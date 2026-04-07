@@ -9,6 +9,10 @@ export default defineConfig(({mode}) => {
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.DEEPSEEK_API_KEY': JSON.stringify(env.DEEPSEEK_API_KEY),
+      'process.env.QWEN_API_KEY': JSON.stringify(env.QWEN_API_KEY),
+      'process.env.MINIMAX_API_KEY': JSON.stringify(env.MINIMAX_API_KEY),
+      'process.env.MINIMAX_MODEL': JSON.stringify(env.MINIMAX_MODEL),
     },
     resolve: {
       alias: {
@@ -16,8 +20,16 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
+      port: 3009,
+      host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3010',
+          changeOrigin: true,
+        },
+      },
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

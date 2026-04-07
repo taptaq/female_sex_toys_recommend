@@ -7,28 +7,19 @@ export type Product = {
   appearance: 'high_disguise' | 'normal';
   physicalForm: 'external' | 'internal' | 'composite';
   motorType: 'gentle' | 'strong';
+  gender: 'male' | 'female' | 'unisex';
+  brand: string;
+  material: string;
   imagePlaceholder: string;
+  link?: string;
+  tags?: string[];
+  reason?: string; // AI 推荐理由
 };
 
-export const products: Product[] = [
-  { id: '1', name: '星云之吻 (Nebula Kiss)', price: 89, maxDb: 40, waterproof: 7, appearance: 'high_disguise', physicalForm: 'external', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-cyan-900/40 to-blue-900/40' },
-  { id: '2', name: '暗物质 (Dark Matter)', price: 150, maxDb: 50, waterproof: 6, appearance: 'normal', physicalForm: 'internal', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-purple-900/40 to-indigo-900/40' },
-  { id: '3', name: '引力波 (Gravity Wave)', price: 280, maxDb: 42, waterproof: 8, appearance: 'normal', physicalForm: 'composite', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-teal-900/40 to-cyan-900/40' },
-  { id: '4', name: '微星 (Micro Star)', price: 60, maxDb: 35, waterproof: 5, appearance: 'high_disguise', physicalForm: 'external', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-blue-800/40 to-indigo-800/40' },
-  { id: '5', name: '脉冲星 (Pulsar)', price: 199, maxDb: 48, waterproof: 7, appearance: 'normal', physicalForm: 'internal', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-indigo-900/40 to-purple-900/40' },
-  { id: '6', name: '双子星 (Gemini)', price: 350, maxDb: 44, waterproof: 7, appearance: 'normal', physicalForm: 'composite', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-cyan-800/40 to-teal-800/40' },
-  { id: '7', name: '旅行者 (Voyager)', price: 120, maxDb: 40, waterproof: 7, appearance: 'high_disguise', physicalForm: 'internal', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-blue-900/40 to-purple-900/40' },
-  { id: '8', name: '黑洞 (Black Hole)', price: 450, maxDb: 55, waterproof: 8, appearance: 'normal', physicalForm: 'composite', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-gray-900/40 to-slate-800/40' },
-  { id: '9', name: '彗星 (Comet)', price: 95, maxDb: 45, waterproof: 6, appearance: 'normal', physicalForm: 'external', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-teal-800/40 to-blue-800/40' },
-  { id: '10', name: '极光 (Aurora)', price: 220, maxDb: 38, waterproof: 7, appearance: 'high_disguise', physicalForm: 'external', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-cyan-700/40 to-indigo-900/40' },
-  { id: '11', name: '超新星 (Supernova)', price: 320, maxDb: 52, waterproof: 7, appearance: 'normal', physicalForm: 'composite', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-fuchsia-900/40 to-purple-900/40' },
-  { id: '12', name: '量子跃迁 (Quantum Leap)', price: 180, maxDb: 42, waterproof: 8, appearance: 'high_disguise', physicalForm: 'internal', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-blue-700/40 to-cyan-800/40' },
-  { id: '13', name: '星尘 (Stardust)', price: 75, maxDb: 38, waterproof: 6, appearance: 'high_disguise', physicalForm: 'external', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-slate-700/40 to-gray-800/40' },
-  { id: '14', name: '深空 (Deep Space)', price: 299, maxDb: 46, waterproof: 7, appearance: 'normal', physicalForm: 'internal', motorType: 'strong', imagePlaceholder: 'bg-gradient-to-br from-indigo-950/40 to-blue-950/40' },
-  { id: '15', name: '天狼星 (Sirius)', price: 150, maxDb: 40, waterproof: 7, appearance: 'high_disguise', physicalForm: 'composite', motorType: 'gentle', imagePlaceholder: 'bg-gradient-to-br from-cyan-600/40 to-teal-800/40' },
-];
+export const products: Product[] = [];
 
 export type AnswerState = {
+  gender?: 'male' | 'female' | 'unisex';
   physicalForm?: 'external' | 'internal' | 'composite';
   motorType?: 'gentle' | 'strong';
   maxDb?: number;
@@ -39,6 +30,17 @@ export type AnswerState = {
 };
 
 export const questions = [
+  {
+    id: 'q0',
+    title: '航向选择',
+    subtitle: '请选择你的内太空探索方向（提示：设备的使用对象分类）',
+    field: 'gender',
+    options: [
+      { label: '女性向探索（跳蛋、震动棒、吮吸器等）', value: 'female', tag: '女性向' },
+      { label: '男性向探索（飞机杯、飞机杯附件等）', value: 'male', tag: '男性向' },
+      { label: '中性/情侣共用（情侣共震器等）', value: 'unisex', tag: '中性/共用' },
+    ]
+  },
   {
     id: 'q1',
     title: '探索倾向',
