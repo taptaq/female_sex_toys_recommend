@@ -30,7 +30,17 @@ export type AnswerState = {
   tags: string[];
 };
 
-export const questions = [
+export type Question = {
+  id: string;
+  title: string;
+  subtitle: string;
+  field: keyof AnswerState;
+  options: { label: string; value: any; tag: string }[];
+  applicableGenders?: ('male' | 'female' | 'unisex')[];
+};
+
+
+export const questions: Question[] = [
   {
     id: 'q0',
     title: '航向选择',
@@ -47,6 +57,7 @@ export const questions = [
     title: '探索倾向',
     subtitle: '你更期待哪种维度的内太空漫游？（提示：期望的刺激部位）',
     field: 'physicalForm',
+    applicableGenders: ['female', 'unisex'],
     options: [
       { label: '外部星环的碰触（仅在外部震动/吮吸，不进入体重）', value: 'external', tag: '外部震动/吮吸' },
       { label: '深入核心的探索（纯入体，适合寻求充实与饱满感）', value: 'internal', tag: '纯入体' },
@@ -54,13 +65,37 @@ export const questions = [
     ]
   },
   {
+    id: 'q1_m',
+    title: '驱动倾向',
+    subtitle: '你更喜欢哪种操控体验？（提示：手动或全自动）',
+    field: 'physicalForm',
+    applicableGenders: ['male'],
+    options: [
+      { label: '手动掌控（自主控制节奏，体验真实的包裹感）', value: 'external', tag: '手动型' },
+      { label: '自动化驱动（释放双手，享受高频震动或活塞）', value: 'internal', tag: '自动型' },
+      { label: '复合体验（动电结合或多重附件加持）', value: 'composite', tag: '复合型' },
+    ]
+  },
+  {
     id: 'q2',
     title: '经验与敏感度',
     subtitle: '你的感官接收器处于什么状态？（提示：自身对刺激的敏感程度）',
     field: 'motorType',
+    applicableGenders: ['female', 'unisex'],
     options: [
       { label: '信号敏锐（敏感易痛或纯新手，适合温柔电机）', value: 'gentle', tag: '温柔型电机' },
       { label: '需要强力能量注入（有经验或耐受度高，需要强力震感）', value: 'strong', tag: '强力型多频段' },
+    ]
+  },
+  {
+    id: 'q2_m',
+    title: '通道体验',
+    subtitle: '你偏好的通道刺激度是？（提示：材质柔软度与内壁纹理）',
+    field: 'motorType',
+    applicableGenders: ['male'],
+    options: [
+      { label: '慢玩柔软（低刺激，适合久战或敏感体质）', value: 'gentle', tag: '慢玩柔软' },
+      { label: '紧致榨汁（高刺激，追求快速爆发或进阶体验）', value: 'strong', tag: '紧致刺激' },
     ]
   },
   {

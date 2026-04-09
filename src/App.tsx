@@ -142,6 +142,14 @@ export default function App() {
 
   const [loadingStep, setLoadingStep] = useState(0);
 
+  const [recommendationTips, setRecommendationTips] = useState<string[]>([]);
+
+  const activeQuestions = questions.filter(
+    (q) =>
+      !q.applicableGenders ||
+      (answers.gender && q.applicableGenders.includes(answers.gender)),
+  );
+
   const pageVariants: any = {
     initial: { opacity: 0, x: 20, scale: 0.95 },
     in: {
@@ -159,10 +167,10 @@ export default function App() {
   };
 
   const fetchProducts = () => {
-    if (hasFetched) return Promise.resolve();
+    if (hasFetched) return Promise.resolve(allProducts);
     setIsLoading(true);
     setLoadingStep(1); // 连接星港
-    return new Promise<void>((resolve) => {
+    return new Promise<Product[]>((resolve) => {
       fetch("/api/recommender/toys")
         .then((response) => response.json())
         .then((data) => {
@@ -173,7 +181,7 @@ export default function App() {
               setAllProducts(data);
               setIsLoading(false);
               setHasFetched(true);
-              resolve();
+              resolve(data);
             }, 1200); // 仪式感时间
           }, 800);
         })
@@ -181,26 +189,35 @@ export default function App() {
           console.error("Failed to fetch products:", error);
           setLoadingStep(-1); // 链路中断
           setIsLoading(false);
-          resolve(); // Resolve anyway to allow user to try again or see error state
+          resolve([]); // Resolve anyway to allow user to try again or see error state
         });
     });
   };
 
   const handleOptionSelect = (field: string, value: any, tag: string) => {
-    setAnswers((prev) => ({
-      ...prev,
+    const newAnswers = {
+      ...answers,
       [field]: value,
-      tags: [...prev.tags, tag],
-    }));
+      tags: [...answers.tags, tag],
+    };
+    setAnswers(newAnswers);
 
-    if (step < questions.length - 1) {
+    const activeQs = questions.filter(
+      (q) =>
+        !q.applicableGenders ||
+        (newAnswers.gender && q.applicableGenders.includes(newAnswers.gender)),
+    );
+
+    if (step < activeQs.length - 1) {
       setStep(step + 1);
     } else {
-      setStep(questions.length); // Loading state
+      setStep(activeQs.length); // Loading state
       if (!hasFetched) {
-        fetchProducts().then(() => calculateResults());
+        fetchProducts().then((data) =>
+          calculateResults(newAnswers, activeQs, data),
+        );
       } else {
-        calculateResults();
+        calculateResults(newAnswers, activeQs, allProducts);
       }
     }
   };
@@ -331,36 +348,114 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
     }
   }
 
-  const calculateResults = async () => {
+  const calculateResults = async (
+    currentAnswers: AnswerState = answers,
+    activeQs: any[] = activeQuestions,
+    productsData: Product[] = allProducts,
+  ) => {
     setIsAiMatching(true);
+    setRecommendationTips([]);
 
     // Step 1: Base Filter (物理硬指标过滤)
-    const filtered = allProducts.filter((p) => {
+    const filtered = productsData.filter((p) => {
       if (
-        answers.budget &&
-        (p.price < answers.budget[0] || p.price > answers.budget[1])
+        currentAnswers.budget &&
+        (p.price < currentAnswers.budget[0] ||
+          p.price > currentAnswers.budget[1])
       )
         return false;
-      if (answers.maxDb && p.maxDb > answers.maxDb) return false;
+      if (currentAnswers.maxDb && p.maxDb > currentAnswers.maxDb) return false;
       if (
-        answers.appearance === "high_disguise" &&
+        currentAnswers.appearance === "high_disguise" &&
         p.appearance !== "high_disguise"
       )
         return false;
       if (
-        answers.gender &&
+        currentAnswers.gender &&
         p.gender !== "unisex" &&
-        p.gender !== answers.gender
+        p.gender !== currentAnswers.gender
       )
         return false;
       return true;
     });
 
+    // --- 约束敏感度分析 (Optimization Tips) ---
+    if (filtered.length < 3) {
+      const tips: string[] = [];
+
+      // 检查预算
+      if (currentAnswers.budget) {
+        const potentialByBudget = productsData.filter((p) => {
+          const matchOther =
+            (!currentAnswers.maxDb || p.maxDb <= currentAnswers.maxDb) &&
+            (currentAnswers.appearance !== "high_disguise" ||
+              p.appearance === "high_disguise") &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return (
+            matchOther &&
+            (p.price < currentAnswers.budget![0] ||
+              p.price > currentAnswers.budget![1])
+          );
+        });
+        if (potentialByBudget.length > 0) {
+          tips.push(
+            `适当调高预算（如增至 ¥${Math.round(currentAnswers.budget[1]! * 1.5)} 左右）可大幅增加匹配成功率。`,
+          );
+        }
+      }
+
+      // 检查外观
+      if (currentAnswers.appearance === "high_disguise") {
+        const potentialByAppearance = productsData.filter((p) => {
+          const matchOther =
+            (!currentAnswers.maxDb || p.maxDb <= currentAnswers.maxDb) &&
+            (!currentAnswers.budget ||
+              (p.price >= currentAnswers.budget[0]! &&
+                p.price <= currentAnswers.budget[1]!)) &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return matchOther && p.appearance !== "high_disguise";
+        });
+        if (potentialByAppearance.length > 0) {
+          tips.push(
+            "若能接受常规或科技感造型（不拘泥于高伪装），可选性能范围将显著扩大。",
+          );
+        }
+      }
+
+      // 检查静音
+      if (currentAnswers.maxDb && currentAnswers.maxDb < 60) {
+        const potentialByNoise = productsData.filter((p) => {
+          const matchOther =
+            (currentAnswers.appearance !== "high_disguise" ||
+              p.appearance === "high_disguise") &&
+            (!currentAnswers.budget ||
+              (p.price >= currentAnswers.budget[0]! &&
+                p.price <= currentAnswers.budget[1]!)) &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return matchOther && p.maxDb > currentAnswers.maxDb!;
+        });
+        if (potentialByNoise.length > 0) {
+          tips.push(
+            "对噪音阈值的微调（如调至 55dB 左右）可能会带给您更细腻的震动体验。",
+          );
+        }
+      }
+
+      setRecommendationTips(tips);
+    }
+    // ----------------------------------------
+
     // 候选池太小时使用全部产品（兜底）
-    const candidates = filtered.length >= 3 ? filtered : allProducts;
+    const candidates = filtered.length >= 3 ? filtered : productsData;
 
     try {
-      const aiResults = await callAiMatching(answers, candidates);
+      const aiResults = await callAiMatching(currentAnswers, candidates);
 
       if (aiResults && Array.isArray(aiResults) && aiResults.length > 0) {
         const selected = aiResults.slice(0, 3).map((res) => {
@@ -376,9 +471,12 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
       // Step 2 Fallback: Rule-based Weighted Scoring
       const scored = candidates.map((p) => {
         let score = 0;
-        if (p.physicalForm === answers.physicalForm) score += 100;
-        if (p.motorType === answers.motorType) score += 20;
-        if (answers.waterproof && p.waterproof >= answers.waterproof)
+        if (p.physicalForm === currentAnswers.physicalForm) score += 100;
+        if (p.motorType === currentAnswers.motorType) score += 20;
+        if (
+          currentAnswers.waterproof &&
+          p.waterproof >= currentAnswers.waterproof
+        )
           score += 20;
         return { ...p, score, reason: "根据您的物理偏好进行精准匹配。" };
       });
@@ -388,7 +486,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
       setIsAiMatching(false);
       // 延迟跳转以供展示动画
       setTimeout(() => {
-        setStep(questions.length + 1);
+        setStep(activeQs.length + 1);
       }, 3000);
     }
   };
@@ -720,7 +818,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
           )}
 
           {/* Question Cards */}
-          {step >= 0 && step < questions.length && (
+          {step >= 0 && step < activeQuestions.length && (
             <motion.div
               key={`q-${step}`}
               variants={pageVariants}
@@ -734,7 +832,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
                   PHASE 0{step + 1}
                 </span>
                 <div className="flex gap-1">
-                  {questions.map((_, i) => (
+                  {activeQuestions.map((_, i) => (
                     <div
                       key={i}
                       className={`h-1 rounded-full transition-all duration-500 ${i === step ? "w-6 bg-cyan-400" : i < step ? "w-2 bg-cyan-800" : "w-2 bg-white/10"}`}
@@ -745,19 +843,19 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
 
               <div className="glass-panel rounded-3xl p-6 sm:p-8">
                 <h2 className="text-xl font-medium text-white mb-2">
-                  {questions[step].title}
+                  {activeQuestions[step].title}
                 </h2>
                 <p className="text-sm text-slate-400 mb-8">
-                  {questions[step].subtitle}
+                  {activeQuestions[step].subtitle}
                 </p>
 
                 <div className="space-y-3">
-                  {questions[step].options.map((option, idx) => (
+                  {activeQuestions[step].options.map((option, idx) => (
                     <button
                       key={idx}
                       onClick={() =>
                         handleOptionSelect(
-                          questions[step].field,
+                          activeQuestions[step].field,
                           option.value,
                           option.tag,
                         )
@@ -784,7 +882,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
           )}
 
           {/* Loading State */}
-          {step === questions.length && (
+          {step === activeQuestions.length && (
             <motion.div
               key="loading"
               variants={pageVariants}
@@ -817,8 +915,8 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
             </motion.div>
           )}
 
-          {/* Result Page */}
-          {step === questions.length + 1 && (
+          {/* Results Screen */}
+          {step === activeQuestions.length + 1 && (
             <motion.div
               key="result"
               variants={pageVariants}
@@ -827,14 +925,51 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
               exit="out"
               className="w-full space-y-6"
             >
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <h2 className="text-2xl font-light text-white mb-2">
                   匹配完成
                 </h2>
+                <div className="flex flex-wrap justify-center gap-1.5 mb-4 max-w-sm mx-auto">
+                  {answers.tags.map((tag, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] text-slate-300"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
                 <p className="text-sm text-slate-400">
-                  基于你的探索偏好，我们找到了以下装备
+                  基于你的以上偏好，我们找到了如下装备
                 </p>
               </div>
+
+              {/* AI 优化建议横幅 */}
+              {recommendationTips.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-8"
+                >
+                  <div className="flex items-center gap-2 mb-2 text-amber-400">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-xs font-medium tracking-wider uppercase">
+                      AI 匹配建议
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {recommendationTips.map((tip, i) => (
+                      <li
+                        key={i}
+                        className="text-[11px] text-amber-200/70 leading-relaxed flex gap-2"
+                      >
+                        <span className="shrink-0">•</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
 
               {topProducts.length > 0 ? (
                 <div className="space-y-4">
@@ -946,31 +1081,55 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
                             </div>
                           )}
                         </div>
-                        <span className="inline-block px-2 py-0.5 rounded bg-white/10 text-slate-300 text-[10px] w-fit mb-1">
-                          {idx === 0 ? "最具性价比" : "探索备选"}
-                        </span>
-                        <h3 className="text-sm font-medium text-white mb-1 truncate">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="inline-block px-1.5 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">
+                            {idx === 0 ? "最具性价比" : "探索备选"}
+                          </span>
+                          <span className="text-[10px] text-cyan-500/70">
+                            {product.brand}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-medium text-white mb-1 truncate leading-tight">
                           {product.name}
                         </h3>
+                        {product.tags && product.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {product.tags.slice(0, 2).map((tag, i) => (
+                              <span
+                                key={i}
+                                className="text-[8px] bg-indigo-500/10 text-indigo-300/80 border border-indigo-500/20 px-1 py-0.5 rounded"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {product.reason && (
                           <p className="text-[9px] text-slate-400 mb-2 line-clamp-2 italic leading-tight">
                             “{product.reason}”
                           </p>
                         )}
-                        {product.link ? (
-                          <a
-                            href={product.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-cyan-400 mt-auto hover:underline"
-                          >
-                            ¥{product.price}
-                          </a>
-                        ) : (
-                          <span className="text-sm text-cyan-400 mt-auto">
-                            ¥{product.price}
-                          </span>
-                        )}
+                        <div className="flex items-center justify-between mt-auto pt-2">
+                          {product.link ? (
+                            <>
+                              <span className="text-sm text-cyan-400">
+                                ¥{product.price}
+                              </span>
+                              <a
+                                href={product.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-cyan-500/80 underline hover:text-cyan-400 transition-colors"
+                              >
+                                立即探索
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-sm text-cyan-400">
+                              ¥{product.price}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
