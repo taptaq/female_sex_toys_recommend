@@ -29,9 +29,11 @@ app.get('/api/recommender/toys', async (req, res) => {
         t.id, t.name, t.price, t.max_db, t.waterproof, 
         t.appearance, t.physical_form, t.motor_type, t.gender, 
         t.brand, t.material, t.image_url,
-        p.link, p.tags, p.persona_analysis
+        p.link, p.tags, p.persona_analysis,
+        c.is_domestic
       FROM public.recommender_toys t
       LEFT JOIN public.products p ON t.original_id = p.id
+      LEFT JOIN public.competitors c ON p.competitor_id = c.id
       ORDER BY t.created_at DESC
     `);
 
@@ -51,7 +53,8 @@ app.get('/api/recommender/toys', async (req, res) => {
       imagePlaceholder: t.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40',
       link: t.link,
       tags: t.tags || [],
-      personaAnalysis: t.persona_analysis
+      personaAnalysis: t.persona_analysis,
+      isDomestic: t.is_domestic
     }));
 
 

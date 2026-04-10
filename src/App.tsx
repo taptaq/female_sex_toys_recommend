@@ -133,6 +133,7 @@ export default function App() {
   // 过滤器状态
   const [filterGender, setFilterGender] = useState<string>("all");
   const [filterBrand, setFilterBrand] = useState<string>("all");
+  const [filterOrigin, setFilterOrigin] = useState<string>("all");
   const [filterMaxDb, setFilterMaxDb] = useState<number>(100);
   const [filterMaterial, setFilterMaterial] = useState<string>("all");
 
@@ -584,7 +585,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
 
           <div className="text-center mb-10">
             <h1 className="text-3xl font-light tracking-widest text-white mb-2">
-              全息装备晶体库
+              全息装备库
             </h1>
             <p className="text-slate-400 text-sm">
               收录当前系统链接的所有真实物理装备
@@ -593,7 +594,7 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
 
           {/* 过滤器面板 */}
           <div className="glass-panel rounded-2xl p-6 mb-10 border border-white/5 bg-white/5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
                   适用对象
@@ -627,6 +628,21 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
                         {brand}
                       </option>
                     ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  出品地区
+                </label>
+                <select
+                  value={filterOrigin}
+                  onChange={(e) => setFilterOrigin(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+                >
+                  <option value="all">不限产地</option>
+                  <option value="domestic">国产品牌</option>
+                  <option value="international">海外品牌</option>
                 </select>
               </div>
 
@@ -688,11 +704,14 @@ ${JSON.stringify(context.candidateProducts, null, 2)}
                   filterGender === "all" || p.gender === filterGender;
                 const matchBrand =
                   filterBrand === "all" || p.brand === filterBrand;
+                const matchOrigin = 
+                  filterOrigin === "all" || 
+                  (filterOrigin === "domestic" ? p.isDomestic === true : p.isDomestic === false);
                 const matchDb = p.maxDb <= filterMaxDb;
                 const matchMaterial =
                   filterMaterial === "all" ||
                   p.material.includes(filterMaterial);
-                return matchGender && matchBrand && matchDb && matchMaterial;
+                return matchGender && matchBrand && matchOrigin && matchDb && matchMaterial;
               })
               .map((product) => {
                 return product.link ? (
