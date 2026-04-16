@@ -22,7 +22,12 @@ async function syncProductsToMock() {
     console.log('[探测] 正在连接云端专属 recommender_toys 表...');
     
     // 取消 LIMIT 30，获取全量清洗后的数据
-    const res = await pool.query('SELECT * FROM public.recommender_toys ORDER BY created_at DESC');
+    const res = await pool.query(`
+      SELECT t.*, p.link
+      FROM public.recommender_toys t
+      LEFT JOIN public.products p ON t.original_id = p.id
+      ORDER BY t.created_at DESC
+    `);
     const rows = res.rows;
     
     if (rows.length === 0) {
@@ -43,7 +48,9 @@ async function syncProductsToMock() {
         physicalForm: row.physical_form,
         motorType: row.motor_type,
         gender: row.gender,
-        imagePlaceholder: row.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40'
+        imagePlaceholder: row.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40',
+        link: row.link || null,
+        sourceUrl: row.link || null,
       };
     });
 
@@ -60,6 +67,8 @@ async function syncProductsToMock() {
   physicalForm: 'external' | 'internal' | 'composite';
   motorType: 'gentle' | 'strong';
   imagePlaceholder: string;
+  link?: string | null;
+  sourceUrl?: string | null;
 };`;
 
     // 通过切割获取后半段（从 AnswerState 开始）

@@ -52,6 +52,7 @@ app.get('/api/recommender/toys', async (req, res) => {
       material: t.material || '亲肤材质',
       imagePlaceholder: t.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40',
       link: t.link,
+      sourceUrl: t.link,
       tags: t.tags || [],
       personaAnalysis: t.persona_analysis,
       isDomestic: t.is_domestic

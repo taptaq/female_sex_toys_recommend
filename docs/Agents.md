@@ -20,7 +20,7 @@
 *   **级联降级策略 (Cascade Fallback)**：
     1.  🥇 **首选 (Primary)**: DeepSeek (`deepseek-chat`)
     2.  🥈 **次选 (Secondary)**: Qwen (`qwen-turbo`)
-    3.  🥉 **全息补偿 (Tertiary)**: Minimax (`MiniMax-M2.5-highspeed`)
+    3.  🥉 **全息补偿 (Tertiary)**: glm (`glm-4.6V-flashX`)
 
 ---
 
@@ -41,7 +41,7 @@
         *   `motorType`: 'gentle' | 'strong'
 *   **级联降级策略 (Cascade Fallback)**：
     1.  🥇 **首选 (Primary)**: Qwen/DeepSeek (依据环境变量优先匹配)
-    2.  🥈 **底层补偿 (Secondary)**: Minimax (`chatcompletion_v2`) 携带特制 `bot_setting`
+    2.  🥈 **底层补偿 (Secondary)**: glm
 
 ---
 

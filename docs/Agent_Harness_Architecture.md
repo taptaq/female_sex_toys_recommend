@@ -24,7 +24,7 @@ graph TD
     subgraph FallbackRouter [多级算力调度路由]
         F[DeepSeek 节点]
         G[Qwen 节点]
-        H[Minimax 节点]
+        H[glm 节点]
     end
 
     subgraph Storage [星港数据库 (PostgreSQL)]

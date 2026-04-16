@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
-import axios from 'axios';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -36,51 +35,23 @@ try {
   console.warn('⚠️ [Init] 初始模型客户端加载失败，将依赖兜底轨道');
 }
 
-/**
- * Minimax 兜底调用函数
- */
-async function callMinimaxFallback(prompt: string) {
-  console.log('⚠️ [Fallback] 正在切换至 Minimax 量子补偿轨道...');
-  const apiKey = process.env.MINIMAX_API_KEY;
-  const model = process.env.MINIMAX_MODEL || 'MiniMax-M2.5-highspeed';
-  
-  const requestData = {
-    model: model,
-    messages: [
-      { role: "user", content: prompt }
-    ],
-    bot_setting: [
-      {
-        bot_name: "专家助手",
-        content: "你是一个专注提取硬件参数的专业机器人。"
-      }
-    ],
-    temperature: 0.1
-  };
+async function callGlmFallback(prompt: string) {
+  console.log('⚠️ [Fallback] 正在切换至 GLM-4.6V-FLASHX 兜底链路...');
+  const apiKey = process.env.GLM_API_KEY;
+  if (!apiKey) throw new Error('GLM_API_KEY 未配置');
 
-  try {
-    const response = await axios.post(
-      "https://api.minimax.io/v1/text/chatcompletion_v2",
-      requestData,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        timeout: 55000,
-      }
-    );
+  const glm = new OpenAI({
+    apiKey,
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4/',
+  });
 
-    if (response.data && response.data.choices && response.data.choices.length > 0) {
-      return response.data.choices[0].message.content || '{}';
-    } else {
-      console.error('❌ [Fallback] Minimax 返回了非标准格式:', JSON.stringify(response.data));
-      throw new Error('Invalid Minimax response format');
-    }
-  } catch (error: any) {
-    console.error('❌ [Fallback] Minimax 补偿任务中断:', error.message || error);
-    throw error;
-  }
+  const response = await glm.chat.completions.create({
+    model: 'GLM-4.6V-FlashX',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.1,
+  });
+
+  return response.choices[0]?.message?.content || '{}';
 }
 
 // --- 数据映射工具函数 (Standardizing Enums) ---
@@ -203,7 +174,7 @@ ${item.rawDescription}
     } catch (e) {
        console.error(`[警告] 第一链路降维通道超载:`, (e as Error).message);
        try {
-         resultText = await callMinimaxFallback(prompt);
+         resultText = await callGlmFallback(prompt);
        } catch (fallbackError) {
          console.error(`[故障] 双重模型链路全部中断`);
          continue; 
@@ -310,4 +281,3 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     prisma.$disconnect();
   });
 }
-

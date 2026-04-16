@@ -13,7 +13,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "debug:param-chain": "tsx -r dotenv/config src/scraper/darentang/debug-param-chain.ts",
+    "scrape:darentang": "tsx -r dotenv/config src/scraper/darentang/crawler.ts"
   },
   "dependencies": {
     "@esbuild/darwin-x64": "^0.28.0",
