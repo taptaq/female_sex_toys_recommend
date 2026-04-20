@@ -69,6 +69,10 @@ const inferExplicitGender = (text: string): 'male' | 'female' | 'unisex' | null 
   if (['男女通用', '男女', '通用', '情侣', '双人', '双方', '共用'].some((hint) => val.includes(hint))) {
     return 'unisex';
   }
+  // 当标题里同时出现女性显式词和男性形态词时，优先按女性向理解，避免被营销/套餐文案带偏。
+  if (['女用', '女性', '女孩子', '阴蒂', 'g点', '跳蛋', '震动棒', '吮吸'].some((hint) => val.includes(hint))) {
+    return 'female';
+  }
   if (
     [
       '飞机杯',
@@ -86,9 +90,6 @@ const inferExplicitGender = (text: string): 'male' | 'female' | 'unisex' | null 
     ].some((hint) => val.includes(hint))
   ) {
     return 'male';
-  }
-  if (['女用', '女性', '女孩子', '阴蒂', 'g点', '跳蛋', '震动棒', '吮吸'].some((hint) => val.includes(hint))) {
-    return 'female';
   }
   return null;
 };
