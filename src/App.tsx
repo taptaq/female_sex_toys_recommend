@@ -1335,6 +1335,8 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               pageVariants={pageVariants}
               answers={answers}
               topProducts={topProducts}
+              backupProducts={backupProducts}
+              shoppingGuidance={shoppingGuidance}
               recommendationTips={recommendationTips}
               onReset={resetQuiz}
             />
