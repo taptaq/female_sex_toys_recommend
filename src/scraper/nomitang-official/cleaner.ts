@@ -558,7 +558,7 @@ ${rawDescription}
     try {
       if (!openai) throw new Error('无 AI 客户端');
       const response = await openai.chat.completions.create({
-        model: 'deepseek-chat',
+        model: 'deepseek-v4-flash',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
       });

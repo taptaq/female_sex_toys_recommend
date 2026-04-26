@@ -562,7 +562,7 @@ async function textFallbackWithDeepSeek(pageText: string): Promise<string> {
   const deepseek = new OpenAI({ apiKey, baseURL: 'https://api.deepseek.com/v1' });
 
   const response = await deepseek.chat.completions.create({
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-flash',
     messages: [
       {
         role: 'user',

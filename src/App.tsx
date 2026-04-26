@@ -813,7 +813,7 @@ ${JSON.stringify(context.rankedProducts, null, 2)}
         dangerouslyAllowBrowser: true,
       });
       const response = await openai.chat.completions.create({
-        model: "deepseek-chat",
+        model: "deepseek-v4-flash",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.1,
       });
@@ -936,7 +936,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
         dangerouslyAllowBrowser: true,
       });
       const response = await openai.chat.completions.create({
-        model: "deepseek-chat",
+        model: "deepseek-v4-flash",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
       });

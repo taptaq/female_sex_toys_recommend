@@ -18,7 +18,7 @@
         *   `id`: string (产品主键)
         *   `reason`: string (30字以内的专业推荐理由，透传至前端气泡)
 *   **级联降级策略 (Cascade Fallback)**：
-    1.  🥇 **首选 (Primary)**: DeepSeek (`deepseek-chat`)
+    1.  🥇 **首选 (Primary)**: DeepSeek (`deepseek-v4-flash`)
     2.  🥈 **次选 (Secondary)**: Qwen (`qwen-turbo`)
     3.  🥉 **全息补偿 (Tertiary)**: glm (`glm-4.6V`)
 

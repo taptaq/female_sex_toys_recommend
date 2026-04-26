@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { Sparkles, VolumeX, Droplets, Zap } from "lucide-react";
+import { ProductImage } from "../components/ProductImage";
 import { AnswerState } from "../data/mock";
 import { RankedProduct } from "../lib/app-shell";
 import type { BackupCandidate } from "../lib/recommendation-results";
@@ -33,22 +34,13 @@ function renderProductImage(
   product: Pick<RankedProduct, "imagePlaceholder" | "name">,
   iconClassName: string,
 ) {
-  if (product.imagePlaceholder.startsWith("http")) {
-    return (
-      <img
-        src={product.imagePlaceholder}
-        alt={product.name}
-        className="h-full w-full object-cover opacity-90"
-      />
-    );
-  }
-
   return (
-    <div
-      className={`flex h-full w-full items-center justify-center ${product.imagePlaceholder}`}
-    >
-      <Sparkles className={iconClassName} />
-    </div>
+    <ProductImage
+      imageValue={product.imagePlaceholder}
+      alt={product.name}
+      iconClassName={iconClassName}
+      imageClassName="h-full w-full object-cover opacity-90"
+    />
   );
 }
 

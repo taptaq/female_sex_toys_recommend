@@ -130,7 +130,7 @@ ${chunk}
   try {
     const primary = getPrimaryClient();
     const response = await primary.chat.completions.create({
-      model: 'deepseek-chat',
+      model: 'deepseek-v4-flash',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
     });

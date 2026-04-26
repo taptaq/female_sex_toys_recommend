@@ -1,25 +1,17 @@
-import { Hexagon, VolumeX, Droplets, Zap } from "lucide-react";
+import { VolumeX, Droplets, Zap } from "lucide-react";
 import { Product } from "../data/mock";
+import { ProductImage } from "./ProductImage";
 
 export function ProductCardContent({ product }: { product: Product }) {
-  const isImage = product.imagePlaceholder.startsWith("http");
-
   return (
     <>
       <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-white/5 bg-black/20">
-        {isImage ? (
-          <img
-            src={product.imagePlaceholder}
-            alt={product.name}
-            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className={`w-full h-full ${product.imagePlaceholder} flex justify-center items-center`}
-          >
-            <Hexagon className="w-8 h-8 text-white/10" />
-          </div>
-        )}
+        <ProductImage
+          imageValue={product.imagePlaceholder}
+          alt={product.name}
+          iconClassName="w-8 h-8 text-white/20"
+          imageClassName="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
+        />
         <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
           <div
             className={`px-2 py-0.5 rounded border text-[9px] font-mono ${product.gender === "male" ? "bg-blue-500/20 border-blue-500/30 text-blue-300" : product.gender === "female" ? "bg-pink-500/20 border-pink-500/30 text-pink-300" : "bg-purple-500/20 border-purple-500/30 text-purple-300"}`}
