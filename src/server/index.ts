@@ -1,12 +1,18 @@
 import express from 'express';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import { createAppAiService } from './app-ai-service.ts';
+import { createRecalibrateResultsHandler } from './app-ai-recalibration-route.ts';
 
 dotenv.config();
 
 const { Pool } = pg;
 const app = express();
 const port = 3010;
+const appAiService = createAppAiService();
+const recalibrateResultsHandler = createRecalibrateResultsHandler({ appAiService });
+
+app.use(express.json({ limit: '1mb' }));
 
 // 使用直连数据库地址，确保高稳定性
 const pool = new Pool({
@@ -67,6 +73,50 @@ app.get('/api/recommender/toys', async (req, res) => {
     res.status(500).json({ error: 'Database synchronization failed', details: String(error) });
   }
 });
+
+app.post('/api/ai/rerank', async (req, res) => {
+  const prompt = String(req.body?.prompt || '').trim();
+  if (!prompt) {
+    res.status(400).json({ error: 'Prompt is required' });
+    return;
+  }
+
+  try {
+    const result = await appAiService.runServerAiProxy<unknown[]>({
+      prompt,
+      temperature: 0.1,
+      emptyJson: '[]',
+      logContext: 'Top3 重排',
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [Server/AI] Top3 重排链路全部中断:', error);
+    res.status(500).json({ error: 'AI rerank failed', details: String(error) });
+  }
+});
+
+app.post('/api/ai/result-enhancement', async (req, res) => {
+  const prompt = String(req.body?.prompt || '').trim();
+  if (!prompt) {
+    res.status(400).json({ error: 'Prompt is required' });
+    return;
+  }
+
+  try {
+    const result = await appAiService.runServerAiProxy<Record<string, unknown>>({
+      prompt,
+      temperature: 0.3,
+      emptyJson: '{}',
+      logContext: '结果增强',
+    });
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [Server/AI] 结果增强链路全部中断:', error);
+    res.status(500).json({ error: 'AI result enhancement failed', details: String(error) });
+  }
+});
+
+app.post('/api/ai/recalibrate-results', recalibrateResultsHandler);
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`🚀 [Server] 稳定后端桥梁已启动: http://localhost:${port}`);

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the app-level recommendation chain try all NVIDIA-hosted models first, and only then fall back to the existing self-hosted DeepSeek/Qwen/GLM providers.
+**Goal:** Make the app-level recommendation chain try all NVIDIA-hosted models first, including Kimi, and only then fall back to the existing self-hosted DeepSeek/Qwen/GLM providers.
 
-**Architecture:** Expand the existing app-level NVIDIA DeepSeek scaffolding into a shared provider ladder used by both recommendation call sites. Keep provider-order knowledge in one tiny helper, keep `vite.config.ts` responsible for env exposure, and keep `App.tsx` responsible for prompt construction, provider execution, and JSON parsing.
+**Architecture:** Expand the existing app-level NVIDIA scaffolding into a shared provider ladder used by both recommendation call sites. Keep provider-order knowledge in one tiny helper, keep `vite.config.ts` responsible for env exposure, and keep `App.tsx` responsible for prompt construction, provider execution, and JSON parsing.
 
 **Tech Stack:** React 19, TypeScript, OpenAI SDK compatibility mode, node:test, Vite
 
@@ -18,7 +18,7 @@
 **Modify:**
 - `src/lib/app-ai-chain.ts` — expand provider order from two entries to the full NVIDIA-first ladder
 - `src/lib/app-ai-chain.test.ts` — verify the new full order
-- `src/App.tsx` — add NVIDIA Qwen and NVIDIA GLM helpers, then reorder both app AI call paths
+- `src/App.tsx` — add NVIDIA Qwen / GLM / Kimi helpers, then reorder both app AI call paths
 - `vite.config.ts` — keep `NVIDIA_API_KEY` exposed for frontend runtime access
 
 ### Task 1: Update The Provider-Order Test First
@@ -42,6 +42,7 @@ test("app ai provider order prefers all NVIDIA providers before self-hosted prov
     "nvidia-deepseek",
     "nvidia-qwen",
     "nvidia-glm",
+    "nvidia-kimi",
     "deepseek",
     "qwen",
     "glm",
@@ -75,6 +76,7 @@ export const APP_RECOMMENDATION_PROVIDER_ORDER = [
   "nvidia-deepseek",
   "nvidia-qwen",
   "nvidia-glm",
+  "nvidia-kimi",
   "deepseek",
   "qwen",
   "glm",
@@ -183,6 +185,27 @@ async function callNvidiaGlm(prompt: string, temperature: number) {
 
   return response.choices[0].message.content;
 }
+
+async function callNvidiaKimi(prompt: string, temperature: number) {
+  const nvidiaKey = process.env.NVIDIA_API_KEY;
+  if (!nvidiaKey) throw new Error("Missing NVIDIA Key");
+
+  const openai = new OpenAI({
+    apiKey: nvidiaKey,
+    baseURL: "https://integrate.api.nvidia.com/v1",
+    dangerouslyAllowBrowser: true,
+  });
+
+  const response = await openai.chat.completions.create({
+    model: "moonshotai/kimi-k2.5",
+    messages: [{ role: "user", content: prompt }],
+    temperature,
+    top_p: 1,
+    max_tokens: 16384,
+  });
+
+  return response.choices[0].message.content;
+}
 ```
 
 - [ ] **Step 3: Reorder both app AI call sites**
@@ -190,13 +213,13 @@ async function callNvidiaGlm(prompt: string, temperature: number) {
 For `callAiRerank`, order the branches as:
 
 ```ts
-NVIDIA DeepSeek -> NVIDIA Qwen -> NVIDIA GLM -> DeepSeek -> Qwen -> GLM
+NVIDIA DeepSeek -> NVIDIA Qwen -> NVIDIA GLM -> NVIDIA Kimi -> DeepSeek -> Qwen -> GLM
 ```
 
 For `callAiResultEnhancement`, use the exact same order:
 
 ```ts
-NVIDIA DeepSeek -> NVIDIA Qwen -> NVIDIA GLM -> DeepSeek -> Qwen -> GLM
+NVIDIA DeepSeek -> NVIDIA Qwen -> NVIDIA GLM -> NVIDIA Kimi -> DeepSeek -> Qwen -> GLM
 ```
 
 Each branch should:

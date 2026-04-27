@@ -1,5 +1,11 @@
 import { motion } from "motion/react";
 import { Hexagon } from "lucide-react";
+import { LoadingFunFacts } from "../components/LoadingFunFacts";
+import { getLoadingFunFacts } from "../lib/loading-fun-facts.ts";
+
+const loadingFunFacts = getLoadingFunFacts("loading", {
+  preferredThemes: ["care", "decision", "experience"],
+});
 
 export function LoadingPage({
   loadingStep,
@@ -16,7 +22,7 @@ export function LoadingPage({
   return (
     <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center p-8 relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/10 rounded-full blur-[140px] animate-pulse"></div>
-      <div className="relative z-10 flex flex-col items-center">
+      <div className="relative z-10 flex w-full max-w-3xl flex-col items-center">
         <div className="relative w-32 h-32 mb-10">
           <motion.div
             animate={{ rotate: 360 }}
@@ -64,12 +70,23 @@ export function LoadingPage({
                   className="absolute top-0 bottom-0 w-1/3 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"
                 />
               </div>
-              <p className="text-[9px] font-mono text-cyan-800 uppercase tracking-widest leading-none">
-                Establishing secure portal to inner_space_db_v2...
+              <p className="text-[10px] font-mono text-cyan-200/45 tracking-[0.22em] leading-none">
+                正在建立通往全息装备库的安全链路...
               </p>
             </div>
           )}
         </div>
+
+        <LoadingFunFacts
+          facts={loadingFunFacts}
+          title={
+            loadingStep === -1
+              ? "等待重连时，也可以先看看这些小参考"
+              : "装备库载入时，先来一条轻量参考"
+          }
+          eyebrow={loadingStep === -1 ? "链路待恢复" : "装备库知识"}
+          className="mt-8 w-full max-w-2xl"
+        />
       </div>
     </div>
   );

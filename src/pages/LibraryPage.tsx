@@ -1,7 +1,9 @@
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, ArrowUp } from "lucide-react";
 import { Product } from "../data/mock";
 import { ProductCardContent } from "../components/ProductCardContent";
 import { PRICE_RANGE_OPTIONS, matchesPriceRange } from "../lib/app-shell";
+import { shouldShowLibraryBackToTop } from "../lib/library-back-to-top";
 
 export function LibraryPage({
   allProducts,
@@ -41,9 +43,34 @@ export function LibraryPage({
   onBack: () => void;
 }) {
   const products = Array.isArray(allProducts) ? allProducts : [];
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const syncVisibility = () => {
+      setShowBackToTop(shouldShowLibraryBackToTop(container.scrollTop));
+    };
+
+    syncVisibility();
+    container.addEventListener("scroll", syncVisibility, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", syncVisibility);
+    };
+  }, []);
+
+  function handleBackToTop() {
+    containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 md:p-8 relative overflow-hidden overflow-y-auto w-full">
+    <div
+      ref={containerRef}
+      className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 md:p-8 relative overflow-hidden overflow-y-auto w-full"
+    >
       <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-cyan-900/20 rounded-full blur-3xl pointer-events-none"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-900/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -282,6 +309,20 @@ export function LibraryPage({
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        onClick={handleBackToTop}
+        aria-label="回到顶部"
+        className={`fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-slate-950/80 px-4 py-2 text-xs text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.18)] backdrop-blur-md transition-all duration-300 hover:border-cyan-300/70 hover:bg-cyan-950/85 hover:text-white sm:bottom-8 sm:right-8 ${
+          showBackToTop
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-3 opacity-0 pointer-events-none"
+        }`}
+      >
+        <ArrowUp className="h-4 w-4" />
+        <span>回到顶部</span>
+      </button>
     </div>
   );
 }

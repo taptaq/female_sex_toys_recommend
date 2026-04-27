@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { CircleDashed, Hexagon, Triangle } from "lucide-react";
+import { ArrowLeft, CircleDashed, Hexagon, Triangle } from "lucide-react";
 import { Question } from "../data/mock";
 
 export function QuizPage({
@@ -7,11 +7,13 @@ export function QuizPage({
   step,
   activeQuestions,
   onSelectOption,
+  onBackHome,
 }: {
   pageVariants: any;
   step: number;
   activeQuestions: Question[];
   onSelectOption: (value: any, tag: string) => void;
+  onBackHome: () => void;
 }) {
   const currentQuestion = activeQuestions[step];
 
@@ -24,6 +26,17 @@ export function QuizPage({
       exit="out"
       className="w-full"
     >
+      <div className="mb-4 px-2">
+        <button
+          type="button"
+          onClick={onBackHome}
+          className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/15 hover:text-white"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>返回首页</span>
+        </button>
+      </div>
+
       <div className="mb-8 flex justify-between items-center px-2">
         <span className="text-xs font-mono text-cyan-500/70 tracking-widest">
           PHASE 0{step + 1}

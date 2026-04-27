@@ -55,11 +55,13 @@ Model mapping:
 The former NVIDIA DeepSeek slot should be replaced by `dmxapi-mimo`, per the user requirement.
 
 ## Response Handling
-- Keep using the current OpenAI-compatible `chat.completions.create(...)` flow.
-- Keep reading the main text response from `response.choices[0].message.content`.
-- Keep the existing JSON-cleanup and parse flow, because the recommendation chain still expects structured JSON-like content from the model output.
+- Keep using the OpenAI-compatible DMXAPI transport.
+- For endpoints that expect JSON payloads, prefer a structured JSON-output path if the current SDK surface supports it cleanly for this codebase.
+- Keep the existing text-content JSON normalization path available as a fallback, because the recommendation chain still expects structured JSON-like content from the model output and model behavior may vary.
 
-The provided DMXAPI example indicates that the response remains compatible with the current server-side parsing approach.
+The provided DMXAPI examples indicate that:
+- standard `chat.completions.create(...)` responses remain compatible with `response.choices[0].message.content`
+- structured JSON output is also a valid direction for stricter server-side parsing when needed
 
 ## Code Changes
 
@@ -74,6 +76,7 @@ The provided DMXAPI example indicates that the response remains compatible with 
 - Replace the OpenAI-compatible base URL from NVIDIA to DMXAPI for the third-party provider group.
 - Replace the third-party model names with the DMXAPI model names provided by the user.
 - Update logs so failures and attempts clearly mention `DMXAPI ...` instead of `NVIDIA ...`.
+- Where practical, prepare the DMXAPI-backed JSON-returning calls to use a more structured response mode first, while preserving the current content-parse fallback.
 
 ### Tests
 - Update provider-order tests to assert the DMXAPI-first order.
@@ -83,7 +86,7 @@ The provided DMXAPI example indicates that the response remains compatible with 
 ## Risks
 - DMXAPI model behavior may differ from the previous NVIDIA-hosted models even with OpenAI-compatible transport.
 - Some existing logs, docs, or plans may still mention NVIDIA after this change; code correctness takes priority in this round.
-- If DMXAPI returns more reasoning-heavy output for some models, the existing JSON-normalization path may still need future hardening, but this migration should not widen scope unless we see a concrete failure.
+- If DMXAPI returns more reasoning-heavy output for some models, the existing JSON-normalization path may still need future hardening; using structured output where feasible should reduce that risk.
 
 ## Acceptance Criteria
 - The local AI proxy no longer depends on any NVIDIA API configuration for app recommendation calls.

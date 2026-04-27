@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence } from "motion/react";
-import OpenAI from "openai";
 import { questions, AnswerState, Product, Question } from "./data/mock";
 import {
   AppRoute,
@@ -23,6 +22,15 @@ import {
   buildLocalShoppingGuidance,
   type BackupCandidate,
 } from "./lib/recommendation-results";
+import { createClearedQuizSessionState } from "./lib/quiz-session";
+import type { AppAiProvider } from "./lib/app-ai-chain";
+import {
+  buildResultRecalibrationPayload,
+  clearResultSourceState,
+  readResultSourceState,
+  resolveCurrentResultSourceState,
+  type ResultRecalibrationResponse,
+} from "./lib/result-recalibration";
 import { LoadingPage } from "./pages/LoadingPage";
 import { HomePage } from "./pages/HomePage";
 import { QuizPage } from "./pages/QuizPage";
@@ -49,6 +57,12 @@ type AiResultEnhancement = {
   shoppingGuidance?: string[];
 };
 
+type AppAiProxyResponse<T> = {
+  data: T;
+  modelName: string;
+  provider: AppAiProvider;
+};
+
 type PersistedAppState = {
   step?: number;
   answers?: AnswerState;
@@ -62,6 +76,8 @@ type PersistedAppState = {
   filterMaxDb?: number;
   filterMaterial?: string;
   filterPriceRange?: string;
+  currentResultProvider?: AppAiProvider;
+  currentResultModelName?: string;
 };
 
 const AI_RERANK_POOL_SIZE = 10;
@@ -298,13 +314,6 @@ const TIEBREAKER_PRIORITY = {
   preferLowerPrice: true,
 } as const;
 
-function normalizeJsonResponse(content: string | null | undefined) {
-  return String(content || "")
-    .replace(/```json/g, "")
-    .replace(/```/g, "")
-    .trim();
-}
-
 function getBudgetGap(price: number, budget?: [number, number]) {
   if (!budget) return 0;
   const [min, max] = budget;
@@ -508,11 +517,20 @@ function finalizeBackupProducts(
   }));
 }
 
+type LocalResultComputation = {
+  filteredCount: number;
+  recommendationTips: string[];
+  rankedCandidates: StructuredRankedProduct[];
+  rerankPool: StructuredRankedProduct[];
+  fallbackTopProducts: StructuredRankedProduct[];
+};
+
 export default function App() {
   const persistedState = readJsonStorage<PersistedAppState>(
     APP_STATE_STORAGE_KEY,
     {},
   );
+  const persistedResultSourceState = readResultSourceState(persistedState);
   const cachedProducts = readProductsCache();
 
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
@@ -563,6 +581,20 @@ export default function App() {
   const [shoppingGuidance, setShoppingGuidance] = useState<string[]>(
     persistedState.shoppingGuidance ?? [],
   );
+  const [currentResultProvider, setCurrentResultProvider] = useState<
+    AppAiProvider | undefined
+  >(persistedResultSourceState.currentResultProvider);
+  const [currentResultModelName, setCurrentResultModelName] = useState<
+    string | undefined
+  >(persistedResultSourceState.currentResultModelName);
+  const [currentSelectedResultProvider, setCurrentSelectedResultProvider] =
+    useState<AppAiProvider>(
+      persistedResultSourceState.currentSelectedResultProvider,
+    );
+  const [isRecalibratingResults, setIsRecalibratingResults] = useState(false);
+  const [resultRecalibrationError, setResultRecalibrationError] = useState<
+    string | null
+  >(null);
 
   const activeQuestions: Question[] = questions.filter(
     (q) =>
@@ -641,6 +673,8 @@ export default function App() {
         filterMaxDb,
         filterMaterial,
         filterPriceRange,
+        currentResultProvider,
+        currentResultModelName,
       }),
     );
   }, [
@@ -656,6 +690,8 @@ export default function App() {
     filterMaxDb,
     filterMaterial,
     filterPriceRange,
+    currentResultProvider,
+    currentResultModelName,
   ]);
 
   useEffect(() => {
@@ -755,6 +791,191 @@ export default function App() {
   };
 
   const [isAiMatching, setIsAiMatching] = useState(false);
+  const isDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env
+    ?.DEV;
+
+  function applyResultSourceState(
+    nextState: ReturnType<typeof readResultSourceState>,
+  ) {
+    setCurrentResultProvider(nextState.currentResultProvider);
+    setCurrentResultModelName(nextState.currentResultModelName);
+    setCurrentSelectedResultProvider(nextState.currentSelectedResultProvider);
+  }
+
+  function buildLocalResultComputation(
+    currentAnswers: AnswerState,
+    productsData: Product[],
+  ): LocalResultComputation {
+    const filtered = productsData.filter((p) => {
+      if (
+        currentAnswers.budget &&
+        (p.price < currentAnswers.budget[0] ||
+          p.price > currentAnswers.budget[1])
+      ) {
+        return false;
+      }
+      if (
+        currentAnswers.maxDb &&
+        p.maxDb != null &&
+        p.maxDb > currentAnswers.maxDb
+      ) {
+        return false;
+      }
+      if (
+        currentAnswers.appearance === "high_disguise" &&
+        p.appearance !== "high_disguise"
+      ) {
+        return false;
+      }
+      if (
+        currentAnswers.gender &&
+        p.gender !== "unisex" &&
+        p.gender !== currentAnswers.gender
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    const recommendationTips: string[] = [];
+
+    if (filtered.length < 3) {
+      if (currentAnswers.budget) {
+        const potentialByBudget = productsData.filter((p) => {
+          const matchOther =
+            (!currentAnswers.maxDb ||
+              p.maxDb == null ||
+              p.maxDb <= currentAnswers.maxDb) &&
+            (currentAnswers.appearance !== "high_disguise" ||
+              p.appearance === "high_disguise") &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return (
+            matchOther &&
+            (p.price < currentAnswers.budget[0] ||
+              p.price > currentAnswers.budget[1])
+          );
+        });
+        if (potentialByBudget.length > 0) {
+          recommendationTips.push(
+            `适当调高预算（如增至 ¥${Math.round(currentAnswers.budget[1] * 1.5)} 左右）可大幅增加匹配成功率。`,
+          );
+        }
+      }
+
+      if (currentAnswers.appearance === "high_disguise") {
+        const potentialByAppearance = productsData.filter((p) => {
+          const matchOther =
+            (!currentAnswers.maxDb ||
+              p.maxDb == null ||
+              p.maxDb <= currentAnswers.maxDb) &&
+            (!currentAnswers.budget ||
+              (p.price >= currentAnswers.budget[0] &&
+                p.price <= currentAnswers.budget[1])) &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return matchOther && p.appearance !== "high_disguise";
+        });
+        if (potentialByAppearance.length > 0) {
+          recommendationTips.push(
+            "若能接受常规或科技感造型（不拘泥于高伪装），可选性能范围将显著扩大。",
+          );
+        }
+      }
+
+      if (currentAnswers.maxDb && currentAnswers.maxDb < 60) {
+        const potentialByNoise = productsData.filter((p) => {
+          const matchOther =
+            (currentAnswers.appearance !== "high_disguise" ||
+              p.appearance === "high_disguise") &&
+            (!currentAnswers.budget ||
+              (p.price >= currentAnswers.budget[0] &&
+                p.price <= currentAnswers.budget[1])) &&
+            (!currentAnswers.gender ||
+              p.gender === "unisex" ||
+              p.gender === currentAnswers.gender);
+          return (
+            matchOther && p.maxDb != null && p.maxDb > currentAnswers.maxDb
+          );
+        });
+        if (potentialByNoise.length > 0) {
+          recommendationTips.push(
+            "对噪音阈值的微调（如调至 55dB 左右）可能会带给您更细腻的震动体验。",
+          );
+        }
+      }
+    }
+
+    const candidates = filtered.length >= 3 ? filtered : productsData;
+    const scorePreset = selectScorePreset(currentAnswers, candidates);
+    const rankedCandidates = candidates
+      .map((product) =>
+        scoreStructuredProduct(product, currentAnswers, scorePreset),
+      )
+      .sort(compareStructuredProducts);
+    const rerankPool = rankedCandidates.slice(0, AI_RERANK_POOL_SIZE);
+
+    return {
+      filteredCount: filtered.length,
+      recommendationTips,
+      rankedCandidates,
+      rerankPool,
+      fallbackTopProducts: rerankPool.slice(0, FINAL_SELECTION_COUNT),
+    };
+  }
+
+  async function postAppAiProxy<T>(
+    path: string,
+    prompt: string,
+  ): Promise<AppAiProxyResponse<T>>;
+  async function postAppAiProxy<T>(
+    path: string,
+    body: Record<string, unknown>,
+    options: { expectEnvelope: false },
+  ): Promise<T>;
+  async function postAppAiProxy<T>(
+    path: string,
+    requestBody: string | Record<string, unknown>,
+    options?: { expectEnvelope?: boolean },
+  ): Promise<AppAiProxyResponse<T> | T> {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(
+        typeof requestBody === "string" ? { prompt: requestBody } : requestBody,
+      ),
+    });
+
+    if (!response.ok) {
+      let details = `HTTP ${response.status}`;
+      try {
+        const payload = await response.json();
+        details = payload?.details || payload?.error || details;
+      } catch {
+        // ignore JSON parse failure and keep HTTP status detail
+      }
+      throw new Error(details);
+    }
+
+    const payload = await response.json();
+    if (options?.expectEnvelope === false) {
+      return payload as T;
+    }
+
+    if (
+      typeof payload !== "object" ||
+      payload == null ||
+      !("data" in payload)
+    ) {
+      throw new Error("Invalid AI proxy response envelope");
+    }
+
+    return payload as AppAiProxyResponse<T>;
+  }
 
   /**
    * AI 在结构化候选池中进行最终 Top3 重排，并生成理由。
@@ -803,67 +1024,17 @@ ${JSON.stringify(context.rankedProducts, null, 2)}
 4. 用中文输出，简洁自然，不要重复同一句话。
 5. 请综合用户标签、结构化分数、matchSummary、价格、噪音、防水、刺激形式来判断，不要只看单一字段。`;
 
-    try {
-      console.log("🤖 [AI] 正在启动首选引擎: DeepSeek，在结构化候选池中重排 Top3...");
-      const dsKey = process.env.DEEPSEEK_API_KEY;
-      if (!dsKey) throw new Error("Missing DeepSeek Key");
-      const openai = new OpenAI({
-        apiKey: dsKey,
-        baseURL: "https://api.deepseek.com/v1",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "deepseek-v4-flash",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      });
-      return JSON.parse(normalizeJsonResponse(response.choices[0].message.content) || "[]");
-    } catch (e) {
-      console.warn(
-        "⚠️ [AI] DeepSeek 重排失败，正在切换至齐天大圣模式 (Qwen)...",
-        e,
+    console.log("🤖 [AI] 正在通过本地后端代理执行 Top3 重排...");
+    const response = await postAppAiProxy<AiReasonResult[]>(
+      "/api/ai/rerank",
+      prompt,
+    );
+    if (isDev) {
+      console.log(
+        `[AI] rerank model: ${response.modelName} (${response.provider})`,
       );
     }
-
-    try {
-      const qwenKey = process.env.QWEN_API_KEY;
-      if (!qwenKey) throw new Error("Missing Qwen Key");
-      const openai = new OpenAI({
-        apiKey: qwenKey,
-        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "qwen-turbo",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      });
-      return JSON.parse(normalizeJsonResponse(response.choices[0].message.content) || "[]");
-    } catch (e) {
-      console.warn(
-        "⚠️ [AI] Qwen 重排失败，正在启动 GLM-4.6V 兜底...",
-        e,
-      );
-    }
-
-    try {
-      const glmKey = process.env.GLM_API_KEY;
-      if (!glmKey) throw new Error("Missing GLM Key");
-      const openai = new OpenAI({
-        apiKey: glmKey,
-        baseURL: "https://open.bigmodel.cn/api/paas/v4/",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "glm-4.6v",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.1,
-      });
-      return JSON.parse(normalizeJsonResponse(response.choices[0].message.content) || "[]");
-    } catch (e) {
-      console.error("❌ [AI] 所有模型链路全部中断，回退到本地结构化 Top3", e);
-      throw e;
-    }
+    return response;
   }
 
   async function callAiResultEnhancement(
@@ -926,67 +1097,67 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
 4. 建议可以参考静音、预算、防水、外观隐蔽、刺激方向、清洁维护等维度。
 5. 如果备选数量不足，也只返回实际存在的备选说明。`;
 
-    try {
-      console.log("🤖 [AI] 正在为备选结果与选购建议生成增强文案: DeepSeek...");
-      const dsKey = process.env.DEEPSEEK_API_KEY;
-      if (!dsKey) throw new Error("Missing DeepSeek Key");
-      const openai = new OpenAI({
-        apiKey: dsKey,
-        baseURL: "https://api.deepseek.com/v1",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "deepseek-v4-flash",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      });
-      return JSON.parse(
-        normalizeJsonResponse(response.choices[0].message.content) || "{}",
-      ) as AiResultEnhancement;
-    } catch (e) {
-      console.warn("⚠️ [AI] DeepSeek 结果增强失败，切换至 Qwen...", e);
+    console.log("🤖 [AI] 正在通过本地后端代理生成备选说明与选购建议...");
+    const response = await postAppAiProxy<AiResultEnhancement>(
+      "/api/ai/result-enhancement",
+      prompt,
+    );
+    if (isDev) {
+      console.log(
+        `[AI] result-enhancement model: ${response.modelName} (${response.provider})`,
+      );
+    }
+    return response;
+  }
+
+  async function recalibrateCurrentResults() {
+    const localResult = buildLocalResultComputation(answers, allProducts);
+
+    if (localResult.rerankPool.length === 0) {
+      setResultRecalibrationError("暂无可用于重校准的候选结果。");
+      return;
     }
 
-    try {
-      const qwenKey = process.env.QWEN_API_KEY;
-      if (!qwenKey) throw new Error("Missing Qwen Key");
-      const openai = new OpenAI({
-        apiKey: qwenKey,
-        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "qwen-turbo",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      });
-      return JSON.parse(
-        normalizeJsonResponse(response.choices[0].message.content) || "{}",
-      ) as AiResultEnhancement;
-    } catch (e) {
-      console.warn("⚠️ [AI] Qwen 结果增强失败，切换至 GLM-4.6V...", e);
-    }
+    setIsRecalibratingResults(true);
+    setResultRecalibrationError(null);
 
     try {
-      const glmKey = process.env.GLM_API_KEY;
-      if (!glmKey) throw new Error("Missing GLM Key");
-      const openai = new OpenAI({
-        apiKey: glmKey,
-        baseURL: "https://open.bigmodel.cn/api/paas/v4/",
-        dangerouslyAllowBrowser: true,
-      });
-      const response = await openai.chat.completions.create({
-        model: "glm-4.6v",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      });
-      return JSON.parse(
-        normalizeJsonResponse(response.choices[0].message.content) || "{}",
-      ) as AiResultEnhancement;
-    } catch (e) {
-      console.error("❌ [AI] 结果增强链路全部中断，回退到本地说明与建议", e);
-      throw e;
+      const response = await postAppAiProxy<ResultRecalibrationResponse>(
+        "/api/ai/recalibrate-results",
+        buildResultRecalibrationPayload({
+          answers,
+          targetProvider: currentSelectedResultProvider,
+          rerankPool: localResult.rerankPool,
+          rankedCandidates: localResult.rankedCandidates,
+          filteredCount: localResult.filteredCount,
+          recommendationTips: localResult.recommendationTips,
+        }),
+        { expectEnvelope: false },
+      );
+
+      setTopProducts(response.topProducts);
+      setBackupProducts(response.backupProducts);
+      setShoppingGuidance(response.shoppingGuidance);
+      setRecommendationTips(response.recommendationTips);
+      applyResultSourceState(
+        readResultSourceState({
+          currentResultProvider: response.provider,
+          currentResultModelName: response.modelName,
+        }),
+      );
+    } catch (error) {
+      console.warn("⚠️ [AI] 结果重校准失败，保留现有结果", error);
+      setResultRecalibrationError(
+        error instanceof Error ? error.message : "结果重校准失败，请稍后重试。",
+      );
+    } finally {
+      setIsRecalibratingResults(false);
     }
+  }
+
+  function handleSelectResultProvider(provider: AppAiProvider) {
+    setCurrentSelectedResultProvider(provider);
+    setResultRecalibrationError(null);
   }
 
   const calculateResults = async (
@@ -994,127 +1165,18 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     activeQs: Question[] = activeQuestions,
     productsData: Product[] = allProducts,
   ) => {
+    const localResult = buildLocalResultComputation(currentAnswers, productsData);
+
     setIsAiMatching(true);
+    setResultRecalibrationError(null);
     setBackupProducts([]);
-    setRecommendationTips([]);
+    setRecommendationTips(localResult.recommendationTips);
     setShoppingGuidance([]);
 
-    // Step 1: Base Filter (物理硬指标过滤)
-    const filtered = productsData.filter((p) => {
-      if (
-        currentAnswers.budget &&
-        (p.price < currentAnswers.budget[0] ||
-          p.price > currentAnswers.budget[1])
-      )
-        return false;
-      if (
-        currentAnswers.maxDb &&
-        p.maxDb != null &&
-        p.maxDb > currentAnswers.maxDb
-      )
-        return false;
-      if (
-        currentAnswers.appearance === "high_disguise" &&
-        p.appearance !== "high_disguise"
-      )
-        return false;
-      if (
-        currentAnswers.gender &&
-        p.gender !== "unisex" &&
-        p.gender !== currentAnswers.gender
-      )
-        return false;
-      return true;
-    });
-
-    // --- 约束敏感度分析 (Optimization Tips) ---
-    if (filtered.length < 3) {
-      const tips: string[] = [];
-
-      // 检查预算
-      if (currentAnswers.budget) {
-        const potentialByBudget = productsData.filter((p) => {
-          const matchOther =
-            (!currentAnswers.maxDb ||
-              p.maxDb == null ||
-              p.maxDb <= currentAnswers.maxDb) &&
-            (currentAnswers.appearance !== "high_disguise" ||
-              p.appearance === "high_disguise") &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
-          return (
-            matchOther &&
-            (p.price < currentAnswers.budget![0] ||
-              p.price > currentAnswers.budget![1])
-          );
-        });
-        if (potentialByBudget.length > 0) {
-          tips.push(
-            `适当调高预算（如增至 ¥${Math.round(currentAnswers.budget[1]! * 1.5)} 左右）可大幅增加匹配成功率。`,
-          );
-        }
-      }
-
-      // 检查外观
-      if (currentAnswers.appearance === "high_disguise") {
-        const potentialByAppearance = productsData.filter((p) => {
-          const matchOther =
-            (!currentAnswers.maxDb ||
-              p.maxDb == null ||
-              p.maxDb <= currentAnswers.maxDb) &&
-            (!currentAnswers.budget ||
-              (p.price >= currentAnswers.budget[0]! &&
-                p.price <= currentAnswers.budget[1]!)) &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
-          return matchOther && p.appearance !== "high_disguise";
-        });
-        if (potentialByAppearance.length > 0) {
-          tips.push(
-            "若能接受常规或科技感造型（不拘泥于高伪装），可选性能范围将显著扩大。",
-          );
-        }
-      }
-
-      // 检查静音
-      if (currentAnswers.maxDb && currentAnswers.maxDb < 60) {
-        const potentialByNoise = productsData.filter((p) => {
-          const matchOther =
-            (currentAnswers.appearance !== "high_disguise" ||
-              p.appearance === "high_disguise") &&
-            (!currentAnswers.budget ||
-              (p.price >= currentAnswers.budget[0]! &&
-                p.price <= currentAnswers.budget[1]!)) &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
-          return (
-            matchOther && p.maxDb != null && p.maxDb > currentAnswers.maxDb!
-          );
-        });
-        if (potentialByNoise.length > 0) {
-          tips.push(
-            "对噪音阈值的微调（如调至 55dB 左右）可能会带给您更细腻的震动体验。",
-          );
-        }
-      }
-
-      setRecommendationTips(tips);
-    }
-    // ----------------------------------------
-
-    // 候选池太小时使用全部产品（兜底），但排序始终先走结构化打分
-    const candidates = filtered.length >= 3 ? filtered : productsData;
-    const scorePreset = selectScorePreset(currentAnswers, candidates);
-    const rankedCandidates = candidates
-      .map((product) => scoreStructuredProduct(product, currentAnswers, scorePreset))
-      .sort(compareStructuredProducts);
-    const rerankPool = rankedCandidates.slice(0, AI_RERANK_POOL_SIZE);
-    const fallbackTopProducts = rerankPool.slice(0, FINAL_SELECTION_COUNT);
-
-    if (rerankPool.length === 0) {
+    if (localResult.rerankPool.length === 0) {
+      applyResultSourceState(
+        clearResultSourceState(currentSelectedResultProvider),
+      );
       setTopProducts([]);
       setBackupProducts([]);
       setShoppingGuidance([]);
@@ -1127,13 +1189,22 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     }
 
     let finalTopProducts: RankedProduct[];
+    let latestResultSourceState = clearResultSourceState(
+      currentSelectedResultProvider,
+    );
 
     try {
-      const aiResults = await callAiRerank(currentAnswers, rerankPool);
+      const rerankResponse = await callAiRerank(
+        currentAnswers,
+        localResult.rerankPool,
+      );
+      const aiResults = rerankResponse.data;
 
       if (aiResults && Array.isArray(aiResults) && aiResults.length > 0) {
         const reasonMap = new Map<string, string>();
-        const poolById = new Map(rerankPool.map((product) => [product.id, product]));
+        const poolById = new Map(
+          localResult.rerankPool.map((product) => [product.id, product]),
+        );
         const orderedProducts: StructuredRankedProduct[] = [];
         const seen = new Set<string>();
 
@@ -1147,7 +1218,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           if (normalizedReason) reasonMap.set(res.id, normalizedReason);
         });
 
-        for (const product of rerankPool) {
+        for (const product of localResult.rerankPool) {
           if (orderedProducts.length >= FINAL_SELECTION_COUNT) break;
           if (seen.has(product.id)) continue;
           seen.add(product.id);
@@ -1159,19 +1230,24 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           reasonMap,
           currentAnswers,
         );
+        latestResultSourceState = resolveCurrentResultSourceState({
+          selectedProvider: currentSelectedResultProvider,
+          currentProvider: rerankResponse.provider,
+          currentModelName: rerankResponse.modelName,
+        });
       } else {
         throw new Error("Empty AI response");
       }
     } catch (e) {
       finalTopProducts = finalizeRankedProducts(
-        fallbackTopProducts,
+        localResult.fallbackTopProducts,
         new Map(),
         currentAnswers,
       );
     }
 
     const backupCandidates = buildBackupCandidates(
-      rankedCandidates,
+      localResult.rankedCandidates,
       finalTopProducts.map((product) => product.id),
       BACKUP_SELECTION_COUNT,
     );
@@ -1181,7 +1257,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     );
     const localShoppingGuidance = buildLocalShoppingGuidance({
       answers: currentAnswers,
-      filteredCount: filtered.length,
+      filteredCount: localResult.filteredCount,
       backupCandidates: localBackupProducts,
     });
 
@@ -1196,15 +1272,15 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           currentAnswers,
           finalTopProducts,
           backupCandidates,
-          filtered.length,
+          localResult.filteredCount,
         );
         const backupReasonMap = new Map<string, string>();
         const backupPoolIds = new Set(
           backupCandidates.map((product) => product.id),
         );
 
-        if (Array.isArray(enhancement.backupProducts)) {
-          enhancement.backupProducts.forEach((item) => {
+        if (Array.isArray(enhancement.data.backupProducts)) {
+          enhancement.data.backupProducts.forEach((item) => {
             if (!item?.id || !backupPoolIds.has(item.id)) return;
             const normalizedReason = String(item.reason || "").trim();
             if (normalizedReason) {
@@ -1213,8 +1289,10 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           });
         }
 
-        const aiShoppingGuidance = Array.isArray(enhancement.shoppingGuidance)
-          ? enhancement.shoppingGuidance
+        const aiShoppingGuidance = Array.isArray(
+          enhancement.data.shoppingGuidance,
+        )
+          ? enhancement.data.shoppingGuidance
               .map((line) => String(line || "").trim())
               .filter(Boolean)
               .slice(0, MAX_SHOPPING_GUIDANCE_COUNT)
@@ -1237,6 +1315,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
       setBackupProducts(localBackupProducts);
       setShoppingGuidance(localShoppingGuidance);
     } finally {
+      applyResultSourceState(latestResultSourceState);
       setIsAiMatching(false);
       // 延迟跳转以供展示动画
       setTimeout(() => {
@@ -1247,13 +1326,30 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   };
 
   const resetQuiz = () => {
+    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
     setStep(0);
     setAnswers({ tags: [] });
     setTopProducts([]);
     setBackupProducts([]);
     setRecommendationTips([]);
     setShoppingGuidance([]);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
     navigateTo("/quiz");
+  };
+
+  const handleBackHomeFromQuiz = () => {
+    const clearedState = createClearedQuizSessionState();
+    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
+    setStep(clearedState.step);
+    setAnswers(clearedState.answers);
+    setTopProducts(clearedState.topProducts);
+    setBackupProducts(clearedState.backupProducts);
+    setRecommendationTips(clearedState.recommendationTips);
+    setShoppingGuidance(clearedState.shoppingGuidance);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
+    navigateTo("/");
   };
 
   if (isLoading && currentRoute !== "/library") {
@@ -1320,6 +1416,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               onSelectOption={(value, tag) =>
                 handleOptionSelect(activeQuestions[step].field, value, tag)
               }
+              onBackHome={handleBackHomeFromQuiz}
             />
           )}
 
@@ -1341,6 +1438,13 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               backupProducts={backupProducts}
               shoppingGuidance={shoppingGuidance}
               recommendationTips={recommendationTips}
+              currentResultProvider={currentResultProvider}
+              currentResultModelName={currentResultModelName}
+              selectedResultProvider={currentSelectedResultProvider}
+              isRecalibratingResults={isRecalibratingResults}
+              resultRecalibrationError={resultRecalibrationError}
+              onSelectResultProvider={handleSelectResultProvider}
+              onRecalibrateResults={recalibrateCurrentResults}
               onReset={resetQuiz}
             />
           )}
