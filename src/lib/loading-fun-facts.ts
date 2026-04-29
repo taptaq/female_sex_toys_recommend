@@ -107,6 +107,33 @@ const LOADING_FUN_FACTS: LoadingFunFact[] = [
     surfaces: ["matching", "loading"],
   },
   {
+    id: "matching-mode-count",
+    title: "常用档位比模式数量更重要",
+    description:
+      "模式很多不一定都常用，真正影响体验的是能否快速找到稳定、顺手、容易复现的那几档。",
+    theme: "decision",
+    priorityTokens: ["多频段", "自动型", "模式", "档位"],
+    surfaces: ["matching", "loading"],
+  },
+  {
+    id: "matching-skin-contact",
+    title: "贴合稳定会放大体感细节",
+    description:
+      "同样的力度下，接触是否稳定、是否容易偏移，往往会明显改变细腻度和持续感。",
+    theme: "experience",
+    priorityTokens: ["柔软", "温柔", "纯入体", "外部"],
+    surfaces: ["matching", "loading"],
+  },
+  {
+    id: "matching-expectation",
+    title: "用前预期越具体，越容易选对",
+    description:
+      "先想清楚想要安静、强反馈、慢慢进入还是方便收纳，通常比临时看参数更可靠。",
+    theme: "decision",
+    priorityTokens: ["预算", "静音", "强力", "高伪装"],
+    surfaces: ["matching", "loading"],
+  },
+  {
     id: "loading-waterproof",
     title: "防水不等于适合长期浸泡",
     description:

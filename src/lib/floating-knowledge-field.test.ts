@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { buildFloatingKnowledgeItems } from "./floating-knowledge-field.ts";
 import type { LoadingFunFact } from "./loading-fun-facts.ts";
 
-const facts: LoadingFunFact[] = Array.from({ length: 12 }, (_, index) => ({
+const facts: LoadingFunFact[] = Array.from({ length: 14 }, (_, index) => ({
   id: `fact-${index + 1}`,
   title: `知识碎片 ${index + 1}`,
   description: `描述 ${index + 1}`,
@@ -17,10 +17,10 @@ test("buildFloatingKnowledgeItems returns slightly richer desktop density", () =
     viewport: "desktop",
   });
 
-  assert.equal(items.length, 11);
+  assert.equal(items.length, 13);
   assert.deepEqual(
     items.map((item) => item.fact.id),
-    facts.slice(0, 11).map((fact) => fact.id),
+    facts.slice(0, 13).map((fact) => fact.id),
   );
 });
 

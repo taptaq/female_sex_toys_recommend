@@ -106,6 +106,22 @@ const LOADING_SLOTS: FloatingKnowledgeSlot[] = [
     delayMs: 1400,
     mobileHidden: true,
   },
+  {
+    id: "loading-far-upper-right",
+    variant: "loading",
+    depth: "far",
+    className: "floating-knowledge-slot-loading-12",
+    delayMs: 1540,
+    mobileHidden: true,
+  },
+  {
+    id: "loading-near-lower-left",
+    variant: "loading",
+    depth: "near",
+    className: "floating-knowledge-slot-loading-13",
+    delayMs: 1680,
+    mobileHidden: true,
+  },
 ];
 
 const MATCHING_SLOTS: FloatingKnowledgeSlot[] = [
@@ -189,6 +205,22 @@ const MATCHING_SLOTS: FloatingKnowledgeSlot[] = [
     depth: "far",
     className: "floating-knowledge-slot-matching-11",
     delayMs: 1200,
+    mobileHidden: true,
+  },
+  {
+    id: "matching-far-outer-left",
+    variant: "matching",
+    depth: "far",
+    className: "floating-knowledge-slot-matching-12",
+    delayMs: 1320,
+    mobileHidden: true,
+  },
+  {
+    id: "matching-near-outer-right",
+    variant: "matching",
+    depth: "near",
+    className: "floating-knowledge-slot-matching-13",
+    delayMs: 1440,
     mobileHidden: true,
   },
 ];
