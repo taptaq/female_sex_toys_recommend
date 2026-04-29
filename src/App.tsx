@@ -1381,7 +1381,11 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   }
 
   const shellContainerClassName =
-    currentRoute === "/results" ? "max-w-6xl" : "max-w-md";
+    currentRoute === "/results"
+      ? "max-w-6xl"
+      : currentRoute === "/quiz" && step === activeQuestions.length
+        ? "max-w-4xl"
+        : "max-w-md";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden">

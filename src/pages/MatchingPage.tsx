@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Orbit } from "lucide-react";
-import { LoadingFunFacts } from "../components/LoadingFunFacts";
+import { FloatingKnowledgeField } from "../components/FloatingKnowledgeField";
 import { getLoadingFunFacts } from "../lib/loading-fun-facts.ts";
 
 export function MatchingPage({
@@ -24,14 +24,16 @@ export function MatchingPage({
       initial="initial"
       animate="in"
       exit="out"
-      className="flex flex-col items-center justify-center py-12"
+      className="relative flex flex-col items-center justify-center overflow-hidden px-4 py-12"
     >
-      <div className="radar-container mb-12">
+      <FloatingKnowledgeField facts={matchingFunFacts} variant="matching" />
+
+      <div className="radar-container relative z-10 mb-12">
         <div className="radar-sweep"></div>
         <Orbit className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-cyan-500/50" />
       </div>
 
-      <div className="w-full max-w-md text-center space-y-4 min-h-[12.5rem] sm:min-h-[11rem]">
+      <div className="relative z-10 w-full max-w-md text-center space-y-4 min-h-[12.5rem] sm:min-h-[11rem]">
         <p className="text-xs font-mono text-cyan-500/70 tracking-widest">
           {isAiMatching ? "AI 专家深度匹配中..." : "解析物理标签中..."}
         </p>
@@ -48,12 +50,6 @@ export function MatchingPage({
         ))}
       </div>
 
-      <LoadingFunFacts
-        facts={matchingFunFacts}
-        title={isAiMatching ? "匹配期间，也许这条刚好有用" : "标签解析中，顺手补一条小知识"}
-        eyebrow={isAiMatching ? "深度匹配" : "标签参考"}
-        className="mt-10 w-full max-w-2xl"
-      />
     </motion.div>
   );
 }

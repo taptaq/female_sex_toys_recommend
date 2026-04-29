@@ -119,9 +119,253 @@ body {
   transform: scale(1.15);
 }
 
+.floating-knowledge-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.floating-knowledge-capsule {
+  position: absolute;
+  max-width: min(240px, 38vw);
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.5), rgba(2, 6, 23, 0.34)),
+    radial-gradient(circle at 15% 30%, rgba(34, 211, 238, 0.22), transparent 42%);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: rgba(226, 232, 240, 0.86);
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0;
+  padding: 8px 12px;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: floating-knowledge-drift 8s ease-in-out infinite alternate;
+}
+
+.floating-knowledge-capsule-near {
+  border-color: rgba(103, 232, 249, 0.34);
+  color: rgba(248, 250, 252, 0.9);
+  opacity: 0.88;
+  animation-duration: 7s;
+}
+
+.floating-knowledge-capsule-far {
+  opacity: 0.58;
+  scale: 0.92;
+  animation-duration: 11s;
+}
+
+.floating-knowledge-mobile-only {
+  display: none;
+}
+
+.floating-knowledge-slot-loading-1 {
+  top: 10%;
+  left: 7%;
+  rotate: -8deg;
+}
+
+.floating-knowledge-slot-loading-2 {
+  top: 13%;
+  right: 8%;
+  rotate: 7deg;
+}
+
+.floating-knowledge-slot-loading-3 {
+  top: 43%;
+  left: 5%;
+  rotate: 5deg;
+}
+
+.floating-knowledge-slot-loading-4 {
+  top: 47%;
+  right: 6%;
+  rotate: -6deg;
+}
+
+.floating-knowledge-slot-loading-5 {
+  bottom: 13%;
+  left: 10%;
+  rotate: 8deg;
+}
+
+.floating-knowledge-slot-loading-6 {
+  bottom: 12%;
+  right: 10%;
+  rotate: -5deg;
+}
+
+.floating-knowledge-slot-loading-7 {
+  top: 25%;
+  left: 18%;
+  rotate: 10deg;
+}
+
+.floating-knowledge-slot-loading-8 {
+  right: 18%;
+  bottom: 25%;
+  rotate: -10deg;
+}
+
+.floating-knowledge-slot-loading-9 {
+  top: 7%;
+  left: 42%;
+  rotate: 3deg;
+}
+
+.floating-knowledge-slot-matching-1 {
+  top: 7%;
+  left: 7%;
+  rotate: -7deg;
+}
+
+.floating-knowledge-slot-matching-2 {
+  top: 10%;
+  right: 7%;
+  rotate: 8deg;
+}
+
+.floating-knowledge-slot-matching-3 {
+  top: 36%;
+  left: 3%;
+  rotate: 5deg;
+}
+
+.floating-knowledge-slot-matching-4 {
+  top: 41%;
+  right: 3%;
+  rotate: -7deg;
+}
+
+.floating-knowledge-slot-matching-5 {
+  bottom: 16%;
+  left: 8%;
+  rotate: -4deg;
+}
+
+.floating-knowledge-slot-matching-6 {
+  right: 8%;
+  bottom: 14%;
+  rotate: 6deg;
+}
+
+.floating-knowledge-slot-matching-7 {
+  top: 24%;
+  right: 19%;
+  rotate: -10deg;
+}
+
+.floating-knowledge-slot-matching-8 {
+  bottom: 29%;
+  left: 18%;
+  rotate: 9deg;
+}
+
+.floating-knowledge-slot-matching-9 {
+  top: 4%;
+  left: 43%;
+  rotate: 2deg;
+}
+
+@keyframes floating-knowledge-drift {
+  0% {
+    translate: 0 0;
+    filter: brightness(0.96);
+  }
+
+  50% {
+    filter: brightness(1.1);
+  }
+
+  100% {
+    translate: 10px -12px;
+    filter: brightness(1);
+  }
+}
+
 @media (max-width: 640px) {
   .loading-fun-fact-stage {
     min-height: 172px;
+  }
+
+  .floating-knowledge-desktop-only {
+    display: none;
+  }
+
+  .floating-knowledge-mobile-only {
+    display: block;
+  }
+
+  .floating-knowledge-capsule {
+    max-width: min(178px, 44vw);
+    padding: 7px 10px;
+    font-size: 10px;
+    opacity: 0.72;
+    animation-duration: 10s;
+  }
+
+  .floating-knowledge-slot-loading-1 {
+    top: 8%;
+    left: 4%;
+  }
+
+  .floating-knowledge-slot-loading-2 {
+    top: 12%;
+    right: 4%;
+  }
+
+  .floating-knowledge-slot-loading-3 {
+    top: 34%;
+    left: 2%;
+  }
+
+  .floating-knowledge-slot-loading-4 {
+    top: 59%;
+    right: 2%;
+  }
+
+  .floating-knowledge-slot-loading-5 {
+    bottom: 8%;
+    left: 7%;
+  }
+
+  .floating-knowledge-slot-matching-1 {
+    top: 5%;
+    left: 4%;
+  }
+
+  .floating-knowledge-slot-matching-2 {
+    top: 12%;
+    right: 3%;
+  }
+
+  .floating-knowledge-slot-matching-3 {
+    top: 34%;
+    left: 2%;
+  }
+
+  .floating-knowledge-slot-matching-4 {
+    top: 56%;
+    right: 2%;
+  }
+
+  .floating-knowledge-slot-matching-5 {
+    bottom: 7%;
+    left: 7%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-knowledge-capsule {
+    animation: none;
   }
 }
 
