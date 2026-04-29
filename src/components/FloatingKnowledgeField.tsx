@@ -41,11 +41,11 @@ export function FloatingKnowledgeField({
         const targetOpacity =
           item.slot.depth === "near"
             ? isMobileLayer
-              ? 0.74
-              : 0.88
+              ? 0.58
+              : 0.72
             : isMobileLayer
-              ? 0.5
-              : 0.58;
+              ? 0.34
+              : 0.42;
 
         return (
           <motion.div
