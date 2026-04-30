@@ -5,10 +5,12 @@ export function HomePage({
   pageVariants,
   onStart,
   onBrowseLibrary,
+  onOpenKnowledgeNebula,
 }: {
   pageVariants: any;
   onStart: () => void;
   onBrowseLibrary: () => void;
+  onOpenKnowledgeNebula: () => void;
 }) {
   return (
     <motion.div
@@ -69,6 +71,13 @@ export function HomePage({
           className="w-full py-4 mt-4 rounded-2xl bg-indigo-900/10 hover:bg-indigo-800/30 border border-indigo-500/20 text-indigo-200 transition-all text-sm tracking-widest flex items-center justify-center"
         >
           浏览全息装备库
+        </button>
+
+        <button
+          onClick={onOpenKnowledgeNebula}
+          className="w-full py-4 mt-4 rounded-2xl bg-slate-900/20 hover:bg-slate-800/40 border border-cyan-400/15 text-cyan-100 transition-all text-sm tracking-widest flex items-center justify-center"
+        >
+          进入知识星云
         </button>
 
         <div className="mt-6 flex justify-center items-center gap-6 text-[10px] text-slate-500 font-mono tracking-wider">

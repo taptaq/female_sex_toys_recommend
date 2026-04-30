@@ -7,6 +7,7 @@ export function QuizPage({
   step,
   activeQuestions,
   onSelectOption,
+  onBackQuestion,
   onBackHome,
 }: {
   pageVariants: any;
@@ -18,6 +19,7 @@ export function QuizPage({
     tag: string,
     answerPatch?: Partial<Omit<AnswerState, "tags">>,
   ) => void;
+  onBackQuestion: () => void;
   onBackHome: () => void;
 }) {
   const currentQuestion = activeQuestions[step];
@@ -31,7 +33,7 @@ export function QuizPage({
       exit="out"
       className="w-full"
     >
-      <div className="mb-4 px-2">
+      <div className="mb-4 flex items-center justify-between gap-3 px-2">
         <button
           type="button"
           onClick={onBackHome}
@@ -40,6 +42,16 @@ export function QuizPage({
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>返回首页</span>
         </button>
+        {step > 0 ? (
+          <button
+            type="button"
+            onClick={onBackQuestion}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>上一题</span>
+          </button>
+        ) : null}
       </div>
 
       <div className="mb-8 flex justify-between items-center px-2">

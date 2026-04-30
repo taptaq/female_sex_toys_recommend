@@ -713,6 +713,37 @@ model recommender_toys {
   @@schema("public")
 }
 
+model knowledge_nebula_topics {
+  slug        String                   @id @db.Text
+  title       String                   @db.Text
+  short_label String                   @db.Text
+  summary     String                   @db.Text
+  accent      String                   @db.Text
+  created_at  DateTime?                @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?                @default(now()) @db.Timestamptz(6)
+  cards       knowledge_nebula_cards[]
+
+  @@schema("public")
+}
+
+model knowledge_nebula_cards {
+  id         String                 @id @db.Text
+  topic_slug String                 @db.Text
+  title      String                 @db.Text
+  summary    String                 @db.Text
+  body       Json                   @db.JsonB
+  is_featured Boolean               @default(false)
+  source_url String?                @db.Text
+  tags       Json                   @default("[]") @db.JsonB
+  sort_order Int                    @default(0)
+  created_at DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?              @default(now()) @db.Timestamptz(6)
+  topics     knowledge_nebula_topics @relation(fields: [topic_slug], references: [slug], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([topic_slug, sort_order], map: "idx_knowledge_nebula_cards_topic_sort")
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2

@@ -18,6 +18,11 @@ import {
   RESULT_MODEL_OPTIONS,
   getResultModelOption,
 } from "../lib/result-models";
+import {
+  RESULT_TUNING_OPTIONS,
+  type ResultTuningMode,
+} from "../lib/result-tuning";
+import { buildResultComparisonRows } from "../lib/result-comparison";
 import type { BackupCandidate } from "../lib/recommendation-results";
 import { getResultLeadCopy } from "../lib/quiz-branching";
 
@@ -144,6 +149,7 @@ type ResultsPageProps = {
   resultRecalibrationError: string | null;
   onSelectResultProvider: (provider: AppAiProvider) => void;
   onRecalibrateResults: () => void;
+  onTuneResults: (mode: ResultTuningMode) => void;
   onReset: () => void;
 };
 
@@ -161,6 +167,7 @@ export function ResultsPage({
   resultRecalibrationError,
   onSelectResultProvider,
   onRecalibrateResults,
+  onTuneResults,
   onReset,
 }: ResultsPageProps) {
   const relaxationTips = dedupeGuidanceItems(recommendationTips).slice(
@@ -190,6 +197,8 @@ export function ResultsPage({
   const primaryProductHref = topProducts[0] ? getProductHref(topProducts[0]) : undefined;
   const resultTags = dedupeDisplayTags(answers.tags);
   const resultLeadCopy = getResultLeadCopy(answers);
+  const comparisonProducts = topProducts.slice(0, 3);
+  const comparisonRows = buildResultComparisonRows(comparisonProducts);
 
   return (
     <motion.div
@@ -216,6 +225,88 @@ export function ResultsPage({
           {resultLeadCopy}
         </p>
       </div>
+
+      {topProducts.length > 0 && (
+        <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-white">快速微调结果</h3>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                保留当前问卷，只轻微调整一个侧重点。
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {RESULT_TUNING_OPTIONS.map((option) => (
+                <button
+                  key={option.mode}
+                  type="button"
+                  onClick={() => onTuneResults(option.mode)}
+                  disabled={isRecalibratingResults}
+                  className="rounded-xl border border-cyan-400/18 bg-cyan-400/8 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-400/14 disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {comparisonProducts.length >= 2 && (
+        <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-white">Top 3 快速对比</h3>
+            <p className="mt-1 text-xs leading-5 text-slate-400">
+              直接看三款在关键决策点上的差异。
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <div className="min-w-[44rem]">
+              <div
+                className="grid gap-2 border-b border-white/8 pb-3"
+                style={{
+                  gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
+                }}
+              >
+                <div className="text-xs text-slate-500">维度</div>
+                {comparisonProducts.map((product, index) => (
+                  <div key={product.id} className="min-w-0">
+                    <div className="mb-1 text-[10px] text-cyan-200/70">
+                      第 {index + 1} 推荐
+                    </div>
+                    <div className="truncate text-xs font-medium text-white">
+                      {product.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="divide-y divide-white/8">
+                {comparisonRows.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid gap-2 py-3"
+                    style={{
+                      gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
+                    }}
+                  >
+                    <div className="text-xs text-slate-400">{row.label}</div>
+                    {row.values.map((value, index) => (
+                      <div
+                        key={`${row.id}-${comparisonProducts[index]?.id ?? index}`}
+                        className="text-xs leading-5 text-slate-200"
+                      >
+                        {value}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {canShowRecalibrationModule && (
         <motion.section

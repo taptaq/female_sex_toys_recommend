@@ -22,7 +22,7 @@ import {
   buildLocalShoppingGuidance,
   type BackupCandidate,
 } from "./lib/recommendation-results";
-import { createClearedQuizSessionState } from "./lib/quiz-session";
+import { createClearedQuizSessionState, rewindQuizAnswer } from "./lib/quiz-session";
 import type { AppAiProvider } from "./lib/app-ai-chain";
 import {
   buildResultRecalibrationPayload,
@@ -31,6 +31,7 @@ import {
   resolveCurrentResultSourceState,
   type ResultRecalibrationResponse,
 } from "./lib/result-recalibration";
+import { tuneResultAnswers, type ResultTuningMode } from "./lib/result-tuning";
 import {
   buildBranchFallbackReason,
   getBranchPreferenceAdjustments,
@@ -44,6 +45,12 @@ import { QuizPage } from "./pages/QuizPage";
 import { MatchingPage } from "./pages/MatchingPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { KnowledgeNebulaPage } from "./pages/KnowledgeNebulaPage";
+import {
+  buildKnowledgeNebulaPath,
+  parseKnowledgeNebulaPath,
+} from "./lib/knowledge-nebula-route";
+import type { KnowledgeNebulaTopicSlug } from "./data/knowledge-nebula";
 
 type StructuredRankedProduct = RankedProduct & {
   matchSummary: string[];
@@ -62,6 +69,10 @@ type BackupProduct = BackupCandidate;
 type AiResultEnhancement = {
   backupProducts?: AiReasonResult[];
   shoppingGuidance?: string[];
+};
+
+type AppHistoryState = {
+  knowledgeOriginRoute?: AppRoute;
 };
 
 type AppAiProxyResponse<T> = {
@@ -524,6 +535,15 @@ type LocalResultComputation = {
 };
 
 export default function App() {
+  const initialPathname = window.location.pathname;
+  const initialKnowledgeRouteState =
+    detectRoute(initialPathname) === "/knowledge"
+      ? parseKnowledgeNebulaPath(initialPathname)
+      : undefined;
+  const initialKnowledgeOriginRoute =
+    detectRoute(initialPathname) === "/knowledge"
+      ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
+      : undefined;
   const persistedState = readJsonStorage<PersistedAppState>(
     APP_STATE_STORAGE_KEY,
     {},
@@ -532,8 +552,14 @@ export default function App() {
   const cachedProducts = readProductsCache();
 
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
-    detectRoute(window.location.pathname),
+    detectRoute(initialPathname),
   );
+  const [selectedKnowledgeTopicSlug, setSelectedKnowledgeTopicSlug] = useState<
+    KnowledgeNebulaTopicSlug | undefined
+  >(initialKnowledgeRouteState?.topicSlug);
+  const [knowledgeOriginRoute, setKnowledgeOriginRoute] = useState<
+    AppRoute | undefined
+  >(initialKnowledgeOriginRoute);
   const [step, setStep] = useState<number>(persistedState.step ?? -1);
   const [answers, setAnswers] = useState<AnswerState>(
     persistedState.answers ?? { tags: [] },
@@ -612,11 +638,55 @@ export default function App() {
     },
   };
 
+  const isInvalidKnowledgeDetailPath = (pathname: string) => {
+    if (detectRoute(pathname) !== "/knowledge") {
+      return false;
+    }
+
+    const normalizedPathname =
+      pathname === "/" ? pathname : pathname.replace(/\/+$/, "");
+    if (normalizedPathname === "/knowledge") {
+      return false;
+    }
+
+    return parseKnowledgeNebulaPath(pathname).topicSlug === undefined;
+  };
+
   const navigateTo = (route: AppRoute, replace = false) => {
     if (window.location.pathname !== route) {
       window.history[replace ? "replaceState" : "pushState"]({}, "", route);
     }
     setCurrentRoute(route);
+    if (route !== "/knowledge") {
+      setSelectedKnowledgeTopicSlug(undefined);
+      setKnowledgeOriginRoute(undefined);
+    }
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const navigateToKnowledgeNebula = (
+    topicSlug?: KnowledgeNebulaTopicSlug,
+    replace = false,
+  ) => {
+    const knowledgePath = buildKnowledgeNebulaPath(topicSlug);
+    const nextKnowledgeOriginRoute =
+      currentRoute === "/knowledge" ? knowledgeOriginRoute : currentRoute;
+    if (window.location.pathname !== knowledgePath) {
+      window.history[replace ? "replaceState" : "pushState"](
+        { knowledgeOriginRoute: nextKnowledgeOriginRoute } satisfies AppHistoryState,
+        "",
+        knowledgePath,
+      );
+    } else if (replace) {
+      window.history.replaceState(
+        { knowledgeOriginRoute: nextKnowledgeOriginRoute } satisfies AppHistoryState,
+        "",
+        knowledgePath,
+      );
+    }
+    setCurrentRoute("/knowledge");
+    setSelectedKnowledgeTopicSlug(topicSlug);
+    setKnowledgeOriginRoute(nextKnowledgeOriginRoute);
     window.scrollTo({ top: 0, behavior: "auto" });
   };
 
@@ -629,8 +699,32 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (currentRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
+      navigateToKnowledgeNebula(undefined, true);
+    }
+  }, [currentRoute]);
+
+  useEffect(() => {
     const handlePopState = () => {
-      setCurrentRoute(detectRoute(window.location.pathname));
+      const nextRoute = detectRoute(window.location.pathname);
+      if (nextRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
+        window.history.replaceState(
+          window.history.state,
+          "",
+          buildKnowledgeNebulaPath(),
+        );
+      }
+      setCurrentRoute(nextRoute);
+      setSelectedKnowledgeTopicSlug(
+        nextRoute === "/knowledge"
+          ? parseKnowledgeNebulaPath(window.location.pathname).topicSlug
+          : undefined,
+      );
+      setKnowledgeOriginRoute(
+        nextRoute === "/knowledge"
+          ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
+          : undefined,
+      );
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -765,7 +859,7 @@ export default function App() {
     const newAnswers = {
       ...answers,
       ...(answerPatch ?? {}),
-      [field]: value,
+      ...(value === undefined ? {} : { [field]: value }),
       tags: [...answers.tags, tag],
     };
     setAnswers(newAnswers);
@@ -784,6 +878,23 @@ export default function App() {
         calculateResults(newAnswers, activeQs, allProducts);
       }
     }
+  };
+
+  const handleBackQuestion = () => {
+    if (step <= 0) return;
+
+    const previousQuestion = activeQuestions[step - 1];
+    setAnswers(
+      rewindQuizAnswer(answers, {
+        field: previousQuestion.field,
+        answerPatchFields: Object.keys(
+          previousQuestion.options.find((option) =>
+            answers.tags.includes(option.tag),
+          )?.answerPatch ?? {},
+        ) as (keyof Omit<AnswerState, "tags">)[],
+      }),
+    );
+    setStep(step - 1);
   };
 
   const [isAiMatching, setIsAiMatching] = useState(false);
@@ -1160,6 +1271,50 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     setResultRecalibrationError(null);
   }
 
+  function applyLocalResultSet(
+    currentAnswers: AnswerState,
+    localResult: LocalResultComputation,
+  ) {
+    const finalTopProducts = finalizeRankedProducts(
+      localResult.fallbackTopProducts,
+      new Map(),
+      currentAnswers,
+    );
+    const backupCandidates = buildBackupCandidates(
+      localResult.rankedCandidates,
+      finalTopProducts.map((product) => product.id),
+      BACKUP_SELECTION_COUNT,
+      currentAnswers,
+    );
+    const localBackupProducts = finalizeBackupProducts(
+      backupCandidates,
+      new Map(),
+      currentAnswers,
+    );
+
+    setTopProducts(finalTopProducts);
+    setBackupProducts(localBackupProducts);
+    setRecommendationTips(localResult.recommendationTips);
+    setShoppingGuidance(
+      buildLocalShoppingGuidance({
+        answers: currentAnswers,
+        filteredCount: localResult.filteredCount,
+        backupCandidates: localBackupProducts,
+      }),
+    );
+    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
+  }
+
+  function handleTuneResults(mode: ResultTuningMode) {
+    const tunedAnswers = tuneResultAnswers(answers, mode);
+    const localResult = buildLocalResultComputation(tunedAnswers, allProducts);
+
+    setAnswers(tunedAnswers);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
+    applyLocalResultSet(tunedAnswers, localResult);
+  }
+
   const calculateResults = async (
     currentAnswers: AnswerState = answers,
     activeQs: Question[] = activeQuestions,
@@ -1382,20 +1537,30 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     );
   }
 
+  const isKnowledgeHubRoute =
+    currentRoute === "/knowledge" && selectedKnowledgeTopicSlug == null;
   const shellContainerClassName =
-    currentRoute === "/results"
+    isKnowledgeHubRoute
+      ? "max-w-none"
+      : currentRoute === "/results" || currentRoute === "/knowledge"
       ? "max-w-6xl"
       : currentRoute === "/quiz" && step === activeQuestions.length
         ? "max-w-none"
         : "max-w-md";
   const shellOverflowClassName =
-    currentRoute === "/quiz" && step === activeQuestions.length
+    isKnowledgeHubRoute
+      ? "overflow-hidden"
+      : currentRoute === "/knowledge" ||
+        (currentRoute === "/quiz" && step === activeQuestions.length)
       ? "overflow-visible"
       : "overflow-hidden";
+  const shellViewportClassName = isKnowledgeHubRoute
+    ? "h-dvh min-h-dvh p-0"
+    : "min-h-screen p-4 sm:p-6 md:p-8";
 
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative ${shellOverflowClassName}`}
+      className={`relative flex flex-col items-center justify-center ${shellViewportClassName} ${shellOverflowClassName}`}
     >
       {/* Background ambient elements */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-cyan-900/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -1414,6 +1579,9 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               onBrowseLibrary={() => {
                 navigateTo("/library");
               }}
+              onOpenKnowledgeNebula={() => {
+                navigateToKnowledgeNebula();
+              }}
             />
           )}
 
@@ -1426,6 +1594,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               step={step}
               activeQuestions={activeQuestions}
               onSelectOption={handleOptionSelect}
+              onBackQuestion={handleBackQuestion}
               onBackHome={handleBackHomeFromQuiz}
             />
           )}
@@ -1455,7 +1624,25 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               resultRecalibrationError={resultRecalibrationError}
               onSelectResultProvider={handleSelectResultProvider}
               onRecalibrateResults={recalibrateCurrentResults}
+              onTuneResults={handleTuneResults}
               onReset={resetQuiz}
+            />
+          )}
+
+          {currentRoute === "/knowledge" && (
+            <KnowledgeNebulaPage
+              pageVariants={pageVariants}
+              topicSlug={selectedKnowledgeTopicSlug}
+              onBack={() => {
+                if (selectedKnowledgeTopicSlug) {
+                  navigateToKnowledgeNebula(undefined, true);
+                  return;
+                }
+                navigateTo(knowledgeOriginRoute ?? "/");
+              }}
+              onSelectTopic={(topicSlug) => {
+                navigateToKnowledgeNebula(topicSlug);
+              }}
             />
           )}
         </AnimatePresence>

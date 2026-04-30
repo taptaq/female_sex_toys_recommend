@@ -1,10 +1,11 @@
 import { Product } from "../data/mock";
 
-export type AppRoute = "/" | "/quiz" | "/results" | "/library";
+export type AppRoute = "/" | "/quiz" | "/results" | "/library" | "/knowledge";
 
 export const APP_STATE_STORAGE_KEY = "inner-space-recommender-app-state-v1";
 export const PRODUCTS_CACHE_STORAGE_KEY =
   "inner-space-recommender-products-cache-v1";
+const KNOWLEDGE_NEBULA_PATH_PATTERN = /^\/knowledge(?:\/|$)/;
 
 type ProductsCachePayload = {
   updatedAt: number;
@@ -70,6 +71,9 @@ export function clearProductsCache() {
 }
 
 export function detectRoute(pathname: string): AppRoute {
+  if (KNOWLEDGE_NEBULA_PATH_PATTERN.test(pathname)) {
+    return "/knowledge";
+  }
   if (pathname === "/library") return "/library";
   if (pathname === "/results") return "/results";
   if (pathname === "/quiz") return "/quiz";

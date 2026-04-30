@@ -3,6 +3,15 @@ import pg from 'pg';
 import dotenv from 'dotenv';
 import { createAppAiService } from './app-ai-service.ts';
 import { createRecalibrateResultsHandler } from './app-ai-recalibration-route.ts';
+import {
+  createKnowledgeNebulaCreateCardHandler,
+  createKnowledgeNebulaTopicHandler,
+  createKnowledgeNebulaUpdateCardHandler,
+} from './knowledge-nebula-route.ts';
+import {
+  createKnowledgeNebulaStore,
+  ensureKnowledgeNebulaSchema,
+} from './knowledge-nebula-store.ts';
 
 dotenv.config();
 
@@ -21,6 +30,7 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 });
+const knowledgeNebulaStore = createKnowledgeNebulaStore({ pool });
 
 // 监听连接错误
 pool.on('error', (err) => {
@@ -117,8 +127,28 @@ app.post('/api/ai/result-enhancement', async (req, res) => {
 });
 
 app.post('/api/ai/recalibrate-results', recalibrateResultsHandler);
+app.get(
+  '/api/knowledge/topics/:slug',
+  createKnowledgeNebulaTopicHandler({ store: knowledgeNebulaStore }),
+);
+app.post(
+  '/api/knowledge/topics/:slug/cards',
+  createKnowledgeNebulaCreateCardHandler({ store: knowledgeNebulaStore }),
+);
+app.patch(
+  '/api/knowledge/cards/:cardId',
+  createKnowledgeNebulaUpdateCardHandler({ store: knowledgeNebulaStore }),
+);
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 [Server] 稳定后端桥梁已启动: http://localhost:${port}`);
-  console.log(`🔗 [Server] 前端通过 Vite Proxy (/api) 进行量子透传...`);
-});
+void ensureKnowledgeNebulaSchema(pool)
+  .then(() => {
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`🚀 [Server] 稳定后端桥梁已启动: http://localhost:${port}`);
+      console.log(`🔗 [Server] 前端通过 Vite Proxy (/api) 进行量子透传...`);
+      console.log(`🪐 [Server] 知识星云表与默认卡片已校准`);
+    });
+  })
+  .catch((error) => {
+    console.error('💥 [Server/Knowledge] 知识星云表初始化失败:', error);
+    process.exit(1);
+  });
