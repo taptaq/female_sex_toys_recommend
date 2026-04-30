@@ -13,8 +13,9 @@ import {
   detectRoute,
   normalizeProductsPayload,
   readProductsCache,
-  readJsonStorage,
+  readSessionJsonStorage,
   writeProductsCache,
+  writeSessionJsonStorage,
 } from "./lib/app-shell";
 import {
   buildBackupCandidates,
@@ -39,7 +40,6 @@ import {
   selectScorePresetId,
   type ScorePresetId,
 } from "./lib/quiz-branching";
-import { LoadingPage } from "./pages/LoadingPage";
 import { HomePage } from "./pages/HomePage";
 import { QuizPage } from "./pages/QuizPage";
 import { MatchingPage } from "./pages/MatchingPage";
@@ -503,6 +503,10 @@ function finalizeRankedProducts(
   return products.map(
     ({ matchSummary, hardMisses, budgetGap, noiseGap, ...product }) => ({
       ...product,
+      matchSummary,
+      hardMisses,
+      budgetGap,
+      noiseGap,
       reason:
         reasonMap.get(product.id) ||
         buildLocalReason(
@@ -544,7 +548,7 @@ export default function App() {
     detectRoute(initialPathname) === "/knowledge"
       ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
       : undefined;
-  const persistedState = readJsonStorage<PersistedAppState>(
+  const persistedState = readSessionJsonStorage<PersistedAppState>(
     APP_STATE_STORAGE_KEY,
     {},
   );
@@ -746,9 +750,9 @@ export default function App() {
   }, [currentRoute, allProducts.length, isLoading]);
 
   useEffect(() => {
-    window.localStorage.setItem(
+    writeSessionJsonStorage(
       APP_STATE_STORAGE_KEY,
-      JSON.stringify({
+      {
         step,
         answers,
         topProducts,
@@ -763,7 +767,7 @@ export default function App() {
         filterPriceRange,
         currentResultProvider,
         currentResultModelName,
-      }),
+      },
     );
   }, [
     step,
@@ -1510,7 +1514,21 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   };
 
   if (isLoading && currentRoute !== "/library") {
-    return <LoadingPage loadingStep={loadingStep} />;
+    return (
+      <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 sm:p-6 md:p-8">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-cyan-900/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-indigo-900/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative z-10 w-full max-w-md">
+          <MatchingPage
+            pageVariants={pageVariants}
+            mode="loading"
+            loadingStep={loadingStep}
+            isAiMatching={false}
+            tags={answers.tags}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (currentRoute === "/library") {

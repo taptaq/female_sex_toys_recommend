@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Orbit, ChevronRight, ShieldCheck, Zap } from "lucide-react";
+import { Orbit, ChevronRight, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 
 export function HomePage({
   pageVariants,
@@ -47,13 +47,13 @@ export function HomePage({
           SELECTION GUIDE
         </h2>
 
-        <p className="text-sm text-slate-300 mb-10 leading-relaxed max-w-[260px]">
+        <p className="text-sm text-slate-300 mb-10 leading-relaxed max-w-[300px]">
           跳过复杂难懂的参数陷阱与营销词汇。只需回答几个简单的偏好问题，我们将基于严密的过滤体系，为你精准匹配出最契合自身需求的私密设备。
         </p>
 
         <button
           onClick={onStart}
-          className="group relative w-full py-4 rounded-2xl bg-cyan-900/30 hover:bg-cyan-800/50 border border-cyan-500/30 text-cyan-50 transition-all overflow-hidden flex items-center justify-center gap-2"
+          className="group relative w-full py-4 rounded-2xl bg-cyan-500/18 hover:bg-cyan-400/24 border border-cyan-300/40 text-cyan-50 transition-all overflow-hidden flex items-center justify-center gap-2 shadow-[0_0_36px_rgba(34,211,238,0.16)]"
         >
           <motion.div
             className="absolute inset-0 bg-cyan-400/5"
@@ -66,28 +66,34 @@ export function HomePage({
           </span>
         </button>
 
-        <button
-          onClick={onBrowseLibrary}
-          className="w-full py-4 mt-4 rounded-2xl bg-indigo-900/10 hover:bg-indigo-800/30 border border-indigo-500/20 text-indigo-200 transition-all text-sm tracking-widest flex items-center justify-center"
-        >
-          浏览全息装备库
-        </button>
+        <div className="mt-5 flex w-full flex-col items-center gap-2 border-t border-white/8 pt-5 sm:flex-row sm:justify-center sm:gap-4">
+          <button
+            onClick={onBrowseLibrary}
+            className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-xs tracking-wider text-slate-300 transition-colors hover:border-indigo-300/25 hover:bg-indigo-400/8 hover:text-indigo-100"
+          >
+            先随便看看装备库
+          </button>
 
-        <button
-          onClick={onOpenKnowledgeNebula}
-          className="w-full py-4 mt-4 rounded-2xl bg-slate-900/20 hover:bg-slate-800/40 border border-cyan-400/15 text-cyan-100 transition-all text-sm tracking-widest flex items-center justify-center"
-        >
-          进入知识星云
-        </button>
+          <button
+            onClick={onOpenKnowledgeNebula}
+            className="rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-xs tracking-wider text-slate-300 transition-colors hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100"
+          >
+            看看知识星云
+          </button>
+        </div>
 
-        <div className="mt-6 flex justify-center items-center gap-6 text-[10px] text-slate-500 font-mono tracking-wider">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-800" />
-            绝对隐秘
+        <div className="mt-6 grid w-full grid-cols-1 gap-2 text-[10px] text-slate-500 font-mono tracking-wider sm:grid-cols-3">
+          <span className="flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2">
+            <KeyRound className="w-3.5 h-3.5 text-cyan-800" />
+            登录后多端同步
           </span>
-          <span className="flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-cyan-800" />
-            量化推荐
+          <span className="flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-800" />
+            敏感偏好加密保存
+          </span>
+          <span className="flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2">
+            <Trash2 className="w-3.5 h-3.5 text-cyan-800" />
+            可随时删除推荐记录
           </span>
         </div>
       </div>

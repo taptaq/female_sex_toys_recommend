@@ -61,12 +61,14 @@ function ShardButton({
   accent,
   onOpen,
   onEdit,
+  isAdmin,
 }: {
   section: KnowledgeNebulaSection;
   badgeLabel: string;
   accent: (typeof ACCENT_STYLES)[KnowledgeNebulaTopic["accent"]];
   onOpen: (sectionId: string) => void;
   onEdit: (section: KnowledgeNebulaSection) => void;
+  isAdmin: boolean;
 }) {
   return (
     <motion.div
@@ -103,17 +105,19 @@ function ShardButton({
           ].join(" ")}
         />
       </div>
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onEdit(section);
-        }}
-        className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] tracking-[0.14em] text-slate-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
-        aria-label={`编辑卡片 ${section.title}`}
-      >
-        编辑卡片
-      </button>
+      {isAdmin ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit(section);
+          }}
+          className="absolute right-4 top-4 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] tracking-[0.14em] text-slate-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+          aria-label={`编辑卡片 ${section.title}`}
+        >
+          编辑卡片
+        </button>
+      ) : null}
       <span
         className={[
           "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-mono tracking-[0.16em]",
@@ -137,10 +141,11 @@ function ShardButton({
 
 export function KnowledgeNebulaTopicSections({
   topic,
+  isAdmin = false,
 }: {
   topic: KnowledgeNebulaTopic;
+  isAdmin?: boolean;
 }) {
-  const isAdmin = false;
   const [liveTopic, setLiveTopic] = useState(topic);
   const [topicSyncError, setTopicSyncError] = useState<string | null>(null);
   const sectionsById = useMemo(
@@ -353,13 +358,15 @@ export function KnowledgeNebulaTopicSections({
                 </p>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={openCreateEditor}
-              className="inline-flex shrink-0 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 transition-colors hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-white"
-            >
-              新增卡片
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={openCreateEditor}
+                className="inline-flex shrink-0 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 transition-colors hover:border-cyan-300/38 hover:bg-cyan-400/16 hover:text-white"
+              >
+                新增卡片
+              </button>
+            ) : null}
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -378,6 +385,7 @@ export function KnowledgeNebulaTopicSections({
                   accent={accent}
                   onOpen={setOpenSectionId}
                   onEdit={openEditEditor}
+                  isAdmin={isAdmin}
                 />
               );
             })}
@@ -479,7 +487,7 @@ export function KnowledgeNebulaTopicSections({
         </div>
       ) : null}
 
-      {editorState ? (
+      {isAdmin && editorState ? (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/78 px-4 py-8 backdrop-blur-md"
           onClick={closeEditor}

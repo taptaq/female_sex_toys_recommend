@@ -6,6 +6,11 @@ export type ResultComparisonRow = {
   values: string[];
 };
 
+export type ResultComparisonTeaser = {
+  countText: string;
+  dimensionText: string;
+};
+
 function formatNoise(maxDb: number | null | undefined) {
   return maxDb == null ? "缺失" : `< ${maxDb}dB`;
 }
@@ -70,4 +75,24 @@ export function buildResultComparisonRows(
       values: comparedProducts.map((product) => formatDisguise(product.appearance)),
     },
   ];
+}
+
+export function buildResultComparisonTeaser(
+  rows: ResultComparisonRow[],
+  productCount: number,
+): ResultComparisonTeaser {
+  if (rows.length === 0 || productCount <= 0) {
+    return {
+      countText: "暂无对比",
+      dimensionText: "先看主推荐即可",
+    };
+  }
+
+  const visibleLabels = rows.slice(0, 3).map((row) => row.label);
+  const suffix = rows.length > visibleLabels.length ? "等" : "";
+
+  return {
+    countText: `${productCount} 款推荐对比`,
+    dimensionText: `${visibleLabels.join(" / ")}${suffix}`,
+  };
 }

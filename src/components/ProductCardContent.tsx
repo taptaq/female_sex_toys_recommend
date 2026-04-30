@@ -1,6 +1,6 @@
 import { VolumeX, Droplets, Zap } from "lucide-react";
-import { Product } from "../data/mock";
-import { ProductImage } from "./ProductImage";
+import { Product } from "../data/mock.ts";
+import { ProductImage } from "./ProductImage.tsx";
 
 export function ProductCardContent({ product }: { product: Product }) {
   return (

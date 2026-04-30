@@ -38,6 +38,18 @@ export type BackupCandidate = RecommendationRankedProduct & {
   backupReason: string;
 };
 
+export type BackupDirectionTeaser = {
+  countText: string;
+  directionText: string;
+};
+
+export type ResultConfidenceSummary = {
+  levelLabel: "高匹配" | "有条件匹配" | "备选匹配";
+  tone: "high" | "conditional" | "backup";
+  reasons: string[];
+  caveats: string[];
+};
+
 type BackupDirection = {
   label: string;
   score: number;
@@ -172,6 +184,105 @@ export function buildBackupCandidates(
   }
 
   return selected.slice(0, count);
+}
+
+export function buildBackupDirectionTeaser(
+  backupCandidates: Pick<BackupCandidate, "backupLabel">[],
+): BackupDirectionTeaser {
+  if (backupCandidates.length === 0) {
+    return {
+      countText: "暂无备选方向",
+      directionText: "先看主推荐即可",
+    };
+  }
+
+  const uniqueLabels = Array.from(
+    new Set(
+      backupCandidates
+        .map((candidate) => candidate.backupLabel.trim())
+        .filter(Boolean),
+    ),
+  );
+  const visibleLabels = uniqueLabels.slice(0, 3);
+  const suffix = uniqueLabels.length > visibleLabels.length ? "等" : "";
+
+  return {
+    countText: `${backupCandidates.length} 个备选方向`,
+    directionText:
+      visibleLabels.length > 0
+        ? `${visibleLabels.join(" / ")}${suffix}`
+        : "先看主推荐即可",
+  };
+}
+
+export function buildResultConfidenceSummary(
+  product: Pick<
+    RecommendationRankedProduct,
+    | "matchSummary"
+    | "hardMisses"
+    | "budgetGap"
+    | "noiseGap"
+    | "waterproof"
+    | "score"
+  >,
+  answers: Pick<RecommendationAnswers, "budget" | "maxDb" | "waterproof" | "tags">,
+): ResultConfidenceSummary {
+  const hardMisses = product.hardMisses ?? 0;
+  const budgetGap = product.budgetGap ?? 0;
+  const noiseGap = product.noiseGap ?? 0;
+  const reasons = (product.matchSummary ?? []).filter(Boolean).slice(0, 2);
+  const caveats: string[] = [];
+
+  if (answers.budget && budgetGap > 0) {
+    caveats.push(`超出预算约 ${budgetGap} 元，适合你愿意为体验稳定性多留一点空间时考虑。`);
+  }
+
+  if (answers.maxDb != null && answers.maxDb < 100 && noiseGap > 0) {
+    caveats.push(`噪音比你的目标高约 ${noiseGap}dB，同住或深夜场景建议谨慎。`);
+  }
+
+  if (answers.waterproof != null && product.waterproof == null) {
+    caveats.push("缺少防水参数，购买前建议确认清洁方式和售后说明。");
+  } else if (
+    answers.waterproof != null &&
+    product.waterproof != null &&
+    product.waterproof < answers.waterproof
+  ) {
+    caveats.push(`防水等级为 IPX${product.waterproof}，低于你偏好的 IPX${answers.waterproof}。`);
+  }
+
+  if (hardMisses > 0 && caveats.length === 0) {
+    caveats.push("存在少量条件不完全吻合，建议把它当作备选而不是唯一答案。");
+  }
+
+  if (caveats.length === 0) {
+    caveats.push("主要参数与当前偏好吻合，优先比较价格、渠道和售后即可。");
+  }
+
+  if (hardMisses >= 2 || product.score < 70) {
+    return {
+      levelLabel: "备选匹配",
+      tone: "backup",
+      reasons,
+      caveats: caveats.slice(0, 3),
+    };
+  }
+
+  if (hardMisses > 0 || budgetGap > 0 || noiseGap > 0) {
+    return {
+      levelLabel: "有条件匹配",
+      tone: "conditional",
+      reasons,
+      caveats: caveats.slice(0, 3),
+    };
+  }
+
+  return {
+    levelLabel: "高匹配",
+    tone: "high",
+    reasons,
+    caveats: caveats.slice(0, 3),
+  };
 }
 
 export function buildLocalShoppingGuidance({

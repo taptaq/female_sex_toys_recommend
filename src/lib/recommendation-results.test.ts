@@ -5,7 +5,9 @@ import type {
   RecommendationRankedProduct,
 } from "./recommendation-results.ts";
 import {
+  buildBackupDirectionTeaser,
   buildBackupCandidates,
+  buildResultConfidenceSummary,
   buildLocalBackupReason,
   buildLocalShoppingGuidance,
 } from "./recommendation-results.ts";
@@ -104,6 +106,83 @@ test("buildBackupCandidates excludes top 3 and preserves overall quality order",
 
   assert.deepEqual(result.map((item) => item.id), ["p5", "p4"]);
   assert.deepEqual(result.map((item) => item.backupLabel), ["更省预算", "更静音"]);
+});
+
+test("buildBackupDirectionTeaser summarizes secondary options without repeating labels", () => {
+  const result = buildBackupDirectionTeaser([
+    { backupLabel: "更静音" },
+    { backupLabel: "更省预算" },
+    { backupLabel: "更静音" },
+    { backupLabel: "更防水" },
+    { backupLabel: "更隐蔽" },
+  ]);
+
+  assert.equal(result.countText, "5 个备选方向");
+  assert.equal(result.directionText, "更静音 / 更省预算 / 更防水等");
+});
+
+test("buildBackupDirectionTeaser handles empty secondary options", () => {
+  const result = buildBackupDirectionTeaser([]);
+
+  assert.equal(result.countText, "暂无备选方向");
+  assert.equal(result.directionText, "先看主推荐即可");
+});
+
+test("buildResultConfidenceSummary labels clean matches as high confidence", () => {
+  const result = buildResultConfidenceSummary(
+    makeProduct({
+      id: "p1",
+      name: "Clean Match",
+      score: 96,
+      price: 269,
+      matchSummary: ["适配当前使用方向", "价格落在预算区间内", "防水表现达到 IPX7"],
+      hardMisses: 0,
+      budgetGap: 0,
+      noiseGap: 0,
+      waterproof: 7,
+      maxDb: 42,
+    }),
+    {
+      tags: ["静音"],
+      maxDb: 50,
+      waterproof: 7,
+      budget: [100, 300],
+    },
+  );
+
+  assert.equal(result.levelLabel, "高匹配");
+  assert.deepEqual(result.reasons, ["适配当前使用方向", "价格落在预算区间内"]);
+  assert.deepEqual(result.caveats, [
+    "主要参数与当前偏好吻合，优先比较价格、渠道和售后即可。",
+  ]);
+});
+
+test("buildResultConfidenceSummary surfaces caveats for conditional matches", () => {
+  const result = buildResultConfidenceSummary(
+    makeProduct({
+      id: "p2",
+      name: "Conditional Match",
+      score: 82,
+      price: 360,
+      maxDb: 55,
+      waterproof: null,
+      matchSummary: ["刺激形式与偏好一致"],
+      hardMisses: 1,
+      budgetGap: 60,
+      noiseGap: 5,
+    }),
+    {
+      tags: ["安静"],
+      maxDb: 50,
+      waterproof: 7,
+      budget: [100, 300],
+    },
+  );
+
+  assert.equal(result.levelLabel, "有条件匹配");
+  assert.ok(result.caveats.some((item) => item.includes("超出预算约 60 元")));
+  assert.ok(result.caveats.some((item) => item.includes("高约 5dB")));
+  assert.ok(result.caveats.some((item) => item.includes("缺少防水参数")));
 });
 
 test("buildLocalBackupReason returns the local backup reason for a label", () => {

@@ -37,6 +37,15 @@ test("knowledge topic sections render fragment buttons instead of anchor jump ca
   assert.doesNotMatch(html, /clip-path/i);
   assert.doesNotMatch(html, /rotate-\[/);
   assert.doesNotMatch(html, /translate-y-/);
+  assert.doesNotMatch(html, /新增卡片/);
+  assert.doesNotMatch(html, /编辑卡片/);
+});
+
+test("knowledge topic sections only show editing affordances in admin mode", () => {
+  const html = renderToStaticMarkup(
+    <KnowledgeNebulaTopicSections topic={scienceTopic} isAdmin />,
+  );
+
   assert.match(html, /新增卡片/);
   assert.match(html, /编辑卡片/);
 });

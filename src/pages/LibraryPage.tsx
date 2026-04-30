@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUp } from "lucide-react";
-import { Product } from "../data/mock";
-import { ProductCardContent } from "../components/ProductCardContent";
-import { PRICE_RANGE_OPTIONS, matchesPriceRange } from "../lib/app-shell";
-import { shouldShowLibraryBackToTop } from "../lib/library-back-to-top";
+import { ArrowLeft, ArrowUp, ChevronDown } from "lucide-react";
+import { Product } from "../data/mock.ts";
+import { ProductCardContent } from "../components/ProductCardContent.tsx";
+import { PRICE_RANGE_OPTIONS, matchesPriceRange } from "../lib/app-shell.ts";
+import { shouldShowLibraryBackToTop } from "../lib/library-back-to-top.ts";
 
 export function LibraryPage({
   allProducts,
@@ -45,6 +45,7 @@ export function LibraryPage({
   const products = Array.isArray(allProducts) ? allProducts : [];
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -100,7 +101,7 @@ export function LibraryPage({
         </div>
 
         <div className="glass-panel rounded-2xl p-6 mb-10 border border-white/5 bg-white/5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
                 适用对象
@@ -114,70 +115,6 @@ export function LibraryPage({
                 <option value="female">女性向</option>
                 <option value="male">男性向</option>
                 <option value="unisex">通用型</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
-                品牌厂商
-              </label>
-              <select
-                value={filterBrand}
-                onChange={(e) => onFilterBrandChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                <option value="all">所有品牌</option>
-                {Array.from(new Set(products.map((product) => product.brand)))
-                  .sort()
-                  .map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
-                出品地区
-              </label>
-              <select
-                value={filterOrigin}
-                onChange={(e) => onFilterOriginChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                <option value="all">不限产地</option>
-                <option value="domestic">国产品牌</option>
-                <option value="international">海外品牌</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
-                材质偏好
-              </label>
-              <select
-                value={filterMaterial}
-                onChange={(e) => onFilterMaterialChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                <option value="all">所有材质</option>
-                {Array.from(
-                  new Set(
-                    products.map((product) => {
-                      if (product.material.includes("硅胶")) return "硅胶";
-                      if (product.material.includes("ABS")) return "ABS";
-                      if (product.material.includes("TPE")) return "TPE";
-                      return product.material;
-                    }),
-                  ),
-                )
-                  .sort()
-                  .map((material) => (
-                    <option key={material} value={material}>
-                      {material}
-                    </option>
-                  ))}
               </select>
             </div>
 
@@ -217,6 +154,90 @@ export function LibraryPage({
                 className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan-500"
               />
             </div>
+          </div>
+
+          <div className="mt-5 border-t border-white/8 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsAdvancedFiltersOpen((isOpen) => !isOpen)}
+              aria-expanded={isAdvancedFiltersOpen}
+              className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2 text-xs text-slate-300 transition-colors hover:border-cyan-300/25 hover:bg-cyan-400/8 hover:text-cyan-100"
+            >
+              <span>高级筛选</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${
+                  isAdvancedFiltersOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isAdvancedFiltersOpen && (
+              <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                    品牌厂商
+                  </label>
+                  <select
+                    value={filterBrand}
+                    onChange={(e) => onFilterBrandChange(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+                  >
+                    <option value="all">所有品牌</option>
+                    {Array.from(new Set(products.map((product) => product.brand)))
+                      .sort()
+                      .map((brand) => (
+                        <option key={brand} value={brand}>
+                          {brand}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                    出品地区
+                  </label>
+                  <select
+                    value={filterOrigin}
+                    onChange={(e) => onFilterOriginChange(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+                  >
+                    <option value="all">不限产地</option>
+                    <option value="domestic">国产品牌</option>
+                    <option value="international">海外品牌</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                    材质偏好
+                  </label>
+                  <select
+                    value={filterMaterial}
+                    onChange={(e) => onFilterMaterialChange(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+                  >
+                    <option value="all">所有材质</option>
+                    {Array.from(
+                      new Set(
+                        products.map((product) => {
+                          if (product.material.includes("硅胶")) return "硅胶";
+                          if (product.material.includes("ABS")) return "ABS";
+                          if (product.material.includes("TPE")) return "TPE";
+                          return product.material;
+                        }),
+                      ),
+                    )
+                      .sort()
+                      .map((material) => (
+                        <option key={material} value={material}>
+                          {material}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

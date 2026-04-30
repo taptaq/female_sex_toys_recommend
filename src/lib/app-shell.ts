@@ -31,6 +31,22 @@ export function readJsonStorage<T>(key: string, fallback: T): T {
   }
 }
 
+export function readSessionJsonStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function writeSessionJsonStorage<T>(key: string, value: T) {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(key);
+  window.sessionStorage.setItem(key, JSON.stringify(value));
+}
+
 export function readProductsCache(): Product[] {
   if (typeof window === "undefined") return [];
   try {
@@ -90,4 +106,10 @@ export function matchesPriceRange(price: number, range: string) {
   return true;
 }
 
-export type RankedProduct = Product & { score: number };
+export type RankedProduct = Product & {
+  score: number;
+  matchSummary?: string[];
+  hardMisses?: number;
+  budgetGap?: number;
+  noiseGap?: number;
+};
