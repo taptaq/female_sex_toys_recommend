@@ -61,12 +61,11 @@ test("readResultSourceState prefers a valid persisted provider", () => {
     {
       currentResultProvider: "qwen",
       currentResultModelName: "qwen-max",
-      currentSelectedResultProvider: "qwen",
     },
   );
 });
 
-test("readResultSourceState keeps result source empty for invalid persisted values while preserving a safe selected provider", () => {
+test("readResultSourceState keeps result source empty for invalid persisted values", () => {
   assert.deepEqual(
     readResultSourceState({
       currentResultProvider: "not-a-provider",
@@ -75,34 +74,24 @@ test("readResultSourceState keeps result source empty for invalid persisted valu
     {
       currentResultProvider: undefined,
       currentResultModelName: undefined,
-      currentSelectedResultProvider: "dmxapi-mimo",
     },
   );
 });
 
-test("clearResultSourceState removes stale result metadata and preserves a safe selected provider", () => {
-  assert.deepEqual(clearResultSourceState("glm"), {
+test("clearResultSourceState removes stale result metadata", () => {
+  assert.deepEqual(clearResultSourceState(), {
     currentResultProvider: undefined,
     currentResultModelName: undefined,
-    currentSelectedResultProvider: "glm",
-  });
-
-  assert.deepEqual(clearResultSourceState("not-a-provider"), {
-    currentResultProvider: undefined,
-    currentResultModelName: undefined,
-    currentSelectedResultProvider: "dmxapi-mimo",
   });
 });
 
 test("resolveCurrentResultSourceState keeps current result empty when rerank falls back locally", () => {
   assert.deepEqual(
     resolveCurrentResultSourceState({
-      selectedProvider: "glm",
     }),
     {
       currentResultProvider: undefined,
       currentResultModelName: undefined,
-      currentSelectedResultProvider: "glm",
     },
   );
 });
@@ -110,20 +99,18 @@ test("resolveCurrentResultSourceState keeps current result empty when rerank fal
 test("resolveCurrentResultSourceState uses the rerank source when one is available", () => {
   assert.deepEqual(
     resolveCurrentResultSourceState({
-      selectedProvider: "glm",
       currentProvider: "qwen",
       currentModelName: "qwen-max",
     }),
     {
       currentResultProvider: "qwen",
       currentResultModelName: "qwen-max",
-      currentSelectedResultProvider: "qwen",
     },
   );
 });
 
 test("readResultSourceState preserves empty result metadata after a clear-state persistence round trip", () => {
-  const clearedState = clearResultSourceState("glm");
+  const clearedState = clearResultSourceState();
 
   assert.deepEqual(
     readResultSourceState({
@@ -133,18 +120,16 @@ test("readResultSourceState preserves empty result metadata after a clear-state 
     {
       currentResultProvider: undefined,
       currentResultModelName: undefined,
-      currentSelectedResultProvider: "dmxapi-mimo",
     },
   );
 
   assert.deepEqual(readResultSourceState({}), {
     currentResultProvider: undefined,
     currentResultModelName: undefined,
-    currentSelectedResultProvider: "dmxapi-mimo",
   });
 });
 
-test("buildResultRecalibrationPayload preserves the selected provider and ranking inputs", () => {
+test("buildResultRecalibrationPayload requests automatic model routing without exposing a target provider", () => {
   const answers: RecommendationAnswers = {
     tags: ["静音", "高伪装"],
     gender: "female",
@@ -190,18 +175,19 @@ test("buildResultRecalibrationPayload preserves the selected provider and rankin
 
   const payload = buildResultRecalibrationPayload({
     answers,
-    targetProvider: "glm",
+    strategy: "auto",
     rerankPool,
     rankedCandidates,
     filteredCount: 6,
     recommendationTips,
   });
 
-  assert.equal(payload.targetProvider, "glm");
+  assert.equal(payload.strategy, "auto");
+  assert.equal("targetProvider" in payload, false);
   assert.equal(payload.recommendationTips, recommendationTips);
   assert.deepEqual(payload, {
     answers,
-    targetProvider: "glm",
+    strategy: "auto",
     rerankPool: [
       {
         id: "p-1",

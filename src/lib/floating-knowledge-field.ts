@@ -33,6 +33,7 @@ export type FloatingKnowledgeItem = {
 type BuildFloatingKnowledgeItemsOptions = {
   variant: FloatingKnowledgeVariant;
   viewport: FloatingKnowledgeViewport;
+  maxItems?: number;
 };
 
 type FloatingKnowledgeSlotInput = Omit<
@@ -369,8 +370,9 @@ export function buildFloatingKnowledgeItems(
   const slots = getSlots(options.variant).filter(
     (slot) => options.viewport === "desktop" || !slot.mobileHidden,
   );
+  const maxItems = options.maxItems ?? slots.length;
 
-  return facts.slice(0, slots.length).map((fact, index) => ({
+  return facts.slice(0, Math.min(slots.length, maxItems)).map((fact, index) => ({
     fact,
     slot: slots[index],
   }));

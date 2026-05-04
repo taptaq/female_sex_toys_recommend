@@ -48,11 +48,29 @@ function formatSavedAt(value: string) {
 
 function formatAnswerCondition(label: string, value: unknown) {
   if (Array.isArray(value)) {
+    if (label === "预算" && value.length >= 2) {
+      const [min, max] = value;
+      if (typeof min === "number" && typeof max === "number") {
+        if (max <= 100) return "100 元以内，先试方向";
+        if (min >= 100 && max <= 300) return "100-300 元，兼顾稳定体验";
+        if (min >= 300) return "300 元以上，偏一步到位";
+      }
+    }
+
     return value.length > 0
       ? value.map((item) => formatAnswerCondition(label, item)).join(" - ")
       : "未设置";
   }
   if (typeof value === "number") {
+    if (label === "静音") {
+      if (value <= 40) return "非常在意静音";
+      if (value <= 50) return "希望尽量低打扰";
+      return "声音不是主要约束";
+    }
+    if (label === "防水") {
+      if (value >= 7) return `偏向更省心的清洁方式（约 IPX${value}）`;
+      if (value >= 6) return `可接受常规清洁（约 IPX${value}）`;
+    }
     return String(value);
   }
   if (typeof value === "string" && value.trim()) {
@@ -62,6 +80,111 @@ function formatAnswerCondition(label: string, value: unknown) {
     return value ? "是" : "否";
   }
   return "未设置";
+}
+
+function buildProfileDecisionSummary(profile: SavedRecommendationProfile) {
+  const answers = profile.payload.answers;
+  const lines: string[] = [];
+
+  const branchLabel = formatAnswerCondition("性别", answers.gender);
+  const routeLabel = formatAnswerCondition("路线", answers.physicalForm);
+  const motorLabel = formatAnswerCondition("电机", answers.motorType);
+  const budgetLabel = formatAnswerCondition("预算", answers.budget);
+  const noiseLabel = formatAnswerCondition("静音", answers.maxDb);
+
+  if (answers.gender || answers.physicalForm || answers.motorType) {
+    lines.push(
+      `你当时更偏向${branchLabel}${
+        answers.physicalForm ? `，想先围绕${routeLabel}来筛选` : ""
+      }${answers.motorType ? `，整体也更适合${motorLabel}的反馈节奏` : ""}。`,
+    );
+  }
+
+  if (answers.budget || answers.maxDb || answers.waterproof) {
+    const conditionParts = [
+      answers.budget ? budgetLabel : "",
+      answers.maxDb != null ? noiseLabel : "",
+      answers.waterproof != null
+        ? formatAnswerCondition("防水", answers.waterproof)
+        : "",
+    ].filter(Boolean);
+
+    if (conditionParts.length > 0) {
+      lines.push(`当时的实际约束更接近：${conditionParts.join("、")}。`);
+    }
+  }
+
+  if (profile.payload.topProducts.length > 0) {
+    lines.push(
+      `所以系统当时先把 ${profile.payload.topProducts
+        .slice(0, 2)
+        .map((product) => product.name)
+        .join("、")} 这类方向放在前面，更适合先回到那次判断继续比较。`,
+    );
+  }
+
+  return lines.slice(0, 3);
+}
+
+function buildProfileDecisionSnapshot(profile: SavedRecommendationProfile) {
+  const answers = profile.payload.answers;
+  const topProduct = profile.payload.topProducts[0];
+  const preferenceTags = dedupeDisplayTags(answers.tags || []).slice(0, 4);
+  const concernParts = [
+    answers.budget ? `预算：${formatAnswerCondition("预算", answers.budget)}` : "",
+    answers.maxDb != null
+      ? `静音：${formatAnswerCondition("静音", answers.maxDb)}`
+      : "",
+    answers.waterproof != null
+      ? `清洁：${formatAnswerCondition("防水", answers.waterproof)}`
+      : "",
+    answers.appearance
+      ? `收纳：${formatAnswerCondition("外观", answers.appearance)}`
+      : "",
+  ].filter(Boolean);
+
+  const routeParts = [
+    answers.gender ? formatAnswerCondition("性别", answers.gender) : "",
+    answers.physicalForm
+      ? formatAnswerCondition("路线", answers.physicalForm)
+      : "",
+    answers.motorType ? formatAnswerCondition("电机", answers.motorType) : "",
+  ].filter(Boolean);
+
+  const reasonParts = [
+    topProduct?.name ? `主推荐是 ${topProduct.name}` : "",
+    profile.summary ? profile.summary : "",
+  ].filter(Boolean);
+
+  return [
+    {
+      label: "当时更在意",
+      value:
+        concernParts.join("、") ||
+        (preferenceTags.length > 0
+          ? preferenceTags.join("、")
+          : "当时更像是一次整体探索，没有留下特别强的单一约束。"),
+    },
+    {
+      label: "主推荐路线",
+      value:
+        routeParts.join(" / ") ||
+        (topProduct?.name
+          ? `先围绕 ${topProduct.name} 这类方向继续看`
+          : "先从系统筛出的主推荐方向继续看。"),
+    },
+    {
+      label: "推荐原因",
+      value:
+        reasonParts.join("，") ||
+        "这组推荐综合了当时的偏好标签、预算、清洁和使用场景，更适合作为一次决策快照回看。",
+    },
+    {
+      label: "如果现在重看",
+      value:
+        "优先比较静音、清洁和预算是否仍然符合现在的使用环境，再决定要不要重新匹配。",
+    },
+  ];
 }
 
 export function ProfilesPage({
@@ -83,6 +206,12 @@ export function ProfilesPage({
 }) {
   const [selectedProfile, setSelectedProfile] =
     useState<SavedRecommendationProfile | null>(initialSelectedProfile);
+  const selectedProfileSummary = selectedProfile
+    ? buildProfileDecisionSummary(selectedProfile)
+    : [];
+  const selectedProfileSnapshot = selectedProfile
+    ? buildProfileDecisionSnapshot(selectedProfile)
+    : [];
   const selectedAnswerEntries = selectedProfile
     ? ([
         ["性别", selectedProfile.payload.answers.gender],
@@ -214,6 +343,45 @@ export function ProfilesPage({
             </div>
 
             <div className="space-y-4">
+              {selectedProfileSummary.length > 0 && (
+                <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4">
+                  <h3 className="mb-3 text-sm font-medium text-cyan-50">
+                    这次为什么会得到这组推荐
+                  </h3>
+                  <div className="space-y-2">
+                    {selectedProfileSummary.map((line) => (
+                      <p
+                        key={line}
+                        className="text-sm leading-6 text-cyan-50/78"
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045] p-4">
+                <h3 className="mb-3 text-sm font-medium text-cyan-50">
+                  决策快照
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {selectedProfileSnapshot.map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-xl border border-cyan-200/10 bg-slate-950/30 px-3 py-3"
+                    >
+                      <p className="text-[10px] tracking-[0.2em] text-cyan-200/48">
+                        {item.label}
+                      </p>
+                      <p className="mt-1.5 text-sm leading-6 text-cyan-50/82">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
               <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
                   <LockKeyhole className="h-4 w-4 text-cyan-200/70" />
@@ -273,6 +441,34 @@ export function ProfilesPage({
                   ))}
                 </div>
               </section>
+
+              {(selectedProfile.payload.savedCandidates || []).length > 0 && (
+                <section className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.045] p-4">
+                  <div className="mb-3">
+                    <h3 className="text-sm font-medium text-cyan-50">
+                      稍后比较
+                    </h3>
+                    <p className="mt-1 text-xs leading-5 text-cyan-100/58">
+                      这些是当时特意留下来想继续看的候选。
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {(selectedProfile.payload.savedCandidates || []).map((product) => (
+                      <div
+                        key={product.id}
+                        className="rounded-xl border border-cyan-200/10 bg-slate-950/28 px-3 py-3"
+                      >
+                        <p className="line-clamp-2 text-sm leading-5 text-cyan-50">
+                          {product.name}
+                        </p>
+                        <p className="mt-1 text-xs text-cyan-100/55">
+                          当时匹配度 {Math.round(product.score)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {selectedProfile.payload.shoppingGuidance.length > 0 && (
                 <section className="rounded-2xl border border-amber-300/16 bg-amber-400/8 p-4">

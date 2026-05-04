@@ -10,6 +10,8 @@ import {
   buildResultConfidenceSummary,
   buildLocalBackupReason,
   buildLocalShoppingGuidance,
+  buildResultAvoidanceTips,
+  buildLocalPrimaryReason,
 } from "./recommendation-results.ts";
 
 function makeProduct(
@@ -183,6 +185,86 @@ test("buildResultConfidenceSummary surfaces caveats for conditional matches", ()
   assert.ok(result.caveats.some((item) => item.includes("超出预算约 60 元")));
   assert.ok(result.caveats.some((item) => item.includes("高约 5dB")));
   assert.ok(result.caveats.some((item) => item.includes("缺少防水参数")));
+});
+
+test("buildResultConfidenceSummary explains when the quiz is using safer defaults for uncertain answers", () => {
+  const result = buildResultConfidenceSummary(
+    makeProduct({
+      id: "p3",
+      name: "Safer Default Pick",
+      score: 90,
+      price: 229,
+      maxDb: 43,
+      waterproof: 7,
+      matchSummary: ["更适合温和慢热的进入节奏", "价格落在预算区间内"],
+      hardMisses: 0,
+      budgetGap: 0,
+      noiseGap: 0,
+    }),
+    {
+      tags: ["路线待判断", "敏感度待判断", "预算待判断"],
+      budget: undefined,
+      maxDb: undefined,
+      waterproof: undefined,
+    },
+  );
+
+  assert.equal(result.levelLabel, "高匹配");
+  assert.ok(
+    result.caveats.some((item) => item.includes("你还有几项偏好暂未确定")),
+  );
+});
+
+test("buildResultAvoidanceTips highlights high-noise and high-intensity routes for sensitive uncertain answers", () => {
+  const result = buildResultAvoidanceTips({
+    tags: ["路线待判断", "敏感度待判断"],
+    maxDb: 40,
+    gender: "female",
+    experienceLevel: "sensitive",
+  });
+
+  assert.equal(result.length, 2);
+  assert.ok(result.some((item) => item.includes("高噪音")));
+  assert.ok(result.some((item) => item.includes("强刺激")));
+});
+
+test("buildResultAvoidanceTips warns couple users away from overly complex routes when preferences are still unclear", () => {
+  const result = buildResultAvoidanceTips({
+    tags: ["互动方式待判断", "双方偏好待判断"],
+    gender: "unisex",
+    sharedIntensity: "gentle",
+  });
+
+  assert.ok(result.some((item) => item.includes("控制复杂")));
+});
+
+test("buildLocalPrimaryReason prioritizes the most important parameter signals in the main recommendation copy", () => {
+  const result = buildLocalPrimaryReason(
+    makeProduct({
+      id: "p3",
+      name: "Quiet Clean Pick",
+      score: 94,
+      price: 269,
+      maxDb: 42,
+      waterproof: 7,
+      matchSummary: [
+        "42dB 更贴近静音需求",
+        "防水表现达到 IPX7",
+        "价格落在预算区间内",
+        "更适合温和慢热的进入节奏",
+      ],
+    }),
+    {
+      tags: ["静音待判断", "清洁待判断"],
+      maxDb: 45,
+      waterproof: 7,
+      budget: [100, 300],
+    },
+  );
+
+  assert.match(result, /42dB 更贴近静音需求/);
+  assert.match(result, /防水表现达到 IPX7/);
+  assert.doesNotMatch(result, /价格落在预算区间内.*更适合温和慢热/);
 });
 
 test("buildLocalBackupReason returns the local backup reason for a label", () => {

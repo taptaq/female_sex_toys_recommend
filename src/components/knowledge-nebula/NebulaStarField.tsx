@@ -3,9 +3,10 @@ import type { StarFieldLayer } from "../../lib/knowledge-nebula-mother-cloud.ts"
 
 type NebulaStarFieldProps = {
   layers: StarFieldLayer[];
+  speedScale?: number;
 };
 
-export function NebulaStarField({ layers }: NebulaStarFieldProps) {
+export function NebulaStarField({ layers, speedScale = 1 }: NebulaStarFieldProps) {
   return (
     <>
       {layers.map((layer) => (
@@ -15,7 +16,7 @@ export function NebulaStarField({ layers }: NebulaStarFieldProps) {
           color={layer.color}
           size={layer.size}
           scale={layer.scale}
-          speed={layer.speed}
+          speed={layer.speed * speedScale}
           opacity={layer.opacity}
           noise={layer.depth === "far" ? 0.9 : layer.depth === "mid" ? 0.55 : 0.25}
         />

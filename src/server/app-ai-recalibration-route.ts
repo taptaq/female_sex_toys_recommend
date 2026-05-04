@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { getResultModelOption } from "../lib/result-models.ts";
 import type {
   ResultRecalibrationRequest,
   ResultRecalibrationResponse,
@@ -22,12 +21,9 @@ export function createRecalibrateResultsHandler({
 }) {
   return async function recalibrateResultsHandler(req: Request, res: Response) {
     const body = req.body ?? {};
-    const targetProvider = getResultModelOption(
-      String(body.targetProvider || ""),
-    )?.provider;
 
-    if (!targetProvider) {
-      res.status(400).json({ error: "A valid targetProvider is required" });
+    if (body.strategy != null && body.strategy !== "auto") {
+      res.status(400).json({ error: "Only auto recalibration strategy is supported" });
       return;
     }
 
@@ -49,7 +45,7 @@ export function createRecalibrateResultsHandler({
     try {
       const result = await appAiService.runResultRecalibration({
         answers: body.answers,
-        targetProvider,
+        strategy: "auto",
         rerankPool: body.rerankPool,
         rankedCandidates: body.rankedCandidates,
         filteredCount: isFiniteNumber(body.filteredCount) ? body.filteredCount : 0,

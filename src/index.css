@@ -1141,9 +1141,32 @@ textarea:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .floating-knowledge-capsule {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
+}
+
+.ambient-motion-paused *,
+.ambient-motion-paused *::before,
+.ambient-motion-paused *::after {
+  animation-play-state: paused !important;
+}
+
+.ambient-motion-paused .floating-knowledge-capsule,
+.ambient-motion-paused .tag-flash,
+.ambient-motion-paused .radar-sweep,
+.ambient-motion-paused .home-space-stars-a,
+.ambient-motion-paused .home-space-stars-b,
+.ambient-motion-paused .home-space-comet,
+.ambient-motion-paused .home-orbit-core,
+.ambient-motion-paused .home-panel-scan {
+  animation: none !important;
+  will-change: auto;
 }
 
 @keyframes flash {

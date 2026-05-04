@@ -4,6 +4,7 @@ import {
   getNextLoadingFunFactIndex,
   type LoadingFunFact,
 } from "../lib/loading-fun-facts.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 export function LoadingFunFacts({
   facts,
@@ -19,13 +20,14 @@ export function LoadingFunFacts({
   className?: string;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const { shouldAnimate } = usePagePerformanceState();
 
   useEffect(() => {
     setActiveIndex(0);
   }, [facts]);
 
   useEffect(() => {
-    if (facts.length <= 1) {
+    if (facts.length <= 1 || !shouldAnimate) {
       return;
     }
 
@@ -36,7 +38,7 @@ export function LoadingFunFacts({
     }, intervalMs);
 
     return () => window.clearInterval(timer);
-  }, [facts, intervalMs]);
+  }, [facts, intervalMs, shouldAnimate]);
 
   const activeFact = facts[activeIndex] ?? facts[0];
 
@@ -74,7 +76,7 @@ export function LoadingFunFacts({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+            transition={{ duration: shouldAnimate ? 0.35 : 0.12, ease: "easeOut" }}
             className="relative z-10 min-h-[98px] sm:min-h-[88px]"
           >
             <p className="text-base sm:text-lg font-semibold tracking-[0.02em] text-white">

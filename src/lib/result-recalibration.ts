@@ -8,7 +8,7 @@ import {
   buildBackupCandidates,
   buildLocalBackupReason,
 } from "./recommendation-results.ts";
-import { getResultModelOption, getSafeSelectedResultProvider } from "./result-models.ts";
+import { getResultModelOption } from "./result-models.ts";
 
 export type ResultRecalibrationCandidate = Pick<
   RecommendationRankedProduct,
@@ -37,7 +37,7 @@ export type RecalibratedResultTopProduct = ResultRecalibrationCandidate & {
 
 export type ResultRecalibrationRequest = {
   answers: RecommendationAnswers;
-  targetProvider: AppAiProvider;
+  strategy: "auto";
   rerankPool: ResultRecalibrationCandidate[];
   rankedCandidates: ResultRecalibrationCandidate[];
   filteredCount: number;
@@ -61,7 +61,6 @@ export type PersistedResultSourceState = {
 export type ResultSourceState = {
   currentResultProvider?: AppAiProvider;
   currentResultModelName?: string;
-  currentSelectedResultProvider: AppAiProvider;
 };
 
 function normalizeModelName(modelName: string | null | undefined) {
@@ -74,42 +73,33 @@ export function readResultSourceState(
 ): ResultSourceState {
   const persistedProvider = persistedState?.currentResultProvider;
   const hasValidPersistedProvider = Boolean(getResultModelOption(persistedProvider));
-  const safeSelectedProvider = getSafeSelectedResultProvider(persistedProvider);
 
   return {
     currentResultProvider: hasValidPersistedProvider
-      ? safeSelectedProvider
+      ? (persistedProvider as AppAiProvider)
       : undefined,
     currentResultModelName: hasValidPersistedProvider
       ? normalizeModelName(persistedState?.currentResultModelName)
       : undefined,
-    currentSelectedResultProvider: safeSelectedProvider,
   };
 }
 
-export function clearResultSourceState(
-  currentSelectedResultProvider: string | null | undefined,
-): ResultSourceState {
+export function clearResultSourceState(): ResultSourceState {
   return {
     currentResultProvider: undefined,
     currentResultModelName: undefined,
-    currentSelectedResultProvider: getSafeSelectedResultProvider(
-      currentSelectedResultProvider,
-    ),
   };
 }
 
 export function resolveCurrentResultSourceState({
-  selectedProvider,
   currentProvider,
   currentModelName,
 }: {
-  selectedProvider: string | null | undefined;
   currentProvider?: string | null;
   currentModelName?: string | null;
 }): ResultSourceState {
   if (!getResultModelOption(currentProvider)) {
-    return clearResultSourceState(selectedProvider);
+    return clearResultSourceState();
   }
 
   return readResultSourceState({
@@ -145,7 +135,7 @@ export function buildResultRecalibrationPayload(
 
   return {
     answers: request.answers,
-    targetProvider: request.targetProvider,
+    strategy: "auto",
     rerankPool: request.rerankPool.map(normalizeCandidate),
     rankedCandidates: request.rankedCandidates.map(normalizeCandidate),
     filteredCount: request.filteredCount,

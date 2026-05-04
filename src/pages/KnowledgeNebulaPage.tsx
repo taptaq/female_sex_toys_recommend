@@ -14,6 +14,7 @@ import {
   getTopicDetailViewport,
   type TopicDetailViewport,
 } from "../lib/knowledge-nebula-topic-detail-scene.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 const DETAIL_ACCENTS = {
   cyan: {
@@ -75,15 +76,18 @@ function useTopicDetailViewport(): TopicDetailViewport {
 export function KnowledgeNebulaPage({
   pageVariants,
   topicSlug,
+  sectionId,
   onBack,
   onSelectTopic,
 }: {
   pageVariants: any;
   topicSlug?: KnowledgeNebulaTopicSlug;
+  sectionId?: string;
   onBack: () => void;
   onSelectTopic: (slug: KnowledgeNebulaTopicSlug) => void;
 }) {
   const topic = topicSlug ? getKnowledgeNebulaTopicBySlug(topicSlug) : undefined;
+  const { shouldAnimate } = usePagePerformanceState();
   const isDetailPage = topic != null;
   const detailAccent = topic ? DETAIL_ACCENTS[topic.accent] : DETAIL_ACCENTS.cyan;
   const detailViewport = useTopicDetailViewport();
@@ -123,11 +127,12 @@ export function KnowledgeNebulaPage({
       initial="initial"
       animate="in"
       exit="out"
-      className={
+      className={[
         isDetailPage
           ? "knowledge-detail-viewport fixed inset-0 h-[100dvh] w-screen overflow-hidden"
-          : "relative h-dvh w-full overflow-hidden"
-      }
+          : "relative h-dvh w-full overflow-hidden",
+        shouldAnimate ? "" : "ambient-motion-paused",
+      ].join(" ")}
     >
       <div
         className={
@@ -174,7 +179,10 @@ export function KnowledgeNebulaPage({
               />
             ) : null}
             <div className="absolute inset-0 z-10">
-              <KnowledgeNebulaTopicSections topic={topic} />
+              <KnowledgeNebulaTopicSections
+                topic={topic}
+                initialOpenSectionId={sectionId}
+              />
             </div>
         </section>
       ) : (

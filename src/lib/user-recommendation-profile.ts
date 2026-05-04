@@ -19,9 +19,11 @@ export type RecommendationProfilePayload = {
   title: string;
   summary: string;
   topProductIds: string[];
+  savedCandidateIds?: string[];
   answers: AnswerState;
   topProducts: RecommendationProfileProduct[];
   backupProducts: RecommendationProfileProduct[];
+  savedCandidates?: RecommendationProfileProduct[];
   recommendationTips: string[];
   shoppingGuidance: string[];
 };
@@ -55,16 +57,35 @@ export function buildRecommendationProfilePayload({
   answers,
   topProducts,
   backupProducts,
+  savedCandidateIds = [],
   recommendationTips,
   shoppingGuidance,
 }: {
   answers: AnswerState;
   topProducts: RankedProduct[];
   backupProducts: BackupCandidate[];
+  savedCandidateIds?: string[];
   recommendationTips: string[];
   shoppingGuidance: string[];
 }): RecommendationProfilePayload {
   const topProductSnapshots = topProducts.map(pickProductSnapshot);
+  const backupProductSnapshots = backupProducts.map(pickProductSnapshot);
+  const candidateSnapshotById = new Map(
+    [...topProductSnapshots, ...backupProductSnapshots].map((product) => [
+      product.id,
+      product,
+    ]),
+  );
+  const normalizedSavedCandidateIds = Array.from(
+    new Set(
+      savedCandidateIds
+        .map((id) => String(id || "").trim())
+        .filter((id) => candidateSnapshotById.has(id)),
+    ),
+  );
+  const savedCandidateSnapshots = normalizedSavedCandidateIds.map(
+    (id) => candidateSnapshotById.get(id)!,
+  );
   const topProductNames = topProductSnapshots.map((product) => product.name);
   const normalizedAnswers: AnswerState = {
     ...answers,
@@ -85,9 +106,11 @@ export function buildRecommendationProfilePayload({
     title,
     summary: summaryParts.join("；") || "推荐档案",
     topProductIds: topProductSnapshots.map((product) => product.id),
+    savedCandidateIds: normalizedSavedCandidateIds,
     answers: normalizedAnswers,
     topProducts: topProductSnapshots,
-    backupProducts: backupProducts.map(pickProductSnapshot),
+    backupProducts: backupProductSnapshots,
+    savedCandidates: savedCandidateSnapshots,
     recommendationTips,
     shoppingGuidance,
   };

@@ -1,9 +1,12 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import {
   buildFloatingKnowledgeItems,
   type FloatingKnowledgeVariant,
+  type FloatingKnowledgeViewport,
 } from "../lib/floating-knowledge-field.ts";
 import type { LoadingFunFact } from "../lib/loading-fun-facts.ts";
+import { getFloatingKnowledgeItemBudget } from "../lib/knowledge-nebula-performance.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 export function FloatingKnowledgeField({
   facts,
@@ -14,22 +17,28 @@ export function FloatingKnowledgeField({
   variant: FloatingKnowledgeVariant;
   className?: string;
 }) {
-  const prefersReducedMotion = useReducedMotion();
-  const desktopItems = buildFloatingKnowledgeItems(facts, {
-    variant,
-    viewport: "desktop",
-  });
-  const mobileItems = buildFloatingKnowledgeItems(facts, {
-    variant,
-    viewport: "mobile",
-  });
+  const { isVisible, shouldAnimate } = usePagePerformanceState();
+  const shouldFloat = shouldAnimate;
+  const buildBudgetedItems = (viewport: FloatingKnowledgeViewport) =>
+    buildFloatingKnowledgeItems(facts, {
+      variant,
+      viewport,
+      maxItems: getFloatingKnowledgeItemBudget({
+        variant,
+        viewport,
+        isVisible,
+        prefersReducedMotion: !shouldAnimate,
+      }),
+    });
+  const mobileItems = buildBudgetedItems("mobile");
+  const budgetedDesktopItems = buildBudgetedItems("desktop");
 
-  if (desktopItems.length === 0) {
+  if (budgetedDesktopItems.length === 0 && mobileItems.length === 0) {
     return null;
   }
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (prefersReducedMotion) {
+    if (!shouldFloat) {
       return;
     }
 
@@ -67,8 +76,8 @@ export function FloatingKnowledgeField({
       className={`floating-knowledge-field floating-knowledge-field-${variant} ${className}`.trim()}
       aria-hidden="true"
     >
-      {[...desktopItems, ...mobileItems].map((item, index) => {
-        const isMobileLayer = index >= desktopItems.length;
+      {[...budgetedDesktopItems, ...mobileItems].map((item, index) => {
+        const isMobileLayer = index >= budgetedDesktopItems.length;
         const layerClassName = isMobileLayer
           ? "floating-knowledge-mobile-only"
           : "floating-knowledge-desktop-only";
@@ -89,19 +98,19 @@ export function FloatingKnowledgeField({
               `floating-knowledge-capsule-${item.slot.depth}`,
               item.slot.className,
               item.slot.shapeClassName,
-              item.slot.motionClassName,
+              shouldFloat ? item.slot.motionClassName : "",
               layerClassName,
             ].join(" ")}
             initial={{ opacity: 0 }}
-            animate={{ opacity: prefersReducedMotion ? targetOpacity * 0.9 : targetOpacity }}
+            animate={{ opacity: shouldFloat ? targetOpacity : targetOpacity * 0.82 }}
             whileHover={{
-              opacity: prefersReducedMotion
+              opacity: !shouldFloat
                 ? Math.min(targetOpacity * 0.98, 0.94)
                 : Math.min(targetOpacity + 0.24, 0.94),
             }}
             transition={{
-              duration: prefersReducedMotion ? 0.2 : 0.7,
-              delay: prefersReducedMotion ? 0 : item.slot.delayMs / 1000,
+              duration: shouldFloat ? 0.7 : 0.16,
+              delay: shouldFloat ? item.slot.delayMs / 1000 : 0,
               ease: "easeOut",
             }}
             onPointerMove={handlePointerMove}

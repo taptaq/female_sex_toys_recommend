@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   KnowledgeNebulaTopic,
@@ -16,6 +16,7 @@ import {
   NEBULA_HOVER_TRANSITION,
   NEBULA_IDLE_TRANSITION,
 } from "../lib/knowledge-nebula-visuals.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 import { NebulaLabelLayer } from "./knowledge-nebula/NebulaLabelLayer.tsx";
 
 type KnowledgeNebulaFieldProps = {
@@ -75,14 +76,6 @@ function getViewportMatch() {
   return window.matchMedia("(min-width: 768px)").matches;
 }
 
-function getInitialReducedMotionPreference() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 function getFocusStage(selectedTopicSlug?: KnowledgeNebulaTopicSlug): NebulaStage {
   return selectedTopicSlug ? "focus" : "idle";
 }
@@ -92,9 +85,8 @@ export function KnowledgeNebulaField({
   selectedTopicSlug,
   onSelectTopic,
 }: KnowledgeNebulaFieldProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const reducedMotionPreference =
-    Boolean(prefersReducedMotion) || getInitialReducedMotionPreference();
+  const { repeat, shouldAnimate } = usePagePerformanceState();
+  const reducedMotionPreference = !shouldAnimate;
   const timeline = useMemo(
     () => getKnowledgeNebulaTimeline(reducedMotionPreference),
     [reducedMotionPreference],
@@ -342,9 +334,9 @@ export function KnowledgeNebulaField({
             }
             transition={{
               delay: layer.delay,
-              duration: layer.duration,
+              duration: shouldAnimate ? layer.duration : 0.2,
               ease: "easeInOut",
-              repeat: reducedMotionPreference ? 0 : Infinity,
+              repeat: reducedMotionPreference ? 0 : repeat,
             }}
           />
         ))}
@@ -380,10 +372,10 @@ export function KnowledgeNebulaField({
             }
             transition={{
               delay: star.delay,
-              duration: star.duration,
+              duration: shouldAnimate ? star.duration : 0.2,
               times: [0, 0.12, 0.72, 1],
               ease: "linear",
-              repeat: reducedMotionPreference ? 0 : Infinity,
+              repeat: reducedMotionPreference ? 0 : repeat,
               repeatDelay: star.repeatDelay,
             }}
           >
@@ -496,7 +488,7 @@ export function KnowledgeNebulaField({
                       ? Math.max(3.8, variant.idleDuration - 2.2)
                       : variant.idleDuration,
                     ease: "easeInOut",
-                    repeat: reducedMotionPreference ? 0 : Infinity,
+                    repeat: reducedMotionPreference ? 0 : repeat,
                   }}
                 />
               </motion.div>

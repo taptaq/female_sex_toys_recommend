@@ -9,6 +9,12 @@ import type {
   KnowledgeNebulaClusterAnchor,
   KnowledgeNebulaViewport,
 } from "../../lib/knowledge-nebula-field.ts";
+import {
+  getKnowledgeNebulaDprBudget,
+  getKnowledgeNebulaSceneFrameIntervalMs,
+  getKnowledgeNebulaStarCountBudget,
+} from "../../lib/knowledge-nebula-performance.ts";
+import { usePagePerformanceState } from "../../lib/page-performance.ts";
 import { NebulaStarField } from "./NebulaStarField.tsx";
 
 type NebulaScene3DProps = {
@@ -25,9 +31,13 @@ type NebulaScene3DProps = {
 function CameraRig({
   cameraState,
   phase,
+  isFocused,
+  isVisible,
 }: {
   cameraState: KnowledgeNebulaCameraState;
   phase: number;
+  isFocused: boolean;
+  isVisible: boolean;
 }) {
   const { camera } = useThree();
   const currentLookAtRef = useRef(new THREE.Vector3(...cameraState.target));
@@ -35,6 +45,7 @@ function CameraRig({
   const currentPositionRef = useRef(new THREE.Vector3(...cameraState.position));
   const targetPositionRef = useRef(new THREE.Vector3(...cameraState.position));
   const isFirstSyncRef = useRef(true);
+  const previousFrameTimeRef = useRef(0);
 
   useEffect(() => {
     targetPositionRef.current.set(...cameraState.position);
@@ -49,7 +60,22 @@ function CameraRig({
     }
   }, [camera, cameraState]);
 
-  useFrame(() => {
+  useFrame((state) => {
+    if (!isVisible) {
+      return;
+    }
+
+    const elapsedMs = state.clock.elapsedTime * 1000;
+    const frameIntervalMs = getKnowledgeNebulaSceneFrameIntervalMs({
+      isFocused,
+      isVisible,
+    });
+
+    if (elapsedMs - previousFrameTimeRef.current < frameIntervalMs) {
+      return;
+    }
+
+    previousFrameTimeRef.current = elapsedMs;
     const settle = 0.07 + THREE.MathUtils.clamp(phase, 0, 1) * 0.05;
 
     currentPositionRef.current.lerp(targetPositionRef.current, settle);
@@ -65,29 +91,53 @@ function NebulaContent({
   phase,
   viewport,
   cameraState,
+  focusedTopicSlug,
 }: NebulaScene3DProps) {
-  const starLayers = useMemo(() => buildStarFieldLayers(viewport), [viewport]);
+  const { isVisible, prefersReducedMotion } = usePagePerformanceState();
+  const isFocused = Boolean(focusedTopicSlug);
+  const starLayers = useMemo(
+    () =>
+      buildStarFieldLayers(
+        viewport,
+        getKnowledgeNebulaStarCountBudget({ viewport, isFocused }),
+      ),
+    [viewport, isFocused],
+  );
+  const starSpeedScale = isVisible && !prefersReducedMotion ? 1 : 0;
 
   return (
     <>
       <AdaptiveDpr pixelated />
       <fog attach="fog" args={["#04030d", 8, viewport === "mobile" ? 18 : 25]} />
-      <CameraRig cameraState={cameraState} phase={phase} />
+      <CameraRig
+        cameraState={cameraState}
+        phase={phase}
+        isFocused={isFocused}
+        isVisible={isVisible}
+      />
 
       <ambientLight intensity={0.72} color="#f5d0fe" />
       <directionalLight position={[5, 7, 8]} intensity={0.85} color="#bae6fd" />
       <pointLight position={[0, 0.2, 4.5]} intensity={1.35} color="#fff7ff" />
 
-      <NebulaStarField layers={starLayers} />
+      <NebulaStarField layers={starLayers} speedScale={starSpeedScale} />
     </>
   );
 }
 
 export function NebulaScene3D(props: NebulaScene3DProps) {
+  const { isVisible, prefersReducedMotion } = usePagePerformanceState();
+  const dpr = getKnowledgeNebulaDprBudget({
+    viewport: props.viewport,
+    isVisible,
+    prefersReducedMotion,
+  });
+
   return (
     <div className="absolute inset-0">
       <Canvas
-        dpr={props.viewport === "mobile" ? [1, 1.1] : [1, 1.35]}
+        dpr={dpr}
+        frameloop="demand"
         gl={{
           antialias: false,
           alpha: true,
@@ -100,8 +150,19 @@ export function NebulaScene3D(props: NebulaScene3DProps) {
           far: 40,
         }}
       >
+        <DemandCanvasKickoff />
         <NebulaContent {...props} />
       </Canvas>
     </div>
   );
+}
+
+function DemandCanvasKickoff() {
+  const { invalidate } = useThree();
+
+  useEffect(() => {
+    invalidate();
+  }, [invalidate]);
+
+  return null;
 }

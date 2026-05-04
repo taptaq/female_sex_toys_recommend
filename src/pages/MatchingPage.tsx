@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { Orbit } from "lucide-react";
 import { FloatingKnowledgeField } from "../components/FloatingKnowledgeField.tsx";
 import { getLoadingFunFacts } from "../lib/loading-fun-facts.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 export function MatchingPage({
   pageVariants,
@@ -16,6 +17,7 @@ export function MatchingPage({
   isAiMatching: boolean;
   tags: string[];
 }) {
+  const { repeat, shouldAnimate } = usePagePerformanceState();
   const loadingText = [
     "正在初始化神经链路...",
     "正在连接星港数据库...",
@@ -48,7 +50,10 @@ export function MatchingPage({
       initial="initial"
       animate="in"
       exit="out"
-      className="relative flex min-h-[calc(100vh-2rem)] w-full flex-col items-center justify-center overflow-visible px-4 py-12 sm:min-h-[calc(100vh-3rem)] md:min-h-[calc(100vh-4rem)]"
+      className={[
+        "relative flex min-h-[calc(100vh-2rem)] w-full flex-col items-center justify-center overflow-visible px-4 py-12 sm:min-h-[calc(100vh-3rem)] md:min-h-[calc(100vh-4rem)]",
+        shouldAnimate ? "" : "ambient-motion-paused",
+      ].join(" ")}
     >
       <FloatingKnowledgeField
         facts={matchingFunFacts}
@@ -90,8 +95,8 @@ export function MatchingPage({
                 initial={{ left: "-100%" }}
                 animate={{ left: "100%" }}
                 transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
+                  duration: shouldAnimate ? 1.5 : 0.2,
+                  repeat,
                   ease: "linear",
                 }}
                 className="absolute top-0 bottom-0 w-1/3 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"

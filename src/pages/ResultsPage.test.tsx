@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-
 import type { RankedProduct } from "../lib/app-shell.ts";
 import { ResultsPage } from "./ResultsPage.tsx";
 
@@ -49,20 +48,23 @@ test("results page shows confidence, fit reasons, and caveats for the primary re
         budget: [100, 300],
       }}
       topProducts={[
-        makeProduct({ id: "p1", name: "Primary Pick" }),
+        makeProduct({
+          id: "p1",
+          name: "Primary Pick",
+          reason: "42dB 更贴近静音需求，防水表现达到 IPX7。",
+        }),
         makeProduct({ id: "p2", name: "Second Pick", score: 88 }),
       ]}
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      selectedResultProvider="dmxapi-mimo"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
-      onSelectResultProvider={() => {}}
       onRecalibrateResults={() => {}}
       onTuneResults={() => {}}
       onSaveRecommendationProfile={async () => {}}
       onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
       isSavingRecommendationProfile={false}
       saveRecommendationProfileMessage={null}
       authPanel={authPanel}
@@ -75,6 +77,40 @@ test("results page shows confidence, fit reasons, and caveats for the primary re
   assert.match(html, /需要留意/);
   assert.match(html, /适配当前使用方向/);
   assert.match(html, /主要参数与当前偏好吻合/);
+  assert.match(html, /42dB 更贴近静音需求/);
+  assert.match(html, /防水表现达到 IPX7/);
+});
+
+test("results page shows what not to prioritize when the user still has strong constraints or uncertainty", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["路线待判断", "敏感度待判断"],
+        maxDb: 40,
+        experienceLevel: "sensitive",
+      }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /暂时不建议优先看/);
+  assert.match(html, /高噪音路线/);
+  assert.match(html, /强刺激路线/);
 });
 
 test("results page shows a save recommendation profile action", () => {
@@ -86,14 +122,13 @@ test("results page shows a save recommendation profile action", () => {
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      selectedResultProvider="dmxapi-mimo"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
-      onSelectResultProvider={() => {}}
       onRecalibrateResults={() => {}}
       onTuneResults={() => {}}
       onSaveRecommendationProfile={async () => {}}
       onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
       isSavingRecommendationProfile={false}
       saveRecommendationProfileMessage="登录后可加密保存到云端"
       authPanel={authPanel}
@@ -114,14 +149,13 @@ test("results page hides login action when the auth session is already active", 
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      selectedResultProvider="dmxapi-mimo"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
-      onSelectResultProvider={() => {}}
       onRecalibrateResults={() => {}}
       onTuneResults={() => {}}
       onSaveRecommendationProfile={async () => {}}
       onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
       isSavingRecommendationProfile={false}
       saveRecommendationProfileMessage="已登录，可加密保存并多端同步"
       authPanel={{ ...authPanel, userLabel: "taptaq" }}
@@ -149,14 +183,13 @@ test("results page prioritizes the primary recommendation before secondary contr
       backupProducts={[]}
       shoppingGuidance={["优先确认清洁便利性"]}
       recommendationTips={[]}
-      selectedResultProvider="dmxapi-mimo"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
-      onSelectResultProvider={() => {}}
       onRecalibrateResults={() => {}}
       onTuneResults={() => {}}
       onSaveRecommendationProfile={async () => {}}
       onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
       isSavingRecommendationProfile={false}
       saveRecommendationProfileMessage={null}
       authPanel={authPanel}
@@ -189,14 +222,13 @@ test("results page shows tuning feedback and disables already applied tuning mod
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      selectedResultProvider="dmxapi-mimo"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
-      onSelectResultProvider={() => {}}
       onRecalibrateResults={() => {}}
       onTuneResults={() => {}}
       onSaveRecommendationProfile={async () => {}}
       onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
       isSavingRecommendationProfile={false}
       saveRecommendationProfileMessage={null}
       authPanel={authPanel}
@@ -207,4 +239,335 @@ test("results page shows tuning feedback and disables already applied tuning mod
   assert.match(html, /已应用更安静一点/);
   assert.match(html, /已应用：更安静一点/);
   assert.match(html, /disabled=""/);
+});
+
+test("results page offers direct entry points to revise key quiz conditions", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音", "进阶级"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onEditQuizCondition={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /想改一个条件？/);
+  assert.match(html, /改预算/);
+  assert.match(html, /改静音/);
+  assert.match(html, /改场景/);
+});
+
+test("results page exposes a later-comparison candidate picker near recommendations", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[
+        makeProduct({ id: "p1", name: "Primary Pick" }),
+        makeProduct({ id: "p2", name: "Second Pick", score: 88 }),
+      ]}
+      backupProducts={[
+        {
+          ...makeProduct({ id: "b1", name: "Budget Backup", score: 82 }),
+          backupLabel: "更省预算",
+          backupReason: "预算压力更小",
+        },
+      ]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      savedCandidateIds={["p2"]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onToggleSavedCandidate={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /稍后比较/);
+  assert.match(html, /已加入比较/);
+  assert.match(html, /已选 1\/3/);
+});
+
+test("results page frames shopping guidance as next-step purchase guidance", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[
+        "购买前优先确认是否有明确售后和材质说明。",
+        "收到后先完成基础清洁，再进入第一次使用。",
+      ]}
+      recommendationTips={["如果同住，先优先比较更安静的路线。"]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /下一步建议/);
+  assert.match(html, /购买前优先确认是否有明确售后和材质说明/);
+  assert.match(html, /收到后先完成基础清洁/);
+  assert.doesNotMatch(html, /结果提示/);
+});
+
+test("results page shows a final pre-purchase checklist before the user decides", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["同住", "新手友好", "高伪装"],
+        maxDb: 45,
+        waterproof: 7,
+        appearance: "high_disguise",
+        experienceLevel: "sensitive",
+      }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /购买前最终自检/);
+  assert.match(html, /声音环境/);
+  assert.match(html, /清洁边界/);
+  assert.match(html, /收纳隐私/);
+  assert.match(html, /经验节奏/);
+  assert.match(html, /下单前快速过一遍/);
+});
+
+test("results page shows lightweight parameter explanation entry near metric chips", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /了解参数怎么看/);
+  assert.match(html, /噪音 &lt; 42dB/);
+  assert.match(html, /防水 IPX7/);
+  assert.match(html, /看静音与场景/);
+  assert.match(html, /看清洁与护理/);
+  assert.match(html, /看参数原理/);
+});
+
+test("results page renders metric chips as direct knowledge entry points", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /了解这个参数/);
+  assert.match(html, /cursor-pointer/);
+  assert.match(html, /噪音 &lt; 42dB/);
+  assert.match(html, /防水 IPX7/);
+  assert.match(html, /温柔电机/);
+});
+
+test("results page includes an inline parameter preview layer for chip explanations", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /参数速览/);
+  assert.match(html, /先看一眼核心判断/);
+  assert.match(html, /去知识星云深读/);
+});
+
+test("results page prioritizes parameter previews that match the user's current constraints", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["静音待判断", "清洁待判断"],
+        maxDb: 40,
+        waterproof: 7,
+      }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.ok(
+    html.indexOf("静音参数") < html.indexOf("电机体感"),
+    "quietness-sensitive users should see quietness guidance earlier",
+  );
+  assert.ok(
+    html.indexOf("防水边界") < html.indexOf("电机体感"),
+    "cleanup-sensitive users should see waterproof guidance earlier",
+  );
+});
+
+test("results page can prioritize motor guidance when the user's current concern is more about body feedback", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["敏感度待判断"],
+        motorType: "gentle",
+        experienceLevel: "sensitive",
+      }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.ok(
+    html.indexOf("电机体感") < html.indexOf("静音参数"),
+    "body-feedback-sensitive users should see motor guidance before quietness",
+  );
+});
+
+test("results page hides model selection details and only exposes a regenerate recommendation entry", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      currentResultProvider="dmxapi-mimo"
+      currentResultModelName="mimo-v2.5-free"
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /对当前结果不满意？/);
+  assert.match(html, /重新生成推荐/);
+  assert.doesNotMatch(html, /换个模型再试/);
+  assert.doesNotMatch(html, /当前模型/);
+  assert.doesNotMatch(html, /Mimo（DMX）/);
+  assert.doesNotMatch(html, /Qwen（DMX）/);
+  assert.doesNotMatch(html, /mimo-v2\.5-free/);
 });

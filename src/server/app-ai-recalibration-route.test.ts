@@ -35,7 +35,7 @@ function createMockResponse() {
   };
 }
 
-test("createRecalibrateResultsHandler routes the request to single-provider recalibration with the parsed provider", async () => {
+test("createRecalibrateResultsHandler routes the request through automatic model routing", async () => {
   let capturedRequest: unknown;
   const handler = createRecalibrateResultsHandler({
     appAiService: {
@@ -57,7 +57,6 @@ test("createRecalibrateResultsHandler routes the request to single-provider reca
   await handler(
     createMockRequest({
       answers: { tags: ["静音"] },
-      targetProvider: "qwen",
       rerankPool: [{ id: "p-1" }],
       rankedCandidates: [{ id: "p-1" }, { id: "b-1" }],
       filteredCount: 6,
@@ -69,7 +68,7 @@ test("createRecalibrateResultsHandler routes the request to single-provider reca
   assert.equal(mockResponse.readStatusCode(), 200);
   assert.deepEqual(capturedRequest, {
     answers: { tags: ["静音"] },
-    targetProvider: "qwen",
+    strategy: "auto",
     rerankPool: [{ id: "p-1" }],
     rankedCandidates: [{ id: "p-1" }, { id: "b-1" }],
     filteredCount: 6,
@@ -85,7 +84,7 @@ test("createRecalibrateResultsHandler routes the request to single-provider reca
   });
 });
 
-test("createRecalibrateResultsHandler rejects an invalid provider before calling the service", async () => {
+test("createRecalibrateResultsHandler rejects an invalid recalibration strategy before calling the service", async () => {
   let callCount = 0;
   const handler = createRecalibrateResultsHandler({
     appAiService: {
@@ -100,7 +99,7 @@ test("createRecalibrateResultsHandler rejects an invalid provider before calling
   await handler(
     createMockRequest({
       answers: { tags: ["静音"] },
-      targetProvider: "missing-provider",
+      strategy: "manual",
       rerankPool: [{ id: "p-1" }],
       rankedCandidates: [{ id: "p-1" }, { id: "b-1" }],
       filteredCount: 6,
@@ -112,6 +111,6 @@ test("createRecalibrateResultsHandler rejects an invalid provider before calling
   assert.equal(callCount, 0);
   assert.equal(mockResponse.readStatusCode(), 400);
   assert.deepEqual(mockResponse.readJsonPayload(), {
-    error: "A valid targetProvider is required",
+    error: "Only auto recalibration strategy is supported",
   });
 });

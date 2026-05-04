@@ -87,7 +87,7 @@ test("createProviderExecutors exposes provider-specific executors with result-mo
   });
 });
 
-test("runResultRecalibration recomputes canonical backup products from the recalibrated Top3", async () => {
+test("runResultRecalibration uses the automatic provider ladder and recomputes canonical backup products from the recalibrated Top3", async () => {
   const requests: ChatCompletionRequest[] = [];
   const service = createAppAiService({
     env: {
@@ -171,7 +171,7 @@ test("runResultRecalibration recomputes canonical backup products from the recal
 
   const result = await service.runResultRecalibration({
     answers,
-    targetProvider: "qwen",
+    strategy: "auto",
     rerankPool,
     rankedCandidates,
     filteredCount: 8,
@@ -186,22 +186,22 @@ test("runResultRecalibration recomputes canonical backup products from the recal
     })),
     [
       {
-        model: "qwen-max",
+        model: "qwen-turbo",
         baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
         maxTokens: 24576,
       },
       {
-        model: "qwen-max",
+        model: "qwen-turbo",
         baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
         maxTokens: 24576,
       },
     ],
   );
-  assert.equal(requests.every((request) => request.model === "qwen-max"), true);
+  assert.equal(requests.every((request) => request.model === "qwen-turbo"), true);
 
   const typedResponse: ResultRecalibrationResponse = result;
   assert.equal(typeof typedResponse.topProducts[0]?.reason, "string");
-  assert.equal(typedResponse.modelName, "qwen-max");
+  assert.equal(typedResponse.modelName, "qwen-turbo");
   assert.equal(typedResponse.provider, "qwen");
   assert.deepEqual(result, {
     topProducts: [
@@ -255,7 +255,7 @@ test("runResultRecalibration recomputes canonical backup products from the recal
       "首次尝试建议优先选更温和的节奏。",
     ],
     recommendationTips: ["如果放宽预算，可看到更多旗舰选项。"],
-    modelName: "qwen-max",
+    modelName: "qwen-turbo",
     provider: "qwen",
   });
 

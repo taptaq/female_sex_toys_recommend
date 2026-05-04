@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Signal } from "lucide-react";
 import type { KnowledgeNebulaSection } from "../../data/knowledge-nebula.ts";
+import { usePagePerformanceState } from "../../lib/page-performance.ts";
 import type {
   TopicDetailNodeAnchor,
   TopicDetailViewport,
@@ -140,6 +141,8 @@ export function TopicDetailNodeLayer({
   onHoverSection,
   onOpenSection,
 }: TopicDetailNodeLayerProps) {
+  const { repeat, shouldAnimate } = usePagePerformanceState();
+
   if (anchors.length === 0) {
     return null;
   }
@@ -201,15 +204,15 @@ export function TopicDetailNodeLayer({
             animate={{
               opacity: isActive ? 1 : 0.9,
               scale: 1,
-              y: isActive ? -6 : [0, -floatY, 0],
+              y: isActive ? -6 : shouldAnimate ? [0, -floatY, 0] : 0,
             }}
             transition={{
               opacity: { duration: 0.24, ease: "easeOut" },
               scale: { duration: 0.24, ease: "easeOut" },
               y: {
-                duration: isActive ? 0.22 : 2.8 + (index % 3) * 0.38,
+                duration: isActive || !shouldAnimate ? 0.22 : 2.8 + (index % 3) * 0.38,
                 ease: "easeInOut",
-                repeat: isActive ? 0 : Infinity,
+                repeat: isActive ? 0 : repeat,
                 repeatType: "mirror",
                 delay: index * 0.1,
               },

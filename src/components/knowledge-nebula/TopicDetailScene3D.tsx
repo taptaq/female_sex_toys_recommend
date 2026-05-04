@@ -7,6 +7,12 @@ import type {
   TopicDetailSceneMeta,
   TopicDetailViewport,
 } from "../../lib/knowledge-nebula-topic-detail-scene.ts";
+import {
+  getKnowledgeNebulaDprBudget,
+  getKnowledgeNebulaSceneFrameIntervalMs,
+  getTopicDetailSceneComplexityBudget,
+} from "../../lib/knowledge-nebula-performance.ts";
+import { usePagePerformanceState } from "../../lib/page-performance.ts";
 
 type TopicDetailScene3DProps = {
   topicSlug: string;
@@ -34,29 +40,6 @@ const OIII_COLOR = "#61f4ff";
 const SII_COLOR = "#ffb15f";
 const VIOLET_EDGE_COLOR = "#a58cff";
 const DUST_CORE_COLOR = "#01030a";
-const TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET = {
-  dpr: {
-    desktop: [1, 1.35] as [number, number],
-    mobile: [1, 1.15] as [number, number],
-  },
-  emissionFilaments: {
-    desktop: 96,
-    mobile: 56,
-  },
-  spectralTubes: {
-    desktop: 12,
-    mobile: 6,
-  },
-  dustLanes: {
-    desktop: 16,
-    mobile: 9,
-  },
-  starCount: {
-    desktop: 220,
-    mobile: 120,
-  },
-  frameIntervalMs: 66,
-} as const;
 
 function createSeedFromTopic(topicSlug: string) {
   return topicSlug.split("").reduce((seed, char, index) => {
@@ -393,12 +376,23 @@ function DriftGroup({
   meta,
   viewport,
   starCount,
+  isFocused,
+  isVisible,
+  complexityBudget,
 }: {
   topicSlug: string;
   nodeCount: number;
   meta: TopicDetailSceneMeta;
   viewport: TopicDetailViewport;
   starCount: number;
+  isFocused: boolean;
+  isVisible: boolean;
+  complexityBudget: {
+    emissionFilaments: number;
+    spectralTubes: number;
+    dustLanes: number;
+    starCount: number;
+  };
 }) {
   const { invalidate } = useThree();
   const groupRef = useRef<THREE.Group>(null);
@@ -457,9 +451,9 @@ function DriftGroup({
         topicSlug,
         nodeCount,
         meta,
-        count: TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.emissionFilaments[viewport],
+        count: complexityBudget.emissionFilaments,
       }),
-    [meta, nodeCount, topicSlug, viewport],
+    [complexityBudget.emissionFilaments, meta, nodeCount, topicSlug],
   );
   const spectralEmissionLines = useMemo(
     () => createSpectralEmissionLines({ topicSlug, nodeCount, meta }),
@@ -471,24 +465,50 @@ function DriftGroup({
         topicSlug,
         nodeCount,
         meta,
-        count: TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.spectralTubes[viewport],
+        count: complexityBudget.spectralTubes,
       }),
-    [meta, nodeCount, topicSlug, viewport],
+    [complexityBudget.spectralTubes, meta, nodeCount, topicSlug],
   );
   const dustLanes = useMemo(
     () =>
       createDustLanes({
         topicSlug,
         nodeCount,
-        count: TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.dustLanes[viewport],
+        count: complexityBudget.dustLanes,
       }),
-    [nodeCount, topicSlug, viewport],
+    [complexityBudget.dustLanes, nodeCount, topicSlug],
   );
   const starGeometry = useMemo(
     () => createStarGeometry({ topicSlug, nodeCount, meta, starCount }),
     [meta, nodeCount, starCount, topicSlug],
   );
   const coreStarGeometry = useMemo(() => createCoreStarGeometry(meta), [meta]);
+
+  useEffect(() => {
+    return () => {
+      softBandTexture.dispose();
+      emissionFilamentGeometry.dispose();
+      dustLaneGeometry.dispose();
+      emissionMaterial.dispose();
+      dustMaterial.dispose();
+      starGeometry.dispose();
+      coreStarGeometry.dispose();
+      spectralTubes.forEach((tube) => tube.geometry.dispose());
+      ringRef.current?.geometry.dispose();
+      ringMaterialRef.current?.dispose();
+      pointsMaterialRef.current?.dispose();
+      coreMaterialRef.current?.dispose();
+    };
+  }, [
+    coreStarGeometry,
+    dustLaneGeometry,
+    dustMaterial,
+    emissionFilamentGeometry,
+    emissionMaterial,
+    softBandTexture,
+    spectralTubes,
+    starGeometry,
+  ]);
 
   useEffect(() => {
     writeInstances({ mesh: emissionRef.current, instances: emissionFilaments });
@@ -504,15 +524,19 @@ function DriftGroup({
 
   useFrame((state) => {
     const elapsedMs = state.clock.elapsedTime * 1000;
-    if (
-      elapsedMs - previousFrameTimeRef.current <
-      TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.frameIntervalMs
-    ) {
+    const frameIntervalMs = getKnowledgeNebulaSceneFrameIntervalMs({
+      isFocused,
+      isVisible,
+    });
+
+    if (elapsedMs - previousFrameTimeRef.current < frameIntervalMs) {
       return;
     }
 
     previousFrameTimeRef.current = elapsedMs;
-    invalidate();
+    if (isVisible) {
+      invalidate();
+    }
 
     const elapsed = state.clock.getElapsedTime();
 
@@ -589,7 +613,7 @@ function DriftGroup({
         material={emissionMaterial}
         count={spectralEmissionLines.length}
       />
-      <SpectralFilamentTubes tubes={spectralTubes} />
+      <SpectralFilamentTubes tubes={spectralTubes} maxVisible={complexityBudget.spectralTubes} />
       <DarkDustLane
         dustRef={dustRef}
         dustLaneGeometry={dustLaneGeometry}
@@ -652,10 +676,16 @@ function SpectralEmissionLines({
   );
 }
 
-function SpectralFilamentTubes({ tubes }: { tubes: SpectralTube[] }) {
+function SpectralFilamentTubes({
+  tubes,
+  maxVisible,
+}: {
+  tubes: SpectralTube[];
+  maxVisible: number;
+}) {
   return (
     <group renderOrder={4}>
-      {tubes.map((tube, index) => (
+      {tubes.slice(0, maxVisible).map((tube, index) => (
         <mesh
           key={`spectral-tube-${index}`}
           geometry={tube.geometry}
@@ -785,13 +815,23 @@ export function TopicDetailScene3D({
   viewport,
   className,
 }: TopicDetailScene3DProps) {
-  const starCount =
-    TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.starCount[viewport];
+  const { isVisible, prefersReducedMotion } = usePagePerformanceState();
+  const isFocused = true;
+  const complexityBudget = getTopicDetailSceneComplexityBudget({
+    viewport,
+    isVisible,
+    prefersReducedMotion: Boolean(prefersReducedMotion),
+  });
+  const dpr = getKnowledgeNebulaDprBudget({
+    viewport,
+    isVisible,
+    prefersReducedMotion: Boolean(prefersReducedMotion),
+  });
 
   return (
     <div className={["absolute inset-0", className].filter(Boolean).join(" ")}>
       <Canvas
-        dpr={TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET.dpr[viewport]}
+        dpr={dpr}
         frameloop="demand"
         gl={{
           antialias: false,
@@ -811,7 +851,10 @@ export function TopicDetailScene3D({
           nodeCount={nodeCount}
           meta={meta}
           viewport={viewport}
-          starCount={starCount}
+          starCount={complexityBudget.starCount}
+          isFocused={isFocused}
+          isVisible={isVisible}
+          complexityBudget={complexityBudget}
         />
       </Canvas>
     </div>

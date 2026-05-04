@@ -1,5 +1,6 @@
 import type { AnswerState, Product } from "../data/mock";
 import {
+  buildBranchFallbackReason,
   buildBranchBackupReason,
   getBranchShoppingGuidanceLead,
   getBranchShoppingPreferenceHints,
@@ -49,6 +50,158 @@ export type ResultConfidenceSummary = {
   reasons: string[];
   caveats: string[];
 };
+
+function hasPendingPreferenceTag(
+  answers: Pick<RecommendationAnswers, "tags">,
+  keyword: string,
+) {
+  return (answers.tags ?? []).some((tag) => tag.includes(keyword));
+}
+
+function getBudgetGap(price: number, budget?: [number, number]) {
+  if (!budget) return 0;
+  if (price < budget[0]) return budget[0] - price;
+  if (price > budget[1]) return price - budget[1];
+  return 0;
+}
+
+function scorePrimaryReasonLine(
+  line: string,
+  answers: RecommendationAnswers,
+  index: number,
+) {
+  let score = Math.max(0, 6 - index);
+
+  if (
+    answers.maxDb != null ||
+    hasPendingPreferenceTag(answers, "静音") ||
+    hasPendingPreferenceTag(answers, "共玩场景")
+  ) {
+    if (/db|dB|静音|噪音|安静/.test(line)) {
+      score += 18;
+    }
+  }
+
+  if (
+    answers.waterproof != null ||
+    hasPendingPreferenceTag(answers, "清洁") ||
+    hasPendingPreferenceTag(answers, "护理")
+  ) {
+    if (/防水|IPX|清洁|冲洗|护理/.test(line)) {
+      score += 16;
+    }
+  }
+
+  if (
+    answers.motorType != null ||
+    answers.experienceLevel != null ||
+    answers.sharedIntensity != null ||
+    hasPendingPreferenceTag(answers, "敏感度") ||
+    hasPendingPreferenceTag(answers, "双方偏好") ||
+    hasPendingPreferenceTag(answers, "刺激")
+  ) {
+    if (/温和|慢热|节奏|刺激|电机|反馈|体感|强劲|档位/.test(line)) {
+      score += 14;
+    }
+  }
+
+  if (
+    answers.physicalForm != null ||
+    answers.driveMode != null ||
+    answers.channelFeel != null ||
+    answers.fitPreference != null ||
+    hasPendingPreferenceTag(answers, "路线") ||
+    hasPendingPreferenceTag(answers, "驱动") ||
+    hasPendingPreferenceTag(answers, "姿态")
+  ) {
+    if (/外部|入体|双通道|路径|路线|驱动|贴合|结构/.test(line)) {
+      score += 12;
+    }
+  }
+
+  if (
+    answers.appearance != null ||
+    hasPendingPreferenceTag(answers, "收纳")
+  ) {
+    if (/隐蔽|收纳|伪装|存在感/.test(line)) {
+      score += 10;
+    }
+  }
+
+  if (answers.budget != null || hasPendingPreferenceTag(answers, "预算")) {
+    if (/预算|价格|价位|性价比/.test(line)) {
+      score += 8;
+    }
+  }
+
+  return score;
+}
+
+export function buildLocalPrimaryReason(
+  product: RecommendationRankedProduct,
+  answers: RecommendationAnswers,
+) {
+  const summary = Array.from(new Set((product.matchSummary ?? []).filter(Boolean)));
+  if (summary.length > 0) {
+    const prioritized = summary
+      .map((line, index) => ({
+        line,
+        index,
+        score: scorePrimaryReasonLine(line, answers, index),
+      }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, 2)
+      .map((item) => item.line);
+
+    if (prioritized.length > 0) {
+      return prioritized.join("，");
+    }
+  }
+
+  if (answers.budget && getBudgetGap(product.price, answers.budget) === 0) {
+    return `${buildBranchFallbackReason(product, answers)} 价格也更稳地落在你的预算区间。`;
+  }
+
+  return buildBranchFallbackReason(product, answers);
+}
+
+export function buildResultAvoidanceTips(
+  answers: Pick<
+    RecommendationAnswers,
+    | "tags"
+    | "gender"
+    | "maxDb"
+    | "experienceLevel"
+    | "sharedIntensity"
+  >,
+) {
+  const tips: string[] = [];
+  const tags = answers.tags ?? [];
+  const hasPendingDecision = (keyword: string) =>
+    tags.some((tag) => tag.includes(keyword));
+
+  if (answers.maxDb != null && answers.maxDb <= 45) {
+    tips.push("当前不建议优先看高噪音路线，尤其是同住、深夜或怕打断氛围的场景。");
+  }
+
+  if (
+    answers.experienceLevel === "sensitive" ||
+    answers.sharedIntensity === "gentle" ||
+    hasPendingDecision("敏感度待判断") ||
+    hasPendingDecision("双方偏好待判断")
+  ) {
+    tips.push("还没摸清身体反馈前，不建议一上来优先看强刺激路线，先从温和稳定的反馈更安心。");
+  }
+
+  if (
+    answers.gender === "unisex" &&
+    (hasPendingDecision("互动方式待判断") || hasPendingDecision("共玩场景待判断"))
+  ) {
+    tips.push("互动方式还没定下来时，不建议优先看控制复杂、上手门槛高的共玩路线。");
+  }
+
+  return Array.from(new Set(tips)).slice(0, 2);
+}
 
 type BackupDirection = {
   label: string;
@@ -232,6 +385,9 @@ export function buildResultConfidenceSummary(
   const noiseGap = product.noiseGap ?? 0;
   const reasons = (product.matchSummary ?? []).filter(Boolean).slice(0, 2);
   const caveats: string[] = [];
+  const unresolvedPreferenceCount = (answers.tags ?? []).filter((tag) =>
+    /待判断|需要系统判断/.test(tag),
+  ).length;
 
   if (answers.budget && budgetGap > 0) {
     caveats.push(`超出预算约 ${budgetGap} 元，适合你愿意为体验稳定性多留一点空间时考虑。`);
@@ -253,6 +409,12 @@ export function buildResultConfidenceSummary(
 
   if (hardMisses > 0 && caveats.length === 0) {
     caveats.push("存在少量条件不完全吻合，建议把它当作备选而不是唯一答案。");
+  }
+
+  if (unresolvedPreferenceCount > 0) {
+    caveats.push(
+      `你还有几项偏好暂未确定，这版结果会先偏向更稳妥、低踩雷的默认路线。`,
+    );
   }
 
   if (caveats.length === 0) {

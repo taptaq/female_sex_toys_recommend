@@ -36,7 +36,7 @@ test("home page prioritizes matching and demotes library and knowledge nebula en
   assert.doesNotMatch(html, /进入知识星云/);
 });
 
-test("home page makes privacy reassurance visible before matching starts", () => {
+test("home page consolidates privacy reassurance into the auth entry", () => {
   const html = renderToStaticMarkup(
     <HomePage
       pageVariants={{}}
@@ -48,9 +48,11 @@ test("home page makes privacy reassurance visible before matching starts", () =>
     />,
   );
 
-  assert.match(html, /登录后多端同步/);
-  assert.match(html, /敏感偏好加密保存/);
-  assert.match(html, /可随时删除推荐记录/);
+  assert.match(html, /登录后可加密保存推荐档案，支持多端同步，也可随时删除/);
+  assert.doesNotMatch(html, /home-privacy-status/);
+  assert.doesNotMatch(html, /登录后多端同步/);
+  assert.doesNotMatch(html, /敏感偏好加密保存/);
+  assert.doesNotMatch(html, /可随时删除推荐记录/);
   assert.doesNotMatch(html, /无需登录/);
   assert.doesNotMatch(html, /问卷进度保存在本机/);
 });
@@ -91,7 +93,6 @@ test("home page renders an animated inner-space entry atmosphere", () => {
   assert.match(html, /home-orbit-core/);
   assert.match(html, /home-primary-ignition/);
   assert.match(html, /home-secondary-node/);
-  assert.match(html, /home-privacy-status/);
   assert.match(html, /w-\[100vw\]/);
   assert.doesNotMatch(html, /overflow-hidden rounded-\[2rem\]/);
 });

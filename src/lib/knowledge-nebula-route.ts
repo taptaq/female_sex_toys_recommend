@@ -6,6 +6,7 @@ import {
 export type KnowledgeNebulaRouteState = {
   route: "/knowledge";
   topicSlug?: KnowledgeNebulaTopicSlug;
+  sectionId?: string;
 };
 
 const KNOWLEDGE_NEBULA_BASE_PATH = "/knowledge";
@@ -15,8 +16,14 @@ function trimTrailingSlashes(pathname: string) {
   return pathname.replace(/\/+$/, "");
 }
 
-export function buildKnowledgeNebulaPath(topicSlug?: KnowledgeNebulaTopicSlug) {
+export function buildKnowledgeNebulaPath(
+  topicSlug?: KnowledgeNebulaTopicSlug,
+  sectionId?: string,
+) {
   if (!topicSlug) return KNOWLEDGE_NEBULA_BASE_PATH;
+  if (sectionId) {
+    return `${KNOWLEDGE_NEBULA_BASE_PATH}/${topicSlug}/${sectionId}`;
+  }
   return `${KNOWLEDGE_NEBULA_BASE_PATH}/${topicSlug}`;
 }
 
@@ -31,11 +38,16 @@ export function parseKnowledgeNebulaPath(pathname: string): KnowledgeNebulaRoute
     return { route: "/knowledge", topicSlug: undefined };
   }
 
-  const slug = normalizedPathname.slice(`${KNOWLEDGE_NEBULA_BASE_PATH}/`.length);
+  const slugSegments = normalizedPathname
+    .slice(`${KNOWLEDGE_NEBULA_BASE_PATH}/`.length)
+    .split("/")
+    .filter(Boolean);
+  const slug = slugSegments[0];
   if (getKnowledgeNebulaTopicBySlug(slug)) {
     return {
       route: "/knowledge",
       topicSlug: slug as KnowledgeNebulaTopicSlug,
+      sectionId: slugSegments[1] || undefined,
     };
   }
 

@@ -72,6 +72,34 @@ test("buildRecommendationProfilePayload dedupes saved preference tags", () => {
   assert.equal(payload.summary, "偏好：静音、入门级、防水；推荐：Top Pick");
 });
 
+test("buildRecommendationProfilePayload saves selected candidates for later comparison", () => {
+  const payload = buildRecommendationProfilePayload({
+    answers: {
+      tags: ["静音"],
+    },
+    topProducts: [
+      makeProduct({ id: "toy-1", name: "Top Pick" }),
+      makeProduct({ id: "toy-2", name: "Second Pick", score: 88 }),
+    ],
+    backupProducts: [
+      {
+        ...makeProduct({ id: "toy-3", name: "Budget Backup", score: 82 }),
+        backupLabel: "更省预算",
+        backupReason: "预算压力更小",
+      },
+    ],
+    savedCandidateIds: ["toy-2", "toy-3", "toy-2", "missing"],
+    recommendationTips: [],
+    shoppingGuidance: [],
+  });
+
+  assert.deepEqual(payload.savedCandidateIds, ["toy-2", "toy-3"]);
+  assert.deepEqual(payload.savedCandidates, [
+    { id: "toy-2", name: "Second Pick", score: 88 },
+    { id: "toy-3", name: "Budget Backup", score: 82 },
+  ]);
+});
+
 test("saveRecommendationProfile posts the payload with bearer authorization", async () => {
   let captured: unknown;
 

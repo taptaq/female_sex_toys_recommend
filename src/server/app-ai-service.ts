@@ -487,14 +487,12 @@ export function createAppAiService({
 
   async function runResultRecalibration({
     answers,
-    targetProvider,
     rerankPool,
     rankedCandidates,
     filteredCount,
     recommendationTips,
   }: ResultRecalibrationRequest): Promise<ResultRecalibrationResponse> {
-    const rerankResult = await runSingleProvider<BackupReasonResult[]>({
-      provider: targetProvider,
+    const rerankResult = await runServerAiProxy<BackupReasonResult[]>({
       prompt: buildRerankPrompt(answers, rerankPool),
       temperature: 0.1,
       emptyJson: "[]",
@@ -534,8 +532,7 @@ export function createAppAiService({
       topProducts.map((product) => product.id),
       BACKUP_SELECTION_COUNT,
     );
-    const enhancementResult = await runSingleProvider<ResultEnhancementPayload>({
-      provider: targetProvider,
+    const enhancementResult = await runServerAiProxy<ResultEnhancementPayload>({
       prompt: buildResultEnhancementPrompt(
         answers,
         topProducts,

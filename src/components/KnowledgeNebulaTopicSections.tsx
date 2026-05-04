@@ -94,9 +94,11 @@ function getKnowledgeCardViewerKey() {
 export function KnowledgeNebulaTopicSections({
   topic,
   isAdmin = false,
+  initialOpenSectionId,
 }: {
   topic: KnowledgeNebulaTopic;
   isAdmin?: boolean;
+  initialOpenSectionId?: string;
 }) {
   const [liveTopic, setLiveTopic] = useState(topic);
   const [topicSyncError, setTopicSyncError] = useState<string | null>(null);
@@ -104,7 +106,9 @@ export function KnowledgeNebulaTopicSections({
     getTopicDetailViewport(),
   );
   const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null);
-  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(
+    initialOpenSectionId ?? null,
+  );
   const [viewedSectionIds, setViewedSectionIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -154,12 +158,12 @@ export function KnowledgeNebulaTopicSections({
   useEffect(() => {
     setLiveTopic(topic);
     setHoveredSectionId(null);
-    setOpenSectionId(null);
+    setOpenSectionId(initialOpenSectionId ?? null);
     setViewedSectionIds(new Set());
     setVisibleScreenStart(0);
     setEditorState(null);
     setTopicSyncError(null);
-  }, [topic]);
+  }, [initialOpenSectionId, topic]);
 
   useEffect(() => {
     setVisibleScreenStart((current) => {

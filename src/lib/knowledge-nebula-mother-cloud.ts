@@ -210,10 +210,10 @@ export function buildMotherCloudBands(
 
 export function buildStarFieldLayers(
   viewport: KnowledgeNebulaViewport,
+  maxTotalCount?: number,
 ): StarFieldLayer[] {
   const mobile = viewport === "mobile";
-
-  return [
+  const layers: StarFieldLayer[] = [
     {
       id: "far-stars",
       depth: "far",
@@ -245,6 +245,18 @@ export function buildStarFieldLayers(
       color: "#ffffff",
     },
   ];
+
+  if (!maxTotalCount) {
+    return layers;
+  }
+
+  const totalCount = layers.reduce((sum, layer) => sum + layer.count, 0);
+  const ratio = Math.min(1, maxTotalCount / totalCount);
+
+  return layers.map((layer) => ({
+    ...layer,
+    count: Math.max(18, Math.round(layer.count * ratio)),
+  }));
 }
 
 export function buildTopicGlowProfiles(

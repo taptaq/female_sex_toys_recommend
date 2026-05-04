@@ -35,6 +35,18 @@ test("knowledge topic sections render a cockpit console with paged knowledge scr
   assert.doesNotMatch(html, /新增卡片/);
 });
 
+test("knowledge topic sections can open a target section immediately when deep-linked", () => {
+  const html = renderToStaticMarkup(
+    <KnowledgeNebulaTopicSections
+      topic={scienceTopic}
+      initialOpenSectionId="science-routes"
+    />,
+  );
+
+  assert.match(html, /主屏展开/);
+  assert.match(html, /刺激路线先分清/);
+});
+
 test("knowledge topic sections only show editing affordances in admin mode", () => {
   const html = renderToStaticMarkup(
     <KnowledgeNebulaTopicSections topic={scienceTopic} isAdmin />,
@@ -128,8 +140,9 @@ test("topic detail cockpit reduces label noise and supports partial screen loadi
   assert.match(nodeLayerSource, /cockpit-screen/);
   assert.match(nodeLayerSource, /SCREEN_SLOT_STYLES/);
   assert.match(nodeLayerSource, /const floatY = 3 \+ \(index % 3\) \* 1\.4/);
-  assert.match(nodeLayerSource, /y: isActive \? -6 : \[0, -floatY, 0\]/);
-  assert.match(nodeLayerSource, /repeat: isActive \? 0 : Infinity/);
+  assert.match(nodeLayerSource, /usePagePerformanceState/);
+  assert.match(nodeLayerSource, /shouldAnimate \? \[0, -floatY, 0\] : 0/);
+  assert.match(nodeLayerSource, /repeat: isActive \? 0 : repeat/);
   assert.doesNotMatch(nodeLayerSource, /PHYSICAL_STRUCTURE_BY_INDEX/);
   assert.doesNotMatch(nodeLayerSource, /致密云核/);
   assert.doesNotMatch(nodeLayerSource, /电离气体/);
@@ -158,9 +171,11 @@ test("topic detail 3d scene uses volumetric nebula layers instead of a flat sphe
   assert.match(source, /YoungStarCluster/);
   assert.match(source, /ShockFrontArc/);
   assert.match(source, /SpectralEmissionLines/);
-  assert.match(source, /TOPIC_DETAIL_SCENE_PERFORMANCE_BUDGET/);
+  assert.match(source, /getTopicDetailSceneComplexityBudget/);
   assert.match(source, /frameloop="demand"/);
   assert.match(source, /invalidate/);
+  assert.match(source, /\.dispose\(\)/);
+  assert.match(source, /spectralTubes\.forEach/);
   assert.doesNotMatch(source, /SphereGeometry/);
   assert.doesNotMatch(source, /sphereGeometry/);
   assert.doesNotMatch(source, /nebulaCloudGeometry/);

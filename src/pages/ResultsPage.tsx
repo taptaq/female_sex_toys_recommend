@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   ChevronDown,
   LoaderCircle,
-  Orbit,
   Sparkles,
   VolumeX,
   Droplets,
@@ -13,12 +12,12 @@ import {
   LockKeyhole,
 } from "lucide-react";
 import { ProductImage } from "../components/ProductImage.tsx";
+import { ResultParameterGuide } from "../components/ResultParameterGuide.tsx";
 import { AnswerState } from "../data/mock.ts";
 import type { AppAiProvider } from "../lib/app-ai-chain.ts";
 import { RankedProduct } from "../lib/app-shell.ts";
 import { dedupeDisplayTags } from "../lib/display-tags.ts";
 import {
-  RESULT_MODEL_OPTIONS,
   getResultModelOption,
 } from "../lib/result-models.ts";
 import {
@@ -32,17 +31,83 @@ import {
 } from "../lib/result-comparison.ts";
 import {
   buildBackupDirectionTeaser,
+  buildResultAvoidanceTips,
   buildResultConfidenceSummary,
 } from "../lib/recommendation-results.ts";
 import type { BackupCandidate } from "../lib/recommendation-results.ts";
 import { getResultLeadCopy } from "../lib/quiz-branching.ts";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
+import { buildKnowledgeNebulaPath } from "../lib/knowledge-nebula-route.ts";
 
 type ResultsBackupProduct = BackupCandidate;
+export type ResultEditableCondition = "budget" | "quietness" | "scene";
 
 const MAX_RELAXATION_TIPS = 3;
 const MAX_SHOPPING_GUIDANCE_WITH_RELAXATION = 3;
 const MAX_SHOPPING_GUIDANCE_ONLY = 5;
+
+const PARAMETER_PREVIEW_ITEMS = [
+  {
+    id: "max-db",
+    title: "静音参数",
+    preview: "分贝数不是唯一答案，夜晚、床架和贴近硬物时，体感会被放大。",
+    topicSlug: "people" as const,
+    sectionId: "science-noise",
+  },
+  {
+    id: "waterproof",
+    title: "防水边界",
+    preview: "防水更像是在说明清洁边界，不代表可以长期随意进水。",
+    topicSlug: "care" as const,
+    sectionId: "care-waterproof",
+  },
+  {
+    id: "motor-type",
+    title: "电机体感",
+    preview: "温和和强力不是绝对高低，关键是它跟你的进入节奏是否匹配。",
+    topicSlug: "science" as const,
+    sectionId: "science-body",
+  },
+] as const;
+
+function getSortedParameterPreviewItems(answers: AnswerState) {
+  const scoredItems = PARAMETER_PREVIEW_ITEMS.map((item, index) => {
+    let score = 0;
+
+    if (item.id === "max-db") {
+      if (answers.maxDb != null && answers.maxDb <= 50) score += 5;
+      if (answers.tags.some((tag) => /静音|同住|宿舍/.test(tag))) score += 4;
+    }
+
+    if (item.id === "waterproof") {
+      if (answers.waterproof != null && answers.waterproof >= 6) score += 5;
+      if (answers.tags.some((tag) => /清洁|护理|收纳/.test(tag))) score += 4;
+    }
+
+    if (item.id === "motor-type") {
+      if (answers.motorType != null) score += 5;
+      if (
+        answers.experienceLevel === "sensitive" ||
+        answers.experienceLevel === "intense"
+      ) {
+        score += 4;
+      }
+      if (answers.tags.some((tag) => /敏感度|强刺激|温柔慢热|平衡进阶/.test(tag))) {
+        score += 4;
+      }
+    }
+
+    return {
+      ...item,
+      score,
+      index,
+    };
+  });
+
+  return scoredItems
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, 3);
+}
 
 function normalizeGuidanceItem(item: string) {
   return item.replace(/\s+/g, " ").trim();
@@ -97,12 +162,16 @@ function getMetricChips(product: Pick<RankedProduct, "maxDb" | "waterproof" | "m
     {
       id: "max-db",
       icon: VolumeX,
+      topicSlug: "people" as const,
+      sectionId: "science-noise",
       label:
         product.maxDb == null ? "噪音参数缺失" : `噪音 < ${product.maxDb}dB`,
     },
     {
       id: "waterproof",
       icon: Droplets,
+      topicSlug: "care" as const,
+      sectionId: "care-waterproof",
       label:
         product.waterproof == null
           ? "防水参数缺失"
@@ -111,6 +180,8 @@ function getMetricChips(product: Pick<RankedProduct, "maxDb" | "waterproof" | "m
     {
       id: "motor-type",
       icon: Zap,
+      topicSlug: "science" as const,
+      sectionId: "science-body",
       label: product.motorType === "gentle" ? "温柔电机" : "强力电机",
     },
   ];
@@ -135,18 +206,6 @@ function getResultSourceSummary(
   };
 }
 
-function getRecalibrationButtonLabel(
-  selectedResultProvider: AppAiProvider,
-  currentResultProvider: AppAiProvider | undefined,
-) {
-  if (selectedResultProvider === currentResultProvider) {
-    return "重新生成当前模型结果";
-  }
-
-  const selectedOption = getResultModelOption(selectedResultProvider);
-  return `用 ${selectedOption?.label || "所选模型"} 重新校准结果`;
-}
-
 function getConfidenceToneClassName(tone: "high" | "conditional" | "backup") {
   if (tone === "high") {
     return "border-emerald-300/25 bg-emerald-400/10 text-emerald-100";
@@ -161,6 +220,51 @@ function getTuningProgressLabel(mode: ResultTuningMode) {
   if (mode === "quieter") return "正在按更安静方向重新计算推荐...";
   if (mode === "cheaper") return "正在按更低预算方向重新计算推荐...";
   return "正在按新手友好方向重新计算推荐...";
+}
+
+function buildPrePurchaseChecklist(
+  answers: AnswerState,
+  primaryProduct: RankedProduct | undefined,
+) {
+  const answerTags = answers.tags || [];
+  const isQuietSensitive =
+    answers.maxDb != null ||
+    answerTags.some((tag) => /静音|同住|宿舍|深夜/.test(tag));
+  const isStorageSensitive =
+    answers.appearance === "high_disguise" ||
+    answerTags.some((tag) => /隐蔽|伪装|收纳|同住/.test(tag));
+  const isSensitiveUser =
+    answers.experienceLevel === "sensitive" ||
+    answerTags.some((tag) => /新手|敏感|不确定|待判断/.test(tag));
+
+  return [
+    {
+      title: "声音环境",
+      detail:
+        isQuietSensitive && primaryProduct?.maxDb != null
+          ? `确认 ${primaryProduct.maxDb}dB 左右在你的同住/夜间环境里可接受。`
+          : "确认实际使用时的房间、床架和时间段不会放大声音打扰。",
+    },
+    {
+      title: "清洁边界",
+      detail:
+        answers.waterproof != null || primaryProduct?.waterproof != null
+          ? `确认防水约 IPX${primaryProduct?.waterproof ?? answers.waterproof} 的清洁方式、充电口和售后说明。`
+          : "确认材质、清洁方式和充电口防护说明清楚，不只看外观图。",
+    },
+    {
+      title: "收纳隐私",
+      detail: isStorageSensitive
+        ? "确认尺寸、外观伪装和收纳位置都适合你的真实居住场景。"
+        : "确认包装、收纳和取用方式不会给自己增加尴尬压力。",
+    },
+    {
+      title: "经验节奏",
+      detail: isSensitiveUser
+        ? "第一次或敏感体质先按温和档位开始，不急着追求强度。"
+        : "确认这款的刺激路线和控制方式，确实符合你这次想要的节奏。",
+    },
+  ];
 }
 
 function renderConfidenceSummary(
@@ -228,14 +332,16 @@ type ResultsPageProps = {
   recommendationTips: string[];
   currentResultProvider?: AppAiProvider;
   currentResultModelName?: string;
-  selectedResultProvider: AppAiProvider;
   isRecalibratingResults: boolean;
   resultRecalibrationError: string | null;
-  onSelectResultProvider: (provider: AppAiProvider) => void;
   onRecalibrateResults: () => void;
   onTuneResults: (mode: ResultTuningMode) => void;
+  onEditQuizCondition?: (condition: ResultEditableCondition) => void;
+  savedCandidateIds?: string[];
+  onToggleSavedCandidate?: (productId: string) => void;
   onSaveRecommendationProfile: () => Promise<void>;
   onOpenRecommendationProfiles: () => void;
+  onOpenKnowledgeNebula?: (path?: string) => void;
   isSavingRecommendationProfile: boolean;
   saveRecommendationProfileMessage: string | null;
   authPanel: {
@@ -258,14 +364,16 @@ export function ResultsPage({
   recommendationTips,
   currentResultProvider,
   currentResultModelName,
-  selectedResultProvider,
   isRecalibratingResults,
   resultRecalibrationError,
-  onSelectResultProvider,
   onRecalibrateResults,
   onTuneResults,
+  onEditQuizCondition,
+  savedCandidateIds = [],
+  onToggleSavedCandidate,
   onSaveRecommendationProfile,
   onOpenRecommendationProfiles,
+  onOpenKnowledgeNebula,
   isSavingRecommendationProfile,
   saveRecommendationProfileMessage,
   authPanel,
@@ -275,6 +383,7 @@ export function ResultsPage({
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false);
   const [isComparisonPanelOpen, setIsComparisonPanelOpen] = useState(false);
   const [isSavePanelOpen, setIsSavePanelOpen] = useState(false);
+  const [isParameterGuideOpen, setIsParameterGuideOpen] = useState(false);
   const [activeTuningMode, setActiveTuningMode] = useState<ResultTuningMode | null>(null);
   const relaxationTips = dedupeGuidanceItems(recommendationTips).slice(
     0,
@@ -295,10 +404,7 @@ export function ResultsPage({
     currentResultProvider,
     currentResultModelName,
   );
-  const recalibrationButtonLabel = getRecalibrationButtonLabel(
-    selectedResultProvider,
-    currentResultProvider,
-  );
+  const recalibrationButtonLabel = "重新生成推荐";
   const canShowRecalibrationModule = topProducts.length > 0;
   const primaryProductHref = topProducts[0] ? getProductHref(topProducts[0]) : undefined;
   const resultTags = dedupeDisplayTags(answers.tags);
@@ -313,6 +419,8 @@ export function ResultsPage({
   const primaryConfidenceSummary = topProducts[0]
     ? buildResultConfidenceSummary(topProducts[0], answers)
     : null;
+  const prePurchaseChecklist = buildPrePurchaseChecklist(answers, topProducts[0]);
+  const avoidanceTips = buildResultAvoidanceTips(answers);
   const visibleResultTags = resultTags.slice(0, 4);
   const hiddenResultTagCount = Math.max(resultTags.length - visibleResultTags.length, 0);
   const appliedTuningOptions = RESULT_TUNING_OPTIONS.filter((option) =>
@@ -322,6 +430,26 @@ export function ResultsPage({
   const activeTuningOption = activeTuningMode
     ? RESULT_TUNING_OPTIONS.find((option) => option.mode === activeTuningMode)
     : undefined;
+  const sortedParameterPreviewItems = getSortedParameterPreviewItems(answers);
+  const savedCandidateLimit = 3;
+  const savedCandidateIdSet = new Set(savedCandidateIds);
+  const laterComparisonCandidates = [
+    ...topProducts.slice(0, 3),
+    ...backupProducts.slice(0, 3),
+  ].reduce<Array<RankedProduct | ResultsBackupProduct>>((items, product) => {
+    if (!product?.id || items.some((item) => item.id === product.id)) {
+      return items;
+    }
+
+    items.push(product);
+    return items;
+  }, []);
+  const handleOpenKnowledgeTopic = (
+    topicSlug: "science" | "people" | "care",
+    sectionId?: string,
+  ) => {
+    onOpenKnowledgeNebula?.(buildKnowledgeNebulaPath(topicSlug, sectionId));
+  };
   const handleTuneResultClick = (mode: ResultTuningMode) => {
     setActiveTuningMode(mode);
     onTuneResults(mode);
@@ -404,21 +532,91 @@ export function ResultsPage({
 
                 {primaryConfidenceSummary &&
                   renderConfidenceSummary(primaryConfidenceSummary)}
+
+                {avoidanceTips.length > 0 && (
+                  <div className="mt-3 rounded-2xl border border-rose-300/12 bg-rose-400/[0.05] p-3">
+                    <div className="mb-2 flex items-center gap-2">
+                      <AlertCircle className="h-3.5 w-3.5 text-rose-200/80" />
+                      <p className="text-[11px] font-medium tracking-wide text-rose-100/88">
+                        暂时不建议优先看
+                      </p>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {avoidanceTips.map((tip, index) => (
+                        <li
+                          key={`avoidance-${index}`}
+                          className="text-[11px] leading-5 text-rose-50/78"
+                        >
+                          {tip}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="space-y-3">
+                <ResultParameterGuide
+                  isOpen={isParameterGuideOpen}
+                  onToggle={() => setIsParameterGuideOpen((isOpen) => !isOpen)}
+                  onOpenTopic={handleOpenKnowledgeTopic}
+                />
+
+                <div className="rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.05] p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-medium text-cyan-100/82">
+                        参数速览
+                      </p>
+                      <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                        先看一眼核心判断，再决定要不要进知识星云深读。
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenKnowledgeTopic("science", "science-body")}
+                      className="inline-flex shrink-0 items-center rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100/82 transition-colors hover:border-cyan-300/32 hover:bg-cyan-300/14"
+                    >
+                      去知识星云深读
+                    </button>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {sortedParameterPreviewItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleOpenKnowledgeTopic(item.topicSlug, item.sectionId)}
+                        className="rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3 text-left transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
+                      >
+                        <p className="text-[11px] font-medium text-cyan-100/84">
+                          {item.title}
+                        </p>
+                        <p className="mt-1.5 text-[11px] leading-5 text-slate-300">
+                          {item.preview}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                 {getMetricChips(topProducts[0]).map((chip) => {
                   const Icon = chip.icon;
                   return (
-                    <div
+                    <button
                       key={chip.id}
-                      className="flex max-w-full items-start gap-1 rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] text-slate-300"
+                      type="button"
+                      onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
+                      className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
+                      title="了解这个参数"
                     >
                       <Icon className="mt-0.5 h-3 w-3 shrink-0" />
                       <span className="break-words">{chip.label}</span>
-                    </div>
+                    </button>
                   );
                 })}
+                </div>
               </div>
             </div>
           </div>
@@ -472,6 +670,39 @@ export function ResultsPage({
                   : "正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。"}
             </div>
 
+            {onEditQuizCondition && (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      想改一个条件？
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      不用重做整套问卷，直接回到关键题重新选择。
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      ["budget", "改预算"],
+                      ["quietness", "改静音"],
+                      ["scene", "改场景"],
+                    ].map(([condition, label]) => (
+                      <button
+                        key={condition}
+                        type="button"
+                        onClick={() =>
+                          onEditQuizCondition(condition as ResultEditableCondition)
+                        }
+                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2 rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.045] p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-start gap-2">
                 <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/75" />
@@ -521,6 +752,71 @@ export function ResultsPage({
             )}
 
             {!isSignedIn && isSavePanelOpen && <AuthPanel {...authPanel} />}
+          </div>
+        </section>
+      )}
+
+      {onToggleSavedCandidate && laterComparisonCandidates.length > 0 && (
+        <section className="relative z-10 overflow-hidden rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045] p-4 sm:p-5">
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/32 to-transparent" />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-white">稍后比较</h3>
+              <p className="mt-1 text-xs leading-5 text-cyan-100/58">
+                先把犹豫的 2-3 个候选留下，保存档案后可回来继续比较。
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center self-start rounded-full border border-cyan-300/18 bg-cyan-300/10 px-3 py-1.5 text-xs text-cyan-100/78">
+              已选 {Math.min(savedCandidateIds.length, savedCandidateLimit)}/{savedCandidateLimit}
+            </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {laterComparisonCandidates.map((product, index) => {
+              const isSaved = savedCandidateIdSet.has(product.id);
+              const isDisabled =
+                !isSaved && savedCandidateIds.length >= savedCandidateLimit;
+
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => onToggleSavedCandidate(product.id)}
+                  disabled={isDisabled}
+                  className={[
+                    "group flex min-h-[5.5rem] cursor-pointer flex-col justify-between rounded-2xl border p-3 text-left transition-all duration-200",
+                    isSaved
+                      ? "border-cyan-200/28 bg-cyan-300/[0.105] shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+                      : "border-white/8 bg-white/[0.032] hover:-translate-y-0.5 hover:border-cyan-300/24 hover:bg-cyan-300/[0.07]",
+                    isDisabled ? "cursor-not-allowed opacity-55 hover:translate-y-0" : "",
+                  ].join(" ")}
+                >
+                  <div className="min-w-0">
+                    <p className="mb-1 text-[10px] tracking-[0.18em] text-cyan-200/48">
+                      CANDIDATE {index + 1}
+                    </p>
+                    <p className="line-clamp-2 text-sm font-medium leading-5 text-white">
+                      {product.name}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-xs text-cyan-100/66">
+                      匹配 {Math.round(product.score)}
+                    </span>
+                    <span
+                      className={[
+                        "rounded-full border px-2.5 py-1 text-[11px]",
+                        isSaved
+                          ? "border-cyan-200/30 bg-cyan-200/12 text-cyan-50"
+                          : "border-white/10 bg-white/[0.035] text-slate-300 group-hover:border-cyan-300/20 group-hover:text-cyan-100",
+                      ].join(" ")}
+                    >
+                      {isSaved ? "已加入比较" : "稍后比较"}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
@@ -612,6 +908,41 @@ export function ResultsPage({
         </section>
       )}
 
+      {topProducts[0] && (
+        <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">
+          <div className="pointer-events-none absolute inset-y-4 left-0 w-px bg-gradient-to-b from-transparent via-emerald-200/35 to-transparent" />
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-white">
+                购买前最终自检
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-emerald-100/58">
+                下单前快速过一遍，把推荐放回真实使用场景里确认。
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 self-start rounded-full border border-emerald-300/18 bg-emerald-300/10 px-3 py-1.5 text-[11px] text-emerald-100/78">
+              FINAL CHECK
+            </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {prePurchaseChecklist.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/8 bg-slate-950/22 px-3 py-3"
+              >
+                <p className="text-[11px] font-medium text-emerald-100/88">
+                  {item.title}
+                </p>
+                <p className="mt-1.5 text-xs leading-5 text-slate-300">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {canShowRecalibrationModule && (
         <motion.section
           initial={{ opacity: 0, y: -12 }}
@@ -625,88 +956,36 @@ export function ResultsPage({
               aria-expanded={isRecalibrationPanelOpen}
               className="flex w-full items-center justify-between gap-3 text-left"
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-400/15 bg-cyan-400/8 text-cyan-200">
-                  <Orbit className="h-4 w-4" />
-                </span>
-                <div>
-                  <h3 className="text-sm font-medium text-white">
-                    对结果不满意？换个模型再试
-                  </h3>
-                  <p className="mt-1 text-xs leading-5 text-slate-400">
-                    当前结果来源：{resultSourceSummary.providerLabel}
-                  </p>
-                </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-medium text-white">
+                  对当前结果不满意？
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  我们会基于当前问卷和候选池，再重新生成一版更适合你的推荐结果。
+                </p>
               </div>
-              <ChevronDown
-                className={[
-                  "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-                  isRecalibrationPanelOpen ? "rotate-180" : "",
-                ].join(" ")}
-              />
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100/82">
+                  重新生成推荐
+                </span>
+                <ChevronDown
+                  className={[
+                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                    isRecalibrationPanelOpen ? "rotate-180" : "",
+                  ].join(" ")}
+                />
+              </div>
             </button>
 
             {isRecalibrationPanelOpen ? (
               <div className="space-y-4 border-t border-white/8 pt-4">
                 <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left">
-                  <p className="text-[11px] text-slate-500">当前模型</p>
-                  <p className="mt-1 break-all text-[11px] text-cyan-200/60">
-                    {resultSourceSummary.modelLabel}
+                  <p className="text-sm text-slate-200">
+                    重新生成时会保留当前问卷和候选范围，只重新整理推荐顺序、说明理由和选购建议。
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {RESULT_MODEL_OPTIONS.map((option) => {
-                    const isSelected = option.provider === selectedResultProvider;
-                    const isCurrent = option.provider === currentResultProvider;
-
-                    return (
-                      <button
-                        key={option.provider}
-                        type="button"
-                        onClick={() => onSelectResultProvider(option.provider)}
-                        disabled={isRecalibratingResults}
-                        aria-pressed={isSelected}
-                        className={[
-                          "group rounded-2xl border px-4 py-3 text-left transition-all",
-                          "bg-white/[0.03] backdrop-blur-sm",
-                          isSelected
-                            ? "border-cyan-400/50 bg-cyan-400/12 shadow-[0_0_0_1px_rgba(34,211,238,0.14),0_12px_30px_rgba(8,47,73,0.25)]"
-                            : "border-white/8 hover:border-cyan-400/25 hover:bg-white/[0.05]",
-                          isRecalibratingResults
-                            ? "cursor-not-allowed opacity-60"
-                            : "cursor-pointer",
-                        ].join(" ")}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium text-white">
-                                {option.label}
-                              </span>
-                              {isCurrent && (
-                                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] text-cyan-200/75">
-                                  当前结果
-                                </span>
-                              )}
-                            </div>
-                            <p className="mt-2 break-all text-[11px] leading-5 text-slate-400">
-                              {option.model}
-                            </p>
-                            <p className="mt-2 text-[11px] leading-5 text-slate-300/80">
-                              {option.description}
-                            </p>
-                          </div>
-                          <span
-                            className={[
-                              "mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full transition-colors",
-                              isSelected ? "bg-cyan-300 shadow-[0_0_12px_rgba(103,232,249,0.7)]" : "bg-slate-600 group-hover:bg-cyan-500/60",
-                            ].join(" ")}
-                          />
-                        </div>
-                      </button>
-                    );
-                  })}
+                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                    如果你觉得当前结果不够贴合，这里更适合先试一次重新生成，而不是重新答题。
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-3">
@@ -724,7 +1003,7 @@ export function ResultsPage({
                     {isRecalibratingResults ? (
                       <>
                         <LoaderCircle className="h-4 w-4 animate-spin" />
-                        <span>模型校准中，请稍候</span>
+                        <span>正在重新生成推荐，请稍候</span>
                       </>
                     ) : (
                       <span>{recalibrationButtonLabel}</span>
@@ -735,7 +1014,7 @@ export function ResultsPage({
                     <div className="flex items-start gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100/90">
                       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
                       <div>
-                        <p>模型校准失败，当前结果已保留。</p>
+                        <p>重新生成失败，当前结果已保留。</p>
                         <p className="mt-1 text-rose-100/75">{resultRecalibrationError}</p>
                       </div>
                     </div>
@@ -755,13 +1034,13 @@ export function ResultsPage({
         >
           <div className="flex items-center gap-2 mb-2 text-amber-400">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium tracking-wide">结果提示</span>
+            <span className="text-sm font-medium tracking-wide">下一步建议</span>
           </div>
           <div className="space-y-4">
             {relaxationTips.length > 0 && (
               <div>
                 <h3 className="mb-2 text-sm font-medium text-amber-200">
-                  放宽条件建议
+                  如果还在犹豫
                 </h3>
                 <ul className="space-y-2">
                   {relaxationTips.map((tip, index) => (
@@ -780,7 +1059,7 @@ export function ResultsPage({
             {shoppingGuidanceItems.length > 0 && (
               <div>
                 <h3 className="mb-2 text-sm font-medium text-amber-200">
-                  选购建议
+                  购买与开始使用前
                 </h3>
                 <ul className="space-y-2">
                   {shoppingGuidanceItems.map((tip, index) => (
@@ -986,13 +1265,16 @@ export function ResultsPage({
                                   {getMetricChips(product).map((chip) => {
                                     const Icon = chip.icon;
                                     return (
-                                      <div
+                                      <button
                                         key={chip.id}
-                                        className="flex max-w-full items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300"
+                                        type="button"
+                                        onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
+                                        className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
+                                        title="了解这个参数"
                                       >
                                         <Icon className="mt-0.5 h-3 w-3 shrink-0" />
                                         <span className="break-words">{chip.label}</span>
-                                      </div>
+                                      </button>
                                     );
                                   })}
                                 </div>
@@ -1042,13 +1324,16 @@ export function ResultsPage({
                                   {getMetricChips(product).map((chip) => {
                                     const Icon = chip.icon;
                                     return (
-                                      <div
+                                      <button
                                         key={chip.id}
-                                        className="flex max-w-full items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300"
+                                        type="button"
+                                        onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
+                                        className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
+                                        title="了解这个参数"
                                       >
                                         <Icon className="mt-0.5 h-3 w-3 shrink-0" />
                                         <span className="break-words">{chip.label}</span>
-                                      </div>
+                                      </button>
                                     );
                                   })}
                                 </div>

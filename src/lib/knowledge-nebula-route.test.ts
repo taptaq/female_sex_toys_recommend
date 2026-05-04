@@ -29,6 +29,7 @@ test('parseKnowledgeNebulaPath("/knowledge/first-time") returns the matching top
   assert.deepEqual(parseKnowledgeNebulaPath("/knowledge/first-time"), {
     route: "/knowledge",
     topicSlug: "first-time",
+    sectionId: undefined,
   });
 });
 
@@ -36,6 +37,15 @@ test('parseKnowledgeNebulaPath("/knowledge/couples/") returns the matching topic
   assert.deepEqual(parseKnowledgeNebulaPath("/knowledge/couples/"), {
     route: "/knowledge",
     topicSlug: "couples",
+    sectionId: undefined,
+  });
+});
+
+test('parseKnowledgeNebulaPath("/knowledge/science/science-noise") returns the matching topic and section', () => {
+  assert.deepEqual(parseKnowledgeNebulaPath("/knowledge/science/science-noise"), {
+    route: "/knowledge",
+    topicSlug: "science",
+    sectionId: "science-noise",
   });
 });
 
@@ -52,6 +62,13 @@ test("buildKnowledgeNebulaPath() returns the base knowledge path", () => {
 
 test('buildKnowledgeNebulaPath("couples") returns the topic path', () => {
   assert.equal(buildKnowledgeNebulaPath("couples"), "/knowledge/couples");
+});
+
+test('buildKnowledgeNebulaPath("science", "science-noise") returns the topic detail path with section id', () => {
+  assert.equal(
+    buildKnowledgeNebulaPath("science", "science-noise"),
+    "/knowledge/science/science-noise",
+  );
 });
 
 test("KNOWLEDGE_NEBULA_TOPICS exposes the expected slugs in order", () => {

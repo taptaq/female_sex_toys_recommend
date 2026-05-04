@@ -5,12 +5,12 @@ import {
   ChevronRight,
   KeyRound,
   ShieldCheck,
-  Trash2,
   Boxes,
   LogOut,
   Sparkles,
 } from "lucide-react";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 function SecondaryEntryButton({
   children,
@@ -110,7 +110,7 @@ function HomeAuthEntry({
             完成匹配后可加密保存
           </p>
           <p className="mt-1 text-[11px] leading-5 text-cyan-100/48">
-            登录只用于同步推荐档案，不影响先体验匹配流程。
+            登录后可加密保存推荐档案，支持多端同步，也可随时删除。不影响先体验匹配流程。
           </p>
         </div>
         <button
@@ -169,6 +169,8 @@ export function HomePage({
     onSignOut: () => Promise<void>;
   };
 }) {
+  const { repeat, shouldAnimate } = usePagePerformanceState();
+
   return (
     <motion.div
       key="welcome"
@@ -176,7 +178,10 @@ export function HomePage({
       initial="initial"
       animate="in"
       exit="out"
-      className="relative w-full flex flex-col items-center px-1 py-2"
+      className={[
+        "relative w-full flex flex-col items-center px-1 py-2",
+        shouldAnimate ? "" : "ambient-motion-paused",
+      ].join(" ")}
     >
       <div className="home-space-depth pointer-events-none absolute left-1/2 top-[-16%] -z-10 h-[120%] w-[100vw] -translate-x-1/2 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_8%,rgba(34,211,238,0.12),transparent_30%),radial-gradient(circle_at_28%_68%,rgba(99,102,241,0.08),transparent_32%)]" />
@@ -190,18 +195,18 @@ export function HomePage({
       <div className="relative mb-12 flex justify-center items-center">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: shouldAnimate ? 20 : 0.2, repeat, ease: "linear" }}
           className="absolute w-32 h-32 border border-cyan-500/20 rounded-full"
         />
         <motion.div
           animate={{ rotate: -360 }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: shouldAnimate ? 30 : 0.2, repeat, ease: "linear" }}
           className="absolute w-40 h-40 border border-indigo-500/20 rounded-full border-dashed"
         />
         <motion.span
           className="absolute h-2 w-2 rounded-full bg-cyan-200 shadow-[0_0_16px_rgba(125,211,252,0.85)]"
           animate={{ rotate: 360 }}
-          transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: shouldAnimate ? 7 : 0.2, repeat, ease: "linear" }}
           style={{ transformOrigin: "4.25rem 0.25rem" }}
         />
         <div className="home-orbit-core w-20 h-20 glass-panel rounded-full flex items-center justify-center relative z-10 overflow-hidden shadow-[0_0_48px_rgba(34,211,238,0.16)]">
@@ -233,7 +238,7 @@ export function HomePage({
           <motion.div
             className="absolute inset-0 bg-cyan-400/5"
             animate={{ scale: [1, 1.2, 1], opacity: [0, 0.8, 0] }}
-            transition={{ duration: 2.5, repeat: Infinity }}
+            transition={{ duration: shouldAnimate ? 2.5 : 0.2, repeat }}
           />
           <span className="absolute inset-y-0 left-0 w-1/3 -translate-x-full bg-gradient-to-r from-transparent via-white/18 to-transparent transition-transform duration-700 group-hover:translate-x-[340%]" />
           <span className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-100/55 to-transparent opacity-70" />
@@ -259,21 +264,6 @@ export function HomePage({
           >
             看看知识星云
           </SecondaryEntryButton>
-        </div>
-
-        <div className="mt-6 grid w-full grid-cols-1 gap-2 text-[10px] text-slate-500 font-mono tracking-wider sm:grid-cols-3">
-          <span className="home-privacy-status flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2 transition-colors hover:border-cyan-300/14 hover:bg-cyan-300/[0.04] hover:text-slate-300">
-            <KeyRound className="w-3.5 h-3.5 text-cyan-800" />
-            登录后多端同步
-          </span>
-          <span className="home-privacy-status flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2 transition-colors hover:border-cyan-300/14 hover:bg-cyan-300/[0.04] hover:text-slate-300">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-800" />
-            敏感偏好加密保存
-          </span>
-          <span className="home-privacy-status flex items-center justify-center gap-1.5 rounded-full border border-white/6 bg-white/[0.025] px-3 py-2 transition-colors hover:border-cyan-300/14 hover:bg-cyan-300/[0.04] hover:text-slate-300">
-            <Trash2 className="w-3.5 h-3.5 text-cyan-800" />
-            可随时删除推荐记录
-          </span>
         </div>
 
         <HomeAuthEntry authPanel={authPanel} onOpenProfiles={onOpenProfiles} />

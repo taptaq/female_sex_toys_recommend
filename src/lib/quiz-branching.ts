@@ -8,6 +8,144 @@ export type BranchPreferenceAdjustment = {
   summary: string[];
 };
 
+function hasDecisionPendingTag(
+  answers: Pick<AnswerState, "tags">,
+  tag: string,
+) {
+  return Array.isArray(answers.tags) && answers.tags.includes(tag);
+}
+
+function getUncertainPreferenceAdjustments(
+  product: Product,
+  answers: AnswerState,
+  presetId: ScorePresetId,
+): BranchPreferenceAdjustment {
+  let score = 0;
+  const summary: string[] = [];
+
+  if (presetId === "female") {
+    if (hasDecisionPendingTag(answers, "路线待判断")) {
+      if (product.physicalForm === "external") {
+        score += 6;
+        summary.push("还没确定路线时，先从外部反馈更容易建立舒适感");
+      } else if (product.physicalForm === "internal") {
+        score -= 2;
+      } else if (product.physicalForm === "composite") {
+        score -= 3;
+      }
+    }
+
+    if (hasDecisionPendingTag(answers, "敏感度待判断")) {
+      if (product.motorType === "gentle") {
+        score += 6;
+        summary.push("敏感度还没摸清时，先从温和档位更稳妥");
+      } else {
+        score -= 3;
+      }
+    }
+  }
+
+  if (presetId === "male") {
+    if (hasDecisionPendingTag(answers, "驱动待判断")) {
+      if (product.physicalForm === "external") {
+        score += 4;
+        summary.push("驱动方式还没想清时，先从更好上手的结构开始");
+      } else if (product.physicalForm === "composite") {
+        score -= 2;
+      }
+    }
+
+    if (hasDecisionPendingTag(answers, "刺激风格待判断")) {
+      if (product.motorType === "gentle") {
+        score += 4;
+        summary.push("刺激风格待判断时，先从更耐玩的节奏入手更稳");
+      } else {
+        score -= 2;
+      }
+    }
+
+    if (hasDecisionPendingTag(answers, "使用节奏待判断")) {
+      if (product.waterproof != null && product.waterproof >= 6) {
+        score += 3;
+        summary.push("还没确定使用节奏时，优先看更省事、复用压力更低的类型");
+      }
+    }
+  }
+
+  if (presetId === "couple") {
+    if (hasDecisionPendingTag(answers, "互动方式待判断") && product.gender === "unisex") {
+      score += 4;
+      summary.push("互动方式还没定下时，通用共玩结构更容易协调");
+    }
+
+    if (hasDecisionPendingTag(answers, "使用姿态待判断")) {
+      if (product.physicalForm === "external") {
+        score += 4;
+        summary.push("使用姿态待判断时，先看更容易贴合配合的结构");
+      } else if (product.physicalForm === "composite") {
+        score -= 2;
+      }
+    }
+
+    if (hasDecisionPendingTag(answers, "双方偏好待判断")) {
+      if (product.motorType === "gentle") {
+        score += 5;
+        summary.push("双方偏好还在摸索时，温和路线更容易共同接受");
+      } else {
+        score -= 2;
+      }
+    }
+
+    if (hasDecisionPendingTag(answers, "共玩场景待判断") && product.maxDb != null) {
+      if (product.maxDb <= 50) {
+        score += 3;
+        summary.push("共玩场景待判断时，先保留更安静的氛围余量");
+      } else if (product.maxDb >= 60) {
+        score -= 2;
+      }
+    }
+  }
+
+  if (hasDecisionPendingTag(answers, "静音待判断") && product.maxDb != null) {
+    if (product.maxDb <= 48) {
+      score += 4;
+      summary.push("环境要求还不明确时，静音一点更不容易出错");
+    } else if (product.maxDb >= 60) {
+      score -= 3;
+    }
+  }
+
+  if (hasDecisionPendingTag(answers, "清洁待判断")) {
+    if (product.waterproof != null && product.waterproof >= 6) {
+      score += 3;
+      summary.push("清洁要求待判断时，先选更省心的防水等级更安心");
+    } else if (product.waterproof == null) {
+      score -= 1;
+    }
+  }
+
+  if (hasDecisionPendingTag(answers, "预算待判断")) {
+    if (product.price >= 120 && product.price <= 320) {
+      score += 4;
+      summary.push("预算还没定下时，先看性价比更稳的中段价格带");
+    } else if (product.price > 420) {
+      score -= 3;
+    }
+  }
+
+  if (hasDecisionPendingTag(answers, "收纳待判断")) {
+    if (product.appearance === "high_disguise") {
+      score += 3;
+      summary.push("收纳压力待判断时，先保留更低存在感会更从容");
+    }
+  }
+
+  return {
+    score,
+    summary: Array.from(new Set(summary)).slice(0, 4),
+  };
+}
+
 function getAnsweredBranch(answers: Pick<AnswerState, "gender">): ScorePresetId {
   if (answers.gender === "male") return "male";
   if (answers.gender === "unisex") return "couple";
@@ -253,11 +391,23 @@ export function getBranchPreferenceAdjustments(
     answers,
     presetId,
   );
+  const uncertainAdjustment = getUncertainPreferenceAdjustments(
+    product,
+    answers,
+    presetId,
+  );
 
   return {
-    score: branchAdjustment.score + descriptionAdjustment.score,
+    score:
+      branchAdjustment.score +
+      descriptionAdjustment.score +
+      uncertainAdjustment.score,
     summary: Array.from(
-      new Set([...branchAdjustment.summary, ...descriptionAdjustment.summary]),
+      new Set([
+        ...branchAdjustment.summary,
+        ...uncertainAdjustment.summary,
+        ...descriptionAdjustment.summary,
+      ]),
     ).slice(0, 4),
   };
 }

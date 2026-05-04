@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { ArrowLeft, CircleDashed, Hexagon, Radar, Triangle } from "lucide-react";
 import type { AnswerState, Question } from "../data/mock";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 export function QuizPage({
   pageVariants,
@@ -23,6 +24,7 @@ export function QuizPage({
   onBackHome: () => void;
 }) {
   const currentQuestion = activeQuestions[step];
+  const { shouldAnimate } = usePagePerformanceState();
 
   return (
     <motion.div
@@ -31,7 +33,10 @@ export function QuizPage({
       initial="initial"
       animate="in"
       exit="out"
-      className="quiz-scan-shell relative isolate left-1/2 flex w-screen -translate-x-1/2 flex-col items-center justify-center overflow-hidden px-4 py-3 sm:px-6"
+      className={[
+        "quiz-scan-shell relative isolate left-1/2 flex w-screen -translate-x-1/2 flex-col items-center justify-center overflow-hidden px-4 py-3 sm:px-6",
+        shouldAnimate ? "" : "ambient-motion-paused",
+      ].join(" ")}
     >
       <div className="quiz-starfield pointer-events-none absolute inset-0 -z-10 opacity-75" />
       <div className="pointer-events-none absolute -right-20 top-20 -z-10 h-56 w-56 rounded-full bg-cyan-400/8 blur-3xl" />

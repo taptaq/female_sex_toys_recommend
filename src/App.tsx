@@ -22,10 +22,15 @@ import {
 import {
   buildBackupCandidates,
   buildLocalBackupReason,
+  buildLocalPrimaryReason,
   buildLocalShoppingGuidance,
   type BackupCandidate,
 } from "./lib/recommendation-results";
-import { createClearedQuizSessionState, rewindQuizAnswer } from "./lib/quiz-session";
+import {
+  createClearedQuizSessionState,
+  removeQuizQuestionAnswer,
+  rewindQuizAnswer,
+} from "./lib/quiz-session";
 import type { AppAiProvider } from "./lib/app-ai-chain";
 import {
   buildResultRecalibrationPayload,
@@ -60,7 +65,10 @@ import {
 import { HomePage } from "./pages/HomePage";
 import { QuizPage } from "./pages/QuizPage";
 import { MatchingPage } from "./pages/MatchingPage";
-import { ResultsPage } from "./pages/ResultsPage";
+import {
+  ResultsPage,
+  type ResultEditableCondition,
+} from "./pages/ResultsPage";
 import { LibraryPage } from "./pages/LibraryPage";
 import { KnowledgeNebulaPage } from "./pages/KnowledgeNebulaPage";
 import { ProfilesPage } from "./pages/ProfilesPage";
@@ -105,6 +113,7 @@ type PersistedAppState = {
   answers?: AnswerState;
   topProducts?: RankedProduct[];
   backupProducts?: BackupProduct[];
+  savedCandidateIds?: string[];
   recommendationTips?: string[];
   shoppingGuidance?: string[];
   filterGender?: string;
@@ -500,20 +509,6 @@ function compareStructuredProducts(
   );
 }
 
-function buildLocalReason(
-  product: StructuredRankedProduct,
-  answers: AnswerState,
-) {
-  const summary = product.matchSummary.slice(0, 3);
-  if (summary.length > 0) return summary.join("，");
-
-  if (answers.budget && getBudgetGap(product.price, answers.budget) === 0) {
-    return `${buildBranchFallbackReason(product, answers)} 价格也更稳地落在你的预算区间。`;
-  }
-
-  return buildBranchFallbackReason(product, answers);
-}
-
 function finalizeRankedProducts(
   products: StructuredRankedProduct[],
   reasonMap: Map<string, string>,
@@ -528,7 +523,7 @@ function finalizeRankedProducts(
       noiseGap,
       reason:
         reasonMap.get(product.id) ||
-        buildLocalReason(
+        buildLocalPrimaryReason(
           { ...product, matchSummary, hardMisses, budgetGap, noiseGap },
           answers,
         ),
@@ -584,6 +579,9 @@ export default function App() {
   const [selectedKnowledgeTopicSlug, setSelectedKnowledgeTopicSlug] = useState<
     KnowledgeNebulaTopicSlug | undefined
   >(initialKnowledgeRouteState?.topicSlug);
+  const [selectedKnowledgeSectionId, setSelectedKnowledgeSectionId] = useState<
+    string | undefined
+  >(initialKnowledgeRouteState?.sectionId);
   const [knowledgeOriginRoute, setKnowledgeOriginRoute] = useState<
     AppRoute | undefined
   >(initialKnowledgeOriginRoute);
@@ -626,6 +624,9 @@ export default function App() {
   const [backupProducts, setBackupProducts] = useState<BackupProduct[]>(
     persistedState.backupProducts ?? [],
   );
+  const [savedCandidateIds, setSavedCandidateIds] = useState<string[]>(
+    persistedState.savedCandidateIds ?? [],
+  );
 
   const [loadingStep, setLoadingStep] = useState(0);
 
@@ -641,10 +642,6 @@ export default function App() {
   const [currentResultModelName, setCurrentResultModelName] = useState<
     string | undefined
   >(persistedResultSourceState.currentResultModelName);
-  const [currentSelectedResultProvider, setCurrentSelectedResultProvider] =
-    useState<AppAiProvider>(
-      persistedResultSourceState.currentSelectedResultProvider,
-    );
   const [isRecalibratingResults, setIsRecalibratingResults] = useState(false);
   const [resultRecalibrationError, setResultRecalibrationError] = useState<
     string | null
@@ -705,6 +702,7 @@ export default function App() {
     setCurrentRoute(route);
     if (route !== "/knowledge") {
       setSelectedKnowledgeTopicSlug(undefined);
+      setSelectedKnowledgeSectionId(undefined);
       setKnowledgeOriginRoute(undefined);
     }
     if (route !== "/profiles") {
@@ -715,9 +713,10 @@ export default function App() {
 
   const navigateToKnowledgeNebula = (
     topicSlug?: KnowledgeNebulaTopicSlug,
+    sectionId?: string,
     replace = false,
   ) => {
-    const knowledgePath = buildKnowledgeNebulaPath(topicSlug);
+    const knowledgePath = buildKnowledgeNebulaPath(topicSlug, sectionId);
     const nextKnowledgeOriginRoute =
       currentRoute === "/knowledge" ? knowledgeOriginRoute : currentRoute;
     if (window.location.pathname !== knowledgePath) {
@@ -735,6 +734,7 @@ export default function App() {
     }
     setCurrentRoute("/knowledge");
     setSelectedKnowledgeTopicSlug(topicSlug);
+    setSelectedKnowledgeSectionId(sectionId);
     setKnowledgeOriginRoute(nextKnowledgeOriginRoute);
     window.scrollTo({ top: 0, behavior: "auto" });
   };
@@ -766,7 +766,7 @@ export default function App() {
 
   useEffect(() => {
     if (currentRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
-      navigateToKnowledgeNebula(undefined, true);
+      navigateToKnowledgeNebula(undefined, undefined, true);
     }
   }, [currentRoute]);
 
@@ -843,6 +843,11 @@ export default function App() {
           ? parseKnowledgeNebulaPath(window.location.pathname).topicSlug
           : undefined,
       );
+      setSelectedKnowledgeSectionId(
+        nextRoute === "/knowledge"
+          ? parseKnowledgeNebulaPath(window.location.pathname).sectionId
+          : undefined,
+      );
       setKnowledgeOriginRoute(
         nextRoute === "/knowledge"
           ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
@@ -881,6 +886,7 @@ export default function App() {
         answers,
         topProducts,
         backupProducts,
+        savedCandidateIds,
         recommendationTips,
         shoppingGuidance,
         filterGender,
@@ -898,6 +904,7 @@ export default function App() {
     answers,
     topProducts,
     backupProducts,
+    savedCandidateIds,
     recommendationTips,
     shoppingGuidance,
     filterGender,
@@ -1025,6 +1032,38 @@ export default function App() {
     setStep(step - 1);
   };
 
+  const handleEditQuizCondition = (condition: ResultEditableCondition) => {
+    const questionByCondition = activeQuestions.find((question) => {
+      if (condition === "budget") return question.field === "budget";
+      if (condition === "quietness") return question.field === "maxDb";
+      return (
+        question.field === "coupleScene" ||
+        question.field === "appearance" ||
+        question.field === "sessionGoal"
+      );
+    });
+
+    if (!questionByCondition) {
+      resetQuiz();
+      return;
+    }
+
+    const questionIndex = activeQuestions.findIndex(
+      (question) => question.id === questionByCondition.id,
+    );
+
+    setAnswers(removeQuizQuestionAnswer(answers, questionByCondition));
+    setTopProducts([]);
+    setBackupProducts([]);
+    setRecommendationTips([]);
+    setShoppingGuidance([]);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
+    applyResultSourceState(clearResultSourceState());
+    setStep(questionIndex);
+    navigateTo("/quiz");
+  };
+
   const [isAiMatching, setIsAiMatching] = useState(false);
   const isDev = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env
     ?.DEV;
@@ -1034,7 +1073,6 @@ export default function App() {
   ) {
     setCurrentResultProvider(nextState.currentResultProvider);
     setCurrentResultModelName(nextState.currentResultModelName);
-    setCurrentSelectedResultProvider(nextState.currentSelectedResultProvider);
   }
 
   function buildLocalResultComputation(
@@ -1365,7 +1403,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
         "/api/ai/recalibrate-results",
         buildResultRecalibrationPayload({
           answers,
-          targetProvider: currentSelectedResultProvider,
+          strategy: "auto",
           rerankPool: localResult.rerankPool,
           rankedCandidates: localResult.rankedCandidates,
           filteredCount: localResult.filteredCount,
@@ -1374,8 +1412,12 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
         { expectEnvelope: false },
       );
 
+      const nextCandidateIds = new Set(
+        [...response.topProducts, ...response.backupProducts].map((product) => product.id),
+      );
       setTopProducts(response.topProducts);
       setBackupProducts(response.backupProducts);
+      setSavedCandidateIds((ids) => ids.filter((id) => nextCandidateIds.has(id)));
       setShoppingGuidance(response.shoppingGuidance);
       setRecommendationTips(response.recommendationTips);
       applyResultSourceState(
@@ -1392,11 +1434,6 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     } finally {
       setIsRecalibratingResults(false);
     }
-  }
-
-  function handleSelectResultProvider(provider: AppAiProvider) {
-    setCurrentSelectedResultProvider(provider);
-    setResultRecalibrationError(null);
   }
 
   function applyLocalResultSet(
@@ -1422,6 +1459,12 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
 
     setTopProducts(finalTopProducts);
     setBackupProducts(localBackupProducts);
+    setSavedCandidateIds((ids) => {
+      const nextCandidateIds = new Set(
+        [...finalTopProducts, ...localBackupProducts].map((product) => product.id),
+      );
+      return ids.filter((id) => nextCandidateIds.has(id));
+    });
     setRecommendationTips(localResult.recommendationTips);
     setShoppingGuidance(
       buildLocalShoppingGuidance({
@@ -1430,7 +1473,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
         backupCandidates: localBackupProducts,
       }),
     );
-    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
+    applyResultSourceState(clearResultSourceState());
   }
 
   function handleTuneResults(mode: ResultTuningMode) {
@@ -1441,6 +1484,18 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     setResultRecalibrationError(null);
     setIsRecalibratingResults(false);
     applyLocalResultSet(tunedAnswers, localResult);
+  }
+
+  function handleToggleSavedCandidate(productId: string) {
+    setSavedCandidateIds((ids) => {
+      if (ids.includes(productId)) {
+        return ids.filter((id) => id !== productId);
+      }
+      if (ids.length >= 3) {
+        return ids;
+      }
+      return [...ids, productId];
+    });
   }
 
   async function handleAuthSubmit(
@@ -1532,6 +1587,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           answers,
           topProducts,
           backupProducts,
+          savedCandidateIds,
           recommendationTips,
           shoppingGuidance,
         }),
@@ -1559,15 +1615,17 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     setIsAiMatching(true);
     setResultRecalibrationError(null);
     setBackupProducts([]);
+    setSavedCandidateIds([]);
     setRecommendationTips(localResult.recommendationTips);
     setShoppingGuidance([]);
 
     if (localResult.rerankPool.length === 0) {
       applyResultSourceState(
-        clearResultSourceState(currentSelectedResultProvider),
+        clearResultSourceState(),
       );
       setTopProducts([]);
       setBackupProducts([]);
+      setSavedCandidateIds([]);
       setShoppingGuidance([]);
       setIsAiMatching(false);
       setTimeout(() => {
@@ -1578,9 +1636,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     }
 
     let finalTopProducts: RankedProduct[];
-    let latestResultSourceState = clearResultSourceState(
-      currentSelectedResultProvider,
-    );
+    let latestResultSourceState = clearResultSourceState();
 
     try {
       const rerankResponse = await callAiRerank(
@@ -1620,7 +1676,6 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           currentAnswers,
         );
         latestResultSourceState = resolveCurrentResultSourceState({
-          selectedProvider: currentSelectedResultProvider,
           currentProvider: rerankResponse.provider,
           currentModelName: rerankResponse.modelName,
         });
@@ -1717,11 +1772,12 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   };
 
   const resetQuiz = () => {
-    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
+    applyResultSourceState(clearResultSourceState());
     setStep(0);
     setAnswers({ tags: [] });
     setTopProducts([]);
     setBackupProducts([]);
+    setSavedCandidateIds([]);
     setRecommendationTips([]);
     setShoppingGuidance([]);
     setResultRecalibrationError(null);
@@ -1731,11 +1787,12 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
 
   const handleBackHomeFromQuiz = () => {
     const clearedState = createClearedQuizSessionState();
-    applyResultSourceState(clearResultSourceState(currentSelectedResultProvider));
+    applyResultSourceState(clearResultSourceState());
     setStep(clearedState.step);
     setAnswers(clearedState.answers);
     setTopProducts(clearedState.topProducts);
     setBackupProducts(clearedState.backupProducts);
+    setSavedCandidateIds([]);
     setRecommendationTips(clearedState.recommendationTips);
     setShoppingGuidance(clearedState.shoppingGuidance);
     setResultRecalibrationError(null);
@@ -1892,14 +1949,21 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               recommendationTips={recommendationTips}
               currentResultProvider={currentResultProvider}
               currentResultModelName={currentResultModelName}
-              selectedResultProvider={currentSelectedResultProvider}
               isRecalibratingResults={isRecalibratingResults}
               resultRecalibrationError={resultRecalibrationError}
-              onSelectResultProvider={handleSelectResultProvider}
               onRecalibrateResults={recalibrateCurrentResults}
               onTuneResults={handleTuneResults}
+              onEditQuizCondition={handleEditQuizCondition}
+              savedCandidateIds={savedCandidateIds}
+              onToggleSavedCandidate={handleToggleSavedCandidate}
               onSaveRecommendationProfile={handleSaveRecommendationProfile}
               onOpenRecommendationProfiles={navigateToProfiles}
+              onOpenKnowledgeNebula={(path) => {
+                navigateToKnowledgeNebula(
+                  parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).topicSlug,
+                  parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).sectionId,
+                );
+              }}
               isSavingRecommendationProfile={isSavingRecommendationProfile}
               saveRecommendationProfileMessage={saveRecommendationProfileMessage}
               authPanel={authPanel}
@@ -1922,15 +1986,16 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
             <KnowledgeNebulaPage
               pageVariants={pageVariants}
               topicSlug={selectedKnowledgeTopicSlug}
+              sectionId={selectedKnowledgeSectionId}
               onBack={() => {
                 if (selectedKnowledgeTopicSlug) {
-                  navigateToKnowledgeNebula(undefined, true);
+                  navigateToKnowledgeNebula(undefined, undefined, true);
                   return;
                 }
                 navigateTo(knowledgeOriginRoute ?? "/");
               }}
               onSelectTopic={(topicSlug) => {
-                navigateToKnowledgeNebula(topicSlug);
+                navigateToKnowledgeNebula(topicSlug, undefined);
               }}
             />
           )}
