@@ -547,8 +547,6 @@ test("results page hides model selection details and only exposes a regenerate r
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      currentResultProvider="dmxapi-mimo"
-      currentResultModelName="mimo-v2.5-free"
       isRecalibratingResults={false}
       resultRecalibrationError={null}
       onRecalibrateResults={() => {}}

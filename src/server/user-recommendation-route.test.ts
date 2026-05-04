@@ -193,7 +193,7 @@ test("list recommendation profile handler decrypts current user's profiles", asy
     encryptionKey,
     jwtSecret: "test-jwt-secret",
     store: {
-      listEncryptedProfiles: async (userId) => [
+      listEncryptedProfiles: async (_userId) => [
         {
           id: "profile-1",
           title: "我的装备匹配档案",

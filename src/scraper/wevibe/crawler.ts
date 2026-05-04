@@ -34,9 +34,7 @@ const TARGET_URL = 'https://wevibe.tmall.com/shop/view_shop.htm?appUid=RAzN8HWVJ
 const MAX_ITEMS = Number(process.env.WEVIBE_MAX_ITEMS || 200);
 const DELAY_BETWEEN_PAGES = 3000;
 const BUFFER_PATH = path.resolve(__dirname, '../../data/wevibe-review-buffer.json');
-const LEGACY_LIST_AREA_SELECTOR = '.J_TItems';
 const LEGACY_LIST_CARD_SELECTOR = '.J_TItems dl.item';
-const SHELF_LIST_AREA_SELECTOR = '.product_shelf, [class*="ProductShelf"], [class*="product_shelf"]';
 const SHELF_LIST_CARD_SELECTOR =
   '.product_shelf [class*="cardContainer"], [class*="ProductShelf"] [class*="cardContainer"], [class*="product_shelf"] [class*="cardContainer"]';
 const LIST_READY_SELECTOR = `${LEGACY_LIST_CARD_SELECTOR}, ${SHELF_LIST_CARD_SELECTOR}`;
@@ -268,10 +266,6 @@ function buildShopSearchUrl(url: string): string {
   } catch {
     return url;
   }
-}
-
-function getListAreaLocator(page: any) {
-  return page.locator(`${LEGACY_LIST_AREA_SELECTOR}, ${SHELF_LIST_AREA_SELECTOR}`).first();
 }
 
 function getListCardLocator(page: any, item: any) {
@@ -812,7 +806,6 @@ async function runCrawler() {
   let listItems: any[] = [];
   let currentPage = 1;
   let nextPageUrl = '';
-  const visitedUrls = new Set<string>();
 
   try {
     // 阶段一：全量列表抓取

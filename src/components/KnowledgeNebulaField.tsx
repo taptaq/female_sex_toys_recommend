@@ -97,7 +97,6 @@ export function KnowledgeNebulaField({
   const [stage, setStage] = useState<NebulaStage>(() =>
     reducedMotionPreference ? getFocusStage(selectedTopicSlug) : "aggregate",
   );
-  const [phase, setPhase] = useState(() => (reducedMotionPreference ? 1 : 0));
   const [focusedTopicSlug, setFocusedTopicSlug] = useState<
     KnowledgeNebulaTopicSlug | undefined
   >(selectedTopicSlug);
@@ -126,9 +125,6 @@ export function KnowledgeNebulaField({
     [topicSlugs, viewport],
   );
   const nebulaTextureVariants = useMemo(() => buildNebulaTextureVariants(), []);
-  const selectedTopic = focusedTopicSlug
-    ? topicsBySlug.get(focusedTopicSlug)
-    : undefined;
   const shootingStars = useMemo(() => buildShootingStars(), []);
   const focusMotion = useMemo(() => buildNebulaFocusMotion(), []);
   const focusedAnchor = focusedTopicSlug
@@ -186,20 +182,17 @@ export function KnowledgeNebulaField({
 
     if (reducedMotionPreference) {
       hasSettledIntroRef.current = true;
-      setPhase(1);
       setStage(getFocusStage(focusedTopicSlug));
       return undefined;
     }
 
     if (hasSettledIntroRef.current) {
-      setPhase(1);
       setStage((currentStage) =>
         currentStage === "focus" ? currentStage : getFocusStage(selectedTopicSlug),
       );
       return undefined;
     }
 
-    setPhase(0);
     setStage("aggregate");
 
     const introRunToken = introRunTokenRef.current;
@@ -218,8 +211,6 @@ export function KnowledgeNebulaField({
         }
 
         const progress = Math.min(1, (now - start) / timeline.splitMs);
-        const eased = 1 - Math.pow(1 - progress, 3);
-        setPhase(eased);
 
         if (progress < 1) {
           animationFrameRef.current = window.requestAnimationFrame(animatePhase);
@@ -261,7 +252,6 @@ export function KnowledgeNebulaField({
     }
 
     cancelIntroMotion();
-    setPhase(1);
     setStage("focus");
   }, [anchors, focusedTopicSlug]);
 
@@ -286,7 +276,6 @@ export function KnowledgeNebulaField({
     cancelIntroMotion();
     hasSettledIntroRef.current = true;
     setFocusedTopicSlug(topicSlug);
-    setPhase(1);
     setStage("focus");
 
     if (reducedMotionPreference || timeline.focusMs <= 0) {

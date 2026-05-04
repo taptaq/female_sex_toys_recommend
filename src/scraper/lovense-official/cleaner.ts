@@ -156,39 +156,6 @@ const mapGender = (raw: string, format: 'lowercase' | 'capitalized' = 'lowercase
   return format === 'capitalized' ? result.charAt(0).toUpperCase() + result.slice(1) : result;
 };
 
-const inferExplicitGender = (text: string): 'male' | 'female' | 'unisex' | null => {
-  const value = (text || '').toLowerCase();
-  if (
-    [
-      '男女通用',
-      '通用',
-      '情侣',
-      '双人',
-      'couples',
-      'unisex',
-      'for couples',
-      'worn during sex',
-    ].some((hint) => value.includes(hint))
-  ) {
-    return 'unisex';
-  }
-  if (
-    ['女用', '女性', 'clitoral', 'g-spot', 'rabbit', 'panty', 'bullet vibrator', 'for her', 'vaginal'].some((hint) =>
-      value.includes(hint),
-    )
-  ) {
-    return 'female';
-  }
-  if (
-    ['男用', '男性', 'for him', 'penis', 'cock ring', 'prostate', 'masturbator', 'stroker', 'blowjob'].some((hint) =>
-      value.includes(hint),
-    )
-  ) {
-    return 'male';
-  }
-  return null;
-};
-
 const mapPhysicalForm = (raw: string): string => {
   const value = (raw || '').toLowerCase();
   if (value.includes('composite') || value.includes('复合')) return 'composite';

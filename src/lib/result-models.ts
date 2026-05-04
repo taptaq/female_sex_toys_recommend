@@ -79,9 +79,3 @@ export const DEFAULT_RESULT_MODEL_PROVIDER =
 export function getResultModelOption(provider: string | null | undefined) {
   return RESULT_MODEL_OPTIONS.find((option) => option.provider === provider);
 }
-
-export function getSafeSelectedResultProvider(
-  provider: string | null | undefined,
-): AppAiProvider {
-  return getResultModelOption(provider)?.provider ?? DEFAULT_RESULT_MODEL_PROVIDER;
-}

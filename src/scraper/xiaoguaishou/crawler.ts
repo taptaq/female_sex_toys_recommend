@@ -812,7 +812,6 @@ async function runCrawler() {
   let listItems: any[] = [];
   let currentPage = 1;
   let nextPageUrl = '';
-  const visitedUrls = new Set<string>();
 
   try {
     // 阶段一：全量列表抓取

@@ -3,9 +3,7 @@ import test from "node:test";
 
 import { KNOWLEDGE_NEBULA_TOPICS } from "../data/knowledge-nebula.ts";
 import {
-  DEFAULT_KNOWLEDGE_NEBULA_CAMERA,
   buildKnowledgeNebulaClusterAnchors,
-  buildKnowledgeNebulaFocusCamera,
   getKnowledgeNebulaTimeline,
 } from "./knowledge-nebula-field.ts";
 
@@ -307,59 +305,6 @@ test("desktop anchors spread topic clouds across the full starfield", () => {
   assert.ok(Math.max(...yValues) - Math.min(...yValues) >= 40);
   assert.ok(anchors.filter((anchor) => anchor.yPercent >= 70).length >= 2);
   assert.ok(anchors.filter((anchor) => anchor.yPercent <= 38).length >= 1);
-});
-
-test("buildKnowledgeNebulaFocusCamera returns a fresh target tuple aimed at the selected cloud", () => {
-  const anchor = buildKnowledgeNebulaClusterAnchors({
-    topicSlugs,
-    viewport: "desktop",
-  }).find((item) => item.topicSlug === "first-time");
-
-  assert.ok(anchor);
-
-  const focusCamera = buildKnowledgeNebulaFocusCamera(anchor);
-
-  assert.notDeepEqual(
-    focusCamera.position,
-    DEFAULT_KNOWLEDGE_NEBULA_CAMERA.position,
-  );
-  assert.deepEqual(focusCamera.target, anchor.position);
-  assert.notStrictEqual(focusCamera.target, anchor.position);
-  assert.ok(
-    focusCamera.position[2] < DEFAULT_KNOWLEDGE_NEBULA_CAMERA.position[2],
-  );
-
-  anchor.position[0] = 999;
-
-  assert.deepEqual(focusCamera.target, [1.0, -0.7, 1.28]);
-});
-
-test("buildKnowledgeNebulaFocusCamera uses the mid-depth camera offset", () => {
-  const anchor = buildKnowledgeNebulaClusterAnchors({
-    topicSlugs,
-    viewport: "desktop",
-  })[1];
-
-  const focusCamera = buildKnowledgeNebulaFocusCamera(anchor);
-
-  assert.ok(Math.abs(focusCamera.position[0] - -1.36) < 1e-12);
-  assert.ok(Math.abs(focusCamera.position[1] - -0.78) < 1e-12);
-  assert.ok(Math.abs(focusCamera.position[2] - 6.75) < 1e-12);
-  assert.deepEqual(focusCamera.target, [-4.0, -3.0, -0.85]);
-});
-
-test("buildKnowledgeNebulaFocusCamera uses the far-depth camera offset", () => {
-  const anchor = buildKnowledgeNebulaClusterAnchors({
-    topicSlugs,
-    viewport: "desktop",
-  })[0];
-
-  const focusCamera = buildKnowledgeNebulaFocusCamera(anchor);
-
-  assert.ok(Math.abs(focusCamera.position[0] - -2.312) < 1e-12);
-  assert.ok(Math.abs(focusCamera.position[1] - 0.104) < 1e-12);
-  assert.ok(Math.abs(focusCamera.position[2] - 7.1) < 1e-12);
-  assert.deepEqual(focusCamera.target, [-6.8, 0.4, -2.35]);
 });
 
 test("getKnowledgeNebulaTimeline returns the full-motion contract", () => {

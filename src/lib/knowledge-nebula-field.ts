@@ -165,11 +165,6 @@ const MOBILE_LAYOUTS: readonly KnowledgeNebulaClusterAnchorLayout[] = [
   },
 ];
 
-export const DEFAULT_KNOWLEDGE_NEBULA_CAMERA: KnowledgeNebulaCameraState = {
-  position: [0, 0, 11.8],
-  target: [0, 0, 0],
-};
-
 export function buildKnowledgeNebulaClusterAnchors({
   topicSlugs,
   viewport,
@@ -193,22 +188,6 @@ export function buildKnowledgeNebulaClusterAnchors({
     topicSlug,
     viewport,
   }));
-}
-
-export function buildKnowledgeNebulaFocusCamera(
-  anchor: KnowledgeNebulaClusterAnchor,
-): KnowledgeNebulaCameraState {
-  const depthOffset =
-    anchor.depth === "near" ? 0.2 : anchor.depth === "mid" ? 0.55 : 0.9;
-
-  return {
-    position: [
-      anchor.position[0] * 0.34,
-      anchor.position[1] * 0.26,
-      6.2 + depthOffset,
-    ],
-    target: [...anchor.position],
-  };
 }
 
 export function getKnowledgeNebulaTimeline(

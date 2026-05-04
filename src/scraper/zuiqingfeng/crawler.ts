@@ -35,9 +35,7 @@ const MAX_ITEMS = Number(process.env.ZUIQINGFENG_MAX_ITEMS || 200);
 const MAX_LIST_PAGES = 3;
 const DELAY_BETWEEN_PAGES = 3000;
 const BUFFER_PATH = path.resolve(__dirname, '../../data/zuiqingfeng-review-buffer.json');
-const LEGACY_LIST_AREA_SELECTOR = '.J_TItems';
 const LEGACY_LIST_CARD_SELECTOR = '.J_TItems dl.item';
-const SHELF_LIST_AREA_SELECTOR = '.product_shelf, [class*="ProductShelf"], [class*="product_shelf"]';
 const SHELF_LIST_CARD_SELECTOR =
   '.product_shelf [class*="cardContainer"], [class*="ProductShelf"] [class*="cardContainer"], [class*="product_shelf"] [class*="cardContainer"]';
 const LIST_READY_SELECTOR = `${LEGACY_LIST_CARD_SELECTOR}, ${SHELF_LIST_CARD_SELECTOR}`;
@@ -183,17 +181,6 @@ function buildDetailOcrPrompt(title: string): string {
   if (isCareConsumableProduct(title)) return CARE_DETAIL_OCR_PROMPT;
   if (isBedPadProduct(title)) return PAD_DETAIL_OCR_PROMPT;
   return isApparelLikeProduct(title) ? APPAREL_DETAIL_OCR_PROMPT : TOY_DETAIL_OCR_PROMPT;
-}
-
-function sanitizeTitleForModel(title: string): string {
-  return String(title || '')
-    .replace(/情趣/g, '服饰')
-    .replace(/诱惑/g, '设计感')
-    .replace(/成人/g, '居家')
-    .replace(/自慰器/g, '护理器具')
-    .replace(/性用品/g, '护理用品')
-    .replace(/\s+/g, ' ')
-    .trim();
 }
 
 function buildShopSearchUrl(url: string): string {
@@ -705,7 +692,6 @@ async function runCrawler() {
   let listItems: any[] = [];
   let currentPage = 1;
   let nextPageUrl = '';
-  const visitedUrls = new Set<string>();
 
   try {
     // 阶段一：全量列表抓取

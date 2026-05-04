@@ -111,11 +111,6 @@ function uniqueStrings(values: Array<string | null | undefined>, limit = 60): st
   return result;
 }
 
-function parseNumber(value: unknown): number | null {
-  const numeric = Number(String(value ?? '').replace(/[^\d.]+/g, ''));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-}
-
 function resolveUrl(input: string): string {
   const value = String(input || '').trim();
   if (!value) return '';
@@ -124,59 +119,6 @@ function resolveUrl(input: string): string {
   } catch {
     return '';
   }
-}
-
-function inferGender(text: string): GenderHint {
-  const value = String(text || '').toLowerCase();
-  if (
-    [
-      'couple',
-      'partner',
-      'bundle',
-      'set',
-      'wearable g-spot & clitoris',
-      'long-distance relationship',
-      'for couples',
-      'dual stimulation',
-      'nora and max',
-      'lover set',
-    ].some((hint) => value.includes(hint))
-  ) {
-    return 'unisex';
-  }
-  if (
-    [
-      'female',
-      'g-spot',
-      'clit',
-      'clitoral',
-      'rabbit',
-      'panty',
-      'nipple',
-      'vibrator',
-      'dildo',
-      'for her',
-      'feminine',
-    ].some((hint) => value.includes(hint))
-  ) {
-    return 'female';
-  }
-  if (
-    [
-      'male',
-      'penis',
-      'masturbator',
-      'blowjob',
-      'stroker',
-      'cock ring',
-      'prostate',
-      'pocket pussy',
-      'for him',
-    ].some((hint) => value.includes(hint))
-  ) {
-    return 'male';
-  }
-  return 'unisex';
 }
 
 function shouldSkipDetailUrl(url: string): boolean {

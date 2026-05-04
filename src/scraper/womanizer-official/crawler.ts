@@ -265,12 +265,6 @@ function extractVisibleValueBlock(html: string, classFragment: string): string {
   return normalizeWhitespace(first?.[1] || '');
 }
 
-function extractSelectedTabBlock(html: string, tabId: string): string {
-  const escapedId = tabId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = html.match(new RegExp(`<div[^>]+id="${escapedId}"[^>]*>([\\s\\S]*?)<\\/div>`, 'i'));
-  return match?.[1] || '';
-}
-
 function extractSelectedOptionValue(jsonConfig: Record<string, unknown>): string {
   const attributes = jsonConfig.attributes as Record<string, unknown> | undefined;
   if (!attributes) return 'parent';

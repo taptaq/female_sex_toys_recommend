@@ -61,7 +61,7 @@ pool.on('error', (err) => {
   console.error('💥 [Server/DB] 数据库连接池发生灾难性错误:', err);
 });
 
-app.get('/api/recommender/toys', async (req, res) => {
+app.get('/api/recommender/toys', async (_req, res) => {
   console.log('📡 [Server] 收到全息库同步指令...');
   try {
     const result = await pool.query(`

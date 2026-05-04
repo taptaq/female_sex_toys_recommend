@@ -16,33 +16,6 @@ import {
 } from "../lib/knowledge-nebula-topic-detail-scene.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
 
-const DETAIL_ACCENTS = {
-  cyan: {
-    soft: "bg-cyan-400/10",
-    line: "from-cyan-300/80 via-cyan-200/30 to-transparent",
-    text: "from-white via-cyan-100 to-cyan-300/75",
-    border: "border-cyan-300/18",
-    chip: "border-cyan-300/16 bg-cyan-400/8 text-cyan-100/82",
-    glow: "from-cyan-400/24 via-cyan-300/10 to-transparent",
-  },
-  sky: {
-    soft: "bg-sky-400/10",
-    line: "from-sky-300/80 via-sky-200/30 to-transparent",
-    text: "from-white via-sky-100 to-sky-300/75",
-    border: "border-sky-300/18",
-    chip: "border-sky-300/16 bg-sky-400/8 text-sky-100/82",
-    glow: "from-sky-400/24 via-sky-300/10 to-transparent",
-  },
-  indigo: {
-    soft: "bg-indigo-400/10",
-    line: "from-indigo-300/80 via-indigo-200/30 to-transparent",
-    text: "from-white via-indigo-100 to-indigo-300/75",
-    border: "border-indigo-300/18",
-    chip: "border-indigo-300/16 bg-indigo-400/8 text-indigo-100/82",
-    glow: "from-indigo-400/24 via-indigo-300/10 to-transparent",
-  },
-} as const;
-
 function useTopicDetailViewport(): TopicDetailViewport {
   const [viewport, setViewport] = useState<TopicDetailViewport>(() =>
     getTopicDetailViewport(),
@@ -89,7 +62,6 @@ export function KnowledgeNebulaPage({
   const topic = topicSlug ? getKnowledgeNebulaTopicBySlug(topicSlug) : undefined;
   const { shouldAnimate } = usePagePerformanceState();
   const isDetailPage = topic != null;
-  const detailAccent = topic ? DETAIL_ACCENTS[topic.accent] : DETAIL_ACCENTS.cyan;
   const detailViewport = useTopicDetailViewport();
   const detailSceneMeta = useMemo(
     () => (topic ? buildTopicDetailSceneMeta(topic) : undefined),

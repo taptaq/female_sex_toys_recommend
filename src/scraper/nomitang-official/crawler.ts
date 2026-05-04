@@ -86,11 +86,6 @@ function uniqueStrings(values: Array<string | null | undefined>, limit = 60): st
   return result;
 }
 
-function parseNumber(value: unknown): number | null {
-  const numeric = Number(String(value ?? '').replace(/[^\d.]+/g, ''));
-  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
-}
-
 function resolveUrl(input: string): string {
   const value = String(input || '').trim();
   if (!value) return '';

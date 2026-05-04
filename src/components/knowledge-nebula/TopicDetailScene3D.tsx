@@ -137,18 +137,7 @@ function createEmissionFilaments({
   return filaments;
 }
 
-function createSpectralEmissionLines({
-  topicSlug,
-  nodeCount,
-  meta,
-}: {
-  topicSlug: string;
-  nodeCount: number;
-  meta: TopicDetailSceneMeta;
-}) {
-  const random = createMulberry32(
-    createSeedFromTopic(`${topicSlug}-spectral`) + Math.round(nodeCount * 193),
-  );
+function createSpectralEmissionLines({ meta }: { meta: TopicDetailSceneMeta }) {
   const topicColor = new THREE.Color(meta.coreGlowColor);
   const palette = [
     new THREE.Color(H_ALPHA_COLOR),
@@ -374,7 +363,6 @@ function DriftGroup({
   topicSlug,
   nodeCount,
   meta,
-  viewport,
   starCount,
   isFocused,
   isVisible,
@@ -383,7 +371,6 @@ function DriftGroup({
   topicSlug: string;
   nodeCount: number;
   meta: TopicDetailSceneMeta;
-  viewport: TopicDetailViewport;
   starCount: number;
   isFocused: boolean;
   isVisible: boolean;
@@ -456,8 +443,8 @@ function DriftGroup({
     [complexityBudget.emissionFilaments, meta, nodeCount, topicSlug],
   );
   const spectralEmissionLines = useMemo(
-    () => createSpectralEmissionLines({ topicSlug, nodeCount, meta }),
-    [meta, nodeCount, topicSlug],
+    () => createSpectralEmissionLines({ meta }),
+    [meta],
   );
   const spectralTubes = useMemo(
     () =>
@@ -850,7 +837,6 @@ export function TopicDetailScene3D({
           topicSlug={topicSlug}
           nodeCount={nodeCount}
           meta={meta}
-          viewport={viewport}
           starCount={complexityBudget.starCount}
           isFocused={isFocused}
           isVisible={isVisible}

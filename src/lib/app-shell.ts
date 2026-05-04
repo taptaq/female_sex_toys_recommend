@@ -87,11 +87,6 @@ export function writeProductsCache(products: Product[]) {
   );
 }
 
-export function clearProductsCache() {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(PRODUCTS_CACHE_STORAGE_KEY);
-}
-
 export function detectRoute(pathname: string): AppRoute {
   if (KNOWLEDGE_NEBULA_PATH_PATTERN.test(pathname)) {
     return "/knowledge";

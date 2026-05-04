@@ -5,7 +5,6 @@ import {
   DEFAULT_RESULT_MODEL_PROVIDER,
   RESULT_MODEL_OPTIONS,
   getResultModelOption,
-  getSafeSelectedResultProvider,
   type ResultModelOption,
 } from "./result-models.ts";
 
@@ -88,22 +87,6 @@ test("getResultModelOption returns the matching option when provider exists", ()
     description: "想看更自然顺滑的说明文字，可以试它。",
   });
   assert.equal(getResultModelOption("missing-provider"), undefined);
-});
-
-test("getSafeSelectedResultProvider falls back to the default provider", () => {
-  assert.equal(getSafeSelectedResultProvider("glm"), "glm");
-  assert.equal(
-    getSafeSelectedResultProvider("missing-provider"),
-    DEFAULT_RESULT_MODEL_PROVIDER,
-  );
-  assert.equal(
-    getSafeSelectedResultProvider(undefined),
-    DEFAULT_RESULT_MODEL_PROVIDER,
-  );
-  assert.equal(
-    getSafeSelectedResultProvider(null),
-    DEFAULT_RESULT_MODEL_PROVIDER,
-  );
 });
 
 test("RESULT_MODEL_OPTIONS is protected from accidental mutation", () => {

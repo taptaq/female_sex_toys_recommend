@@ -537,48 +537,6 @@ textarea:disabled {
   animation: flash 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.loading-fun-fact-shell {
-  position: relative;
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.78) 0%, rgba(2, 6, 23, 0.74) 100%),
-    radial-gradient(circle at top left, rgba(34, 211, 238, 0.12), transparent 45%);
-  box-shadow:
-    0 18px 50px rgba(2, 6, 23, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.loading-fun-fact-stage {
-  min-height: 146px;
-}
-
-.loading-fun-fact-orb {
-  position: absolute;
-  top: -18px;
-  right: -12px;
-  width: 88px;
-  height: 88px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.18) 0%, rgba(34, 211, 238, 0) 70%);
-  filter: blur(6px);
-}
-
-.loading-fun-fact-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.35);
-  transition:
-    transform 0.25s ease,
-    background-color 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-.loading-fun-fact-dot-active {
-  background: rgba(34, 211, 238, 0.9);
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.55);
-  transform: scale(1.15);
-}
-
 .floating-knowledge-field {
   position: absolute;
   inset: 0;
@@ -1048,10 +1006,6 @@ textarea:disabled {
 }
 
 @media (max-width: 640px) {
-  .loading-fun-fact-stage {
-    min-height: 172px;
-  }
-
   .floating-knowledge-desktop-only {
     display: none;
   }

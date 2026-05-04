@@ -56,9 +56,7 @@ import {
 } from "./lib/supabase-auth";
 import type { AuthPanelMode } from "./components/AuthPanel";
 import {
-  buildBranchFallbackReason,
   getBranchPreferenceAdjustments,
-  getResultLeadCopy,
   selectScorePresetId,
   type ScorePresetId,
 } from "./lib/quiz-branching";
@@ -1947,8 +1945,6 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               backupProducts={backupProducts}
               shoppingGuidance={shoppingGuidance}
               recommendationTips={recommendationTips}
-              currentResultProvider={currentResultProvider}
-              currentResultModelName={currentResultModelName}
               isRecalibratingResults={isRecalibratingResults}
               resultRecalibrationError={resultRecalibrationError}
               onRecalibrateResults={recalibrateCurrentResults}

@@ -14,12 +14,8 @@ import {
 import { ProductImage } from "../components/ProductImage.tsx";
 import { ResultParameterGuide } from "../components/ResultParameterGuide.tsx";
 import { AnswerState } from "../data/mock.ts";
-import type { AppAiProvider } from "../lib/app-ai-chain.ts";
 import { RankedProduct } from "../lib/app-shell.ts";
 import { dedupeDisplayTags } from "../lib/display-tags.ts";
-import {
-  getResultModelOption,
-} from "../lib/result-models.ts";
 import {
   RESULT_TUNING_OPTIONS,
   type ResultTuningMode,
@@ -187,25 +183,6 @@ function getMetricChips(product: Pick<RankedProduct, "maxDb" | "waterproof" | "m
   ];
 }
 
-function getResultSourceSummary(
-  currentResultProvider: AppAiProvider | undefined,
-  currentResultModelName: string | undefined,
-) {
-  const currentOption = getResultModelOption(currentResultProvider);
-
-  if (!currentOption) {
-    return {
-      providerLabel: "本地规则兜底",
-      modelLabel: "未记录模型",
-    };
-  }
-
-  return {
-    providerLabel: currentOption.label,
-    modelLabel: currentResultModelName || currentOption.model,
-  };
-}
-
 function getConfidenceToneClassName(tone: "high" | "conditional" | "backup") {
   if (tone === "high") {
     return "border-emerald-300/25 bg-emerald-400/10 text-emerald-100";
@@ -330,8 +307,6 @@ type ResultsPageProps = {
   backupProducts: ResultsBackupProduct[];
   shoppingGuidance: string[];
   recommendationTips: string[];
-  currentResultProvider?: AppAiProvider;
-  currentResultModelName?: string;
   isRecalibratingResults: boolean;
   resultRecalibrationError: string | null;
   onRecalibrateResults: () => void;
@@ -362,8 +337,6 @@ export function ResultsPage({
   backupProducts,
   shoppingGuidance,
   recommendationTips,
-  currentResultProvider,
-  currentResultModelName,
   isRecalibratingResults,
   resultRecalibrationError,
   onRecalibrateResults,
@@ -400,13 +373,8 @@ export function ResultsPage({
     );
   const hasGuidance =
     relaxationTips.length > 0 || shoppingGuidanceItems.length > 0;
-  const resultSourceSummary = getResultSourceSummary(
-    currentResultProvider,
-    currentResultModelName,
-  );
   const recalibrationButtonLabel = "重新生成推荐";
   const canShowRecalibrationModule = topProducts.length > 0;
-  const primaryProductHref = topProducts[0] ? getProductHref(topProducts[0]) : undefined;
   const resultTags = dedupeDisplayTags(answers.tags);
   const resultLeadCopy = getResultLeadCopy(answers);
   const comparisonProducts = topProducts.slice(0, 3);
@@ -427,9 +395,6 @@ export function ResultsPage({
     answers.tags.includes(getResultTuningAppliedTag(option.mode)),
   );
   const isSignedIn = Boolean(authPanel.userLabel);
-  const activeTuningOption = activeTuningMode
-    ? RESULT_TUNING_OPTIONS.find((option) => option.mode === activeTuningMode)
-    : undefined;
   const sortedParameterPreviewItems = getSortedParameterPreviewItems(answers);
   const savedCandidateLimit = 3;
   const savedCandidateIdSet = new Set(savedCandidateIds);
