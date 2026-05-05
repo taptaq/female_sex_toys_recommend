@@ -31,6 +31,7 @@ test("library page keeps primary filters visible and moves admin-like filters be
     <LibraryPage
       allProducts={[makeProduct()]}
       filterGender="all"
+      filterType="all"
       filterBrand="all"
       filterOrigin="all"
       filterMaterial="all"
@@ -58,11 +59,107 @@ test("library page keeps primary filters visible and moves admin-like filters be
   assert.doesNotMatch(html, /材质偏好/);
 });
 
+test("library page shows only male type options when male gender is selected", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({ id: "m1", gender: "male", typeCode: "masturbator", name: "Cup One" }),
+      ]}
+      filterGender="male"
+      filterType="all"
+      filterBrand="all"
+      filterOrigin="all"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /类型/);
+  assert.match(html, /飞机杯/);
+  assert.match(html, /前列腺探索/);
+  assert.doesNotMatch(html, /吮吸类/);
+});
+
+test("library page filters products by selected type code", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({ id: "f1", name: "Suction One", gender: "female", typeCode: "suction" }),
+        makeProduct({ id: "f2", name: "Insertable One", gender: "female", typeCode: "insertable" }),
+      ]}
+      filterGender="female"
+      filterType="suction"
+      filterBrand="all"
+      filterOrigin="all"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /Suction One/);
+  assert.doesNotMatch(html, /Insertable One/);
+});
+
+test("library page keeps uncategorized products visible only under all types", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({ id: "u1", name: "Unknown One", gender: "female", typeCode: null }),
+      ]}
+      filterGender="female"
+      filterType="all"
+      filterBrand="all"
+      filterOrigin="all"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /Unknown One/);
+});
+
 test("library page keeps a calmer mobile-first shell and lighter filter density", () => {
   const source = renderToStaticMarkup(
     <LibraryPage
       allProducts={[makeProduct()]}
       filterGender="all"
+      filterType="all"
       filterBrand="all"
       filterOrigin="all"
       filterMaterial="all"
@@ -101,6 +198,7 @@ test("library page product grid and back-to-top affordance stay mobile-friendly"
     <LibraryPage
       allProducts={[makeProduct(), makeProduct({ id: "p2", name: "Second Product" })]}
       filterGender="all"
+      filterType="all"
       filterBrand="all"
       filterOrigin="all"
       filterMaterial="all"

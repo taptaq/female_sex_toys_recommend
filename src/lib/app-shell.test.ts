@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   APP_STATE_STORAGE_KEY,
   detectRoute,
+  normalizeProductsPayload,
   readSessionJsonStorage,
   resolveProfilesReturnRoute,
   writeSessionJsonStorage,
@@ -68,4 +69,28 @@ test("resolveProfilesReturnRoute sends profiles back to the route that opened it
   assert.equal(resolveProfilesReturnRoute("/"), "/");
   assert.equal(resolveProfilesReturnRoute(undefined), "/");
   assert.equal(resolveProfilesReturnRoute("/profiles"), "/");
+});
+
+test("normalizeProductsPayload preserves typeCode from cached products", () => {
+  const products = normalizeProductsPayload([
+    {
+      id: "p1",
+      name: "Liberty",
+      safeDisplayName: "Liberty",
+      canonicalName: "Liberty",
+      price: 999,
+      maxDb: 42,
+      waterproof: 7,
+      appearance: "normal",
+      physicalForm: "external",
+      motorType: "gentle",
+      gender: "female",
+      typeCode: "suction",
+      brand: "Womanizer",
+      material: "硅胶",
+      imagePlaceholder: "",
+    },
+  ]);
+
+  assert.equal(products[0]?.typeCode, "suction");
 });
