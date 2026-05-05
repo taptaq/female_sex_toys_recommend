@@ -12,7 +12,9 @@ export type LibraryTypeCode =
   | "wearable_remote"
   | "unknown";
 
-export type LibraryTypeSelection = LibraryTypeCode | "all";
+export type LibrarySelectableTypeCode = Exclude<LibraryTypeCode, "unknown">;
+
+export type LibraryTypeSelection = LibrarySelectableTypeCode | "all";
 
 const TYPE_LABELS: Record<LibraryTypeCode, string> = {
   suction: "吮吸类",
@@ -27,7 +29,7 @@ const TYPE_LABELS: Record<LibraryTypeCode, string> = {
   unknown: "未分类",
 };
 
-const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibraryTypeCode[]> = {
+const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]> = {
   all: [
     "suction",
     "external_vibe",
@@ -58,7 +60,7 @@ export function sanitizeLibraryTypeSelection(
 ): LibraryTypeSelection {
   if (type === "all") return "all";
   const allowed = getAllowedLibraryTypeCodes(gender);
-  return allowed.includes(type as LibraryTypeCode)
-    ? (type as LibraryTypeCode)
+  return allowed.includes(type as LibrarySelectableTypeCode)
+    ? (type as LibrarySelectableTypeCode)
     : "all";
 }
