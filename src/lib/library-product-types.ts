@@ -24,7 +24,19 @@ export type LibrarySubtypeCode =
   | "bullet_vibe"
   | "wand_massager"
   | "gspot_insertable"
-  | "insertable_vibe";
+  | "insertable_vibe"
+  | "manual_masturbator"
+  | "vibrating_masturbator"
+  | "interactive_masturbator"
+  | "prostate_vibe"
+  | "prostate_plug"
+  | "classic_cock_ring"
+  | "vibrating_cock_ring"
+  | "insertable_couples"
+  | "external_couples"
+  | "panty_wearable"
+  | "insertable_remote"
+  | "dual_wearable_remote";
 
 export type LibrarySubtypeSelection = LibrarySubtypeCode | "all";
 
@@ -50,6 +62,18 @@ const SUBTYPE_LABELS: Record<LibrarySubtypeCode, string> = {
   wand_massager: "魔杖按摩",
   gspot_insertable: "G点探索",
   insertable_vibe: "入体震动",
+  manual_masturbator: "手动杯",
+  vibrating_masturbator: "震动杯",
+  interactive_masturbator: "互动杯",
+  prostate_vibe: "震动前列腺",
+  prostate_plug: "前列腺塞",
+  classic_cock_ring: "基础环",
+  vibrating_cock_ring: "震动环",
+  insertable_couples: "双人入体",
+  external_couples: "双人外用",
+  panty_wearable: "隐形穿戴",
+  insertable_remote: "入体远控",
+  dual_wearable_remote: "双人远控",
 };
 
 const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]> = {
@@ -75,6 +99,11 @@ const TYPE_TO_SUBTYPES: Partial<Record<Exclude<LibrarySelectableTypeCode, "unkno
   dual_stimulation: ["suction_dual", "rabbit_dual", "multi_head_dual"],
   external_vibe: ["bullet_vibe", "wand_massager"],
   insertable: ["gspot_insertable", "insertable_vibe"],
+  masturbator: ["manual_masturbator", "vibrating_masturbator", "interactive_masturbator"],
+  prostate: ["prostate_vibe", "prostate_plug"],
+  cock_ring: ["classic_cock_ring", "vibrating_cock_ring"],
+  couples: ["insertable_couples", "external_couples"],
+  wearable_remote: ["panty_wearable", "insertable_remote", "dual_wearable_remote"],
 };
 
 const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCode> = {
@@ -86,6 +115,18 @@ const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCo
   wand_massager: "external_vibe",
   gspot_insertable: "insertable",
   insertable_vibe: "insertable",
+  manual_masturbator: "masturbator",
+  vibrating_masturbator: "masturbator",
+  interactive_masturbator: "masturbator",
+  prostate_vibe: "prostate",
+  prostate_plug: "prostate",
+  classic_cock_ring: "cock_ring",
+  vibrating_cock_ring: "cock_ring",
+  insertable_couples: "couples",
+  external_couples: "couples",
+  panty_wearable: "wearable_remote",
+  insertable_remote: "wearable_remote",
+  dual_wearable_remote: "wearable_remote",
 };
 
 export function getLibraryTypeLabel(typeCode: LibraryTypeCode) {
