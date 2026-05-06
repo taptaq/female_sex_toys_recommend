@@ -141,11 +141,46 @@ const MASTURBATOR_PATTERNS = [
   /\bcup\b/u,
 ];
 
+const INTERACTIVE_PATTERNS = [
+  /互动/u,
+  /联动/u,
+  /同步/u,
+  /交互/u,
+  /\binteractive\b/u,
+  /\bsync\b/u,
+];
+
+const POWERED_MASTURBATOR_PATTERNS = [
+  /电动/u,
+  /马达/u,
+  /加热/u,
+  /自动/u,
+  /震动/u,
+  /振动/u,
+  /\bvibrat/i,
+  /\bpowered\b/u,
+];
+
+const MANUAL_MASTURBATOR_PATTERNS = [
+  /手动/u,
+  /手冲/u,
+  /手持/u,
+  /免电/u,
+  /非震动/u,
+  /\bmanual\b/u,
+];
+
 const PROSTATE_PATTERNS = [
   /前列腺/u,
   /p-spot/u,
   /p spot/u,
   /pspot/u,
+];
+
+const PROSTATE_PLUG_PATTERNS = [
+  /塞/u,
+  /肛塞/u,
+  /plug/u,
 ];
 
 const COCK_RING_PATTERNS = [
@@ -156,6 +191,13 @@ const COCK_RING_PATTERNS = [
   /环类/u,
   /cock\s*ring/u,
   /penis\s*ring/u,
+];
+
+const RING_POWER_PATTERNS = [
+  /震动环/u,
+  /振动环/u,
+  /震动锁精环/u,
+  /vibrating\s+(cock|penis)\s*ring/u,
 ];
 
 const COUPLES_PATTERNS = [
@@ -184,6 +226,14 @@ const WEARABLE_PATTERNS = [
   /内裤/u,
   /隐形佩戴/u,
   /\bwearable\b/u,
+];
+
+const PANTY_WEARABLE_PATTERNS = [
+  /内裤/u,
+  /底裤/u,
+  /panty/u,
+  /panties/u,
+  /隐形佩戴/u,
 ];
 
 const NEGATED_WEARABLE_PATTERNS = [
@@ -241,6 +291,10 @@ function isAccessoryOrMachineLike(corpus: SignalCorpus) {
     (hasAnySignal(corpus.tagText, CONTAMINANT_SUPPORT_PATTERNS) &&
       hasAnySignal(corpus.nameText, CONTAMINANT_SUPPORT_PATTERNS))
   );
+}
+
+export function isLibraryContaminantInput(input: LibraryTypeClassifierInput) {
+  return isAccessoryOrMachineLike(buildSignalCorpus(input));
 }
 
 function scoreBySource(
@@ -318,6 +372,83 @@ function selectSubtypeFromSignals(
       hasRabbitSimultaneousSignals ||
       insertableStrongScore > 0
     );
+  const hasRemoteSignals = hasAnySignal(corpus.signalText, REMOTE_PATTERNS);
+  const hasWearableSignals =
+    hasAnySignal(corpus.signalText, WEARABLE_PATTERNS) &&
+    !hasAnySignal(corpus.signalText, NEGATED_WEARABLE_PATTERNS);
+  const hasInteractiveSignals =
+    hasAnySignal(trustedSubtypeText, INTERACTIVE_PATTERNS) ||
+    (hasRemoteSignals && /\bapp\b/u.test(trustedSubtypeText));
+  const hasPoweredMasturbatorSignals =
+    hasAnySignal(trustedSubtypeText, POWERED_MASTURBATOR_PATTERNS) ||
+    hasAnySignal(trustedSubtypeText, VIBRATION_PATTERNS);
+  const hasManualMasturbatorSignals = hasAnySignal(
+    trustedSubtypeText,
+    MANUAL_MASTURBATOR_PATTERNS,
+  );
+  const hasProstateVibeSignals = hasAnySignal(corpus.signalText, VIBRATION_PATTERNS);
+  const hasProstatePlugSignals =
+    hasAnySignal(trustedSubtypeText, PROSTATE_PLUG_PATTERNS) || insertableStrongScore > 0;
+  const hasRingPowerSignals =
+    hasAnySignal(trustedSubtypeText, RING_POWER_PATTERNS) ||
+    hasAnySignal(trustedSubtypeText, VIBRATION_PATTERNS);
+  const hasCouplesSignals = hasAnySignal(corpus.signalText, COUPLES_PATTERNS);
+  const hasPantyWearableSignals = hasAnySignal(
+    trustedSubtypeText,
+    PANTY_WEARABLE_PATTERNS,
+  );
+
+  if (resolvedTypeCode === "masturbator") {
+    if (hasInteractiveSignals) {
+      return "interactive_masturbator";
+    }
+
+    if (hasPoweredMasturbatorSignals) {
+      return "vibrating_masturbator";
+    }
+
+    if (hasManualMasturbatorSignals) {
+      return "manual_masturbator";
+    }
+
+    return null;
+  }
+
+  if (resolvedTypeCode === "prostate") {
+    if (hasProstateVibeSignals) {
+      return "prostate_vibe";
+    }
+
+    if (hasProstatePlugSignals) {
+      return "prostate_plug";
+    }
+
+    return null;
+  }
+
+  if (resolvedTypeCode === "cock_ring") {
+    return hasRingPowerSignals ? "vibrating_cock_ring" : "classic_cock_ring";
+  }
+
+  if (resolvedTypeCode === "couples") {
+    return insertableStrongScore > 0 ? "insertable_couples" : "external_couples";
+  }
+
+  if (resolvedTypeCode === "wearable_remote") {
+    if (hasCouplesSignals) {
+      return "dual_wearable_remote";
+    }
+
+    if (insertableStrongScore > 0) {
+      return "insertable_remote";
+    }
+
+    if (hasPantyWearableSignals || (hasRemoteSignals && hasWearableSignals)) {
+      return hasPantyWearableSignals ? "panty_wearable" : null;
+    }
+
+    return null;
+  }
 
   if (resolvedTypeCode === "suction") {
     return hasSuctionDualSignals ? "suction_dual" : "suction_pure";
