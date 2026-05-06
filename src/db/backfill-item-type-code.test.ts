@@ -71,6 +71,36 @@ test("classifySubtypeCodeBackfillRow derives subtype codes from joined female pr
   );
 });
 
+test("classifySubtypeCodeBackfillRow derives vibrating cock ring from joined male metadata", () => {
+  assert.equal(
+    classifySubtypeCodeBackfillRow({
+      id: "toy-sub-2",
+      name: "Orbit Ring",
+      gender: "male",
+      physical_form: "external",
+      raw_description: null,
+      product_tags: ["震动环", "延时环"],
+      product_raw_description: "男用震动锁精环，外部佩戴设计",
+    }),
+    "vibrating_cock_ring",
+  );
+});
+
+test("classifySubtypeCodeBackfillRow keeps ambiguous unisex wearable rows as null", () => {
+  assert.equal(
+    classifySubtypeCodeBackfillRow({
+      id: "toy-sub-3",
+      name: "Remote Link",
+      gender: "unisex",
+      physical_form: "external",
+      raw_description: null,
+      product_tags: ["远控", "穿戴"],
+      product_raw_description: "可穿戴远控设计",
+    }),
+    null,
+  );
+});
+
 test("shouldRunTypeCodeBackfillScript handles tsx file URLs with spaces safely", () => {
   assert.equal(
     shouldRunTypeCodeBackfillScript(

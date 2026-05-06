@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as libraryProductTypeClassifierModule from "./library-product-type-classifier.ts";
 
 import {
   classifyLibrarySubtypeCode,
@@ -334,6 +335,69 @@ test("classifyLibrarySubtypeCode recognizes wand-style external vibes", () => {
       tags: ["按摩棒", "外部刺激"],
     }),
     "wand_massager",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes interactive male masturbators from app-linked signals", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "masturbator",
+      gender: "male",
+      physicalForm: "external",
+      name: "Sync Interactive Cup",
+      rawDescription: "APP 互动同步，远控联动体验",
+      tags: ["互动", "远控", "app"],
+    }),
+    "interactive_masturbator",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes dual wearable remote products for couples play", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "wearable_remote",
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Couple Link",
+      rawDescription: "情侣双人共玩，远控穿戴设计",
+      tags: ["情侣", "双人", "远控", "穿戴"],
+    }),
+    "dual_wearable_remote",
+  );
+});
+
+test("classifyLibrarySubtypeCode stays conservative for weak male masturbator evidence", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "masturbator",
+      gender: "male",
+      physicalForm: "external",
+      name: "Series One",
+      rawDescription: null,
+      tags: [],
+    }),
+    null,
+  );
+});
+
+test("isLibraryContaminantInput flags adapter-style rows", () => {
+  const classifierModule =
+    libraryProductTypeClassifierModule as typeof libraryProductTypeClassifierModule & {
+      isLibraryContaminantInput?: (
+        input: Parameters<typeof classifyLibraryTypeCode>[0],
+      ) => boolean;
+    };
+
+  assert.equal(typeof classifierModule.isLibraryContaminantInput, "function");
+  assert.equal(
+    classifierModule.isLibraryContaminantInput?.({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "USB Bluetooth Adapter",
+      rawDescription: "用于连接远控穿戴设备与 app 的蓝牙适配器",
+      tags: ["远控", "蓝牙", "适配器"],
+    }),
+    true,
   );
 });
 
