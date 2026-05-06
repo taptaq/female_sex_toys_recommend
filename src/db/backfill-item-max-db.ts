@@ -19,7 +19,7 @@ async function backfillDeviceMaxDb() {
 
     const deviceResult = await client.query(
       `
-        UPDATE public.recommender_items
+        UPDATE public.recommender_toys
         SET max_db = $1,
             updated_at = NOW()
         WHERE max_db IS NULL
@@ -37,7 +37,7 @@ async function backfillDeviceMaxDb() {
           to_jsonb(COALESCE(t.max_db, $1)),
           true
         )
-        FROM public.recommender_items AS t
+        FROM public.recommender_toys AS t
         WHERE t.original_id = p.id
           AND (
             p.specs IS NULL
@@ -55,7 +55,7 @@ async function backfillDeviceMaxDb() {
       JSON.stringify(
         {
           default_max_db: DEFAULT_DEVICE_MAX_DB,
-          recommender_items_updated: deviceResult.rowCount,
+          recommender_toys_updated: deviceResult.rowCount,
           products_updated: productResult.rowCount,
         },
         null,

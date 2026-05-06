@@ -128,7 +128,7 @@ function dedupeGuidanceItems(items: string[]) {
 }
 
 function renderProductImage(
-  product: Pick<RankedProduct, "imagePlaceholder" | "name" | "safeDisplayName">,
+  product: Pick<RankedProduct, "imagePlaceholder" | "name" | "displayName" | "safeDisplayName">,
   iconClassName: string,
 ) {
   return (

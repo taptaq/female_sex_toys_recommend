@@ -480,8 +480,8 @@ export async function runCleaner() {
       await withDbRetry(`同步商品 ${canonicalName}`, async () => {
         const created = await prisma.products.create({ data: productPayload });
 
-        await prisma.recommender_items.deleteMany({ where: { name: canonicalName } });
-        await prisma.recommender_items.create({
+        await prisma.recommender_toys.deleteMany({ where: { name: canonicalName } });
+        await prisma.recommender_toys.create({
           data: {
             original_id: created.id,
             name: canonicalName,

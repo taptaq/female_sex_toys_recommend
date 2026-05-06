@@ -24,6 +24,11 @@ import { createUsernameRegistrationHandler } from './user-register-route.ts';
 import { createUsernameRegistrationService } from './user-register-service.ts';
 import { createSupabaseAccessTokenVerifier } from './user-auth.ts';
 import { buildSafeDisplayName } from '../lib/product-display-name.ts';
+import {
+  resolveLibrarySubtypeCode,
+  resolveLibraryTypeCode,
+} from '../lib/library-product-type-classifier.ts';
+import { ensureRecommenderItemsSchema } from './recommender-items-schema.ts';
 
 dotenv.config();
 
@@ -62,52 +67,76 @@ pool.on('error', (err) => {
   console.error('💥 [Server/DB] 数据库连接池发生灾难性错误:', err);
 });
 
-async function ensureRecommenderItemsSchema(pool: any) {
-  await pool.query(`
-    ALTER TABLE public.recommender_items
-    ADD COLUMN IF NOT EXISTS safe_display_name TEXT
-  `);
-}
-
 app.get('/api/recommender/toys', async (_req, res) => {
   console.log('📡 [Server] 收到全息库同步指令...');
   try {
+    await pool.query(`
+      ALTER TABLE public.recommender_toys
+      ADD COLUMN IF NOT EXISTS subtype_code TEXT
+    `);
+
     const result = await pool.query(`
       SELECT 
         t.id, t.name, t.safe_display_name, t.price, t.max_db, t.waterproof, 
-        t.appearance, t.physical_form, t.motor_type, t.gender, 
+        t.appearance, t.physical_form, t.motor_type, t.gender, t.type_code, t.subtype_code,
         t.brand, t.material, t.image_url, t.raw_description,
+        COALESCE(p.specs::jsonb ->> 'rawDescription', NULL) AS product_raw_description,
         p.link, p.tags, p.persona_\x61nalysis AS persona_analysis,
         c.is_domestic
-      FROM public.recommender_items t
+      FROM public.recommender_toys t
       LEFT JOIN public.products p ON t.original_id = p.id
       LEFT JOIN public.competitors c ON p.competitor_id = c.id
       ORDER BY t.created_at DESC
     `);
 
     // 格式化输出为前端兼容的驼峰命名
-    const normalized = result.rows.map(t => ({
-      id: t.id,
-      name: t.name,
-      canonicalName: t.name,
-      safeDisplayName: t.safe_display_name || buildSafeDisplayName(t.name),
-      price: Number(t.price),
-      maxDb: t.max_db,
-      waterproof: t.waterproof,
-      appearance: t.appearance,
-      physicalForm: t.physical_form,
-      motorType: t.motor_type,
-      gender: t.gender,
-      brand: t.brand || '探索品牌',
-      material: t.material || '亲肤材质',
-      rawDescription: t.raw_description || null,
-      imagePlaceholder: t.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40',
-      link: t.link,
-      sourceUrl: t.link,
-      tags: t.tags || [],
-      personaAnalysis: t.persona_analysis,
-      isDomestic: t.is_domestic
-    }));
+    const normalized = result.rows.map((t) => {
+      const resolvedTypeCode = resolveLibraryTypeCode(t.type_code, {
+        gender: t.gender,
+        physicalForm: t.physical_form,
+        name: t.name,
+        rawDescription: [t.raw_description, t.product_raw_description]
+          .filter(Boolean)
+          .join('\n') || null,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+      });
+      const resolvedSubtypeCode = resolveLibrarySubtypeCode(t.subtype_code, {
+        typeCode: resolvedTypeCode,
+        gender: t.gender,
+        physicalForm: t.physical_form,
+        name: t.name,
+        rawDescription: [t.raw_description, t.product_raw_description]
+          .filter(Boolean)
+          .join('\n') || null,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+      });
+
+      return {
+        id: t.id,
+        name: t.name,
+        canonicalName: t.name,
+        displayName: t.safe_display_name || buildSafeDisplayName(t.name),
+        safeDisplayName: t.safe_display_name || buildSafeDisplayName(t.name),
+        price: Number(t.price),
+        maxDb: t.max_db,
+        waterproof: t.waterproof,
+        appearance: t.appearance,
+        physicalForm: t.physical_form,
+        motorType: t.motor_type,
+        gender: t.gender,
+        typeCode: resolvedTypeCode,
+        subtypeCode: resolvedSubtypeCode,
+        brand: t.brand || '探索品牌',
+        material: t.material || '亲肤材质',
+        rawDescription: t.raw_description || t.product_raw_description || null,
+        imagePlaceholder: t.image_url || 'bg-gradient-to-br from-indigo-900/40 to-blue-900/40',
+        link: t.link,
+        sourceUrl: t.link,
+        tags: t.tags || [],
+        personaAnalysis: t.persona_analysis,
+        isDomestic: t.is_domestic,
+      };
+    });
 
 
     console.log(`✅ [Server] 已同步 ${normalized.length} 条晶体库数据`);
@@ -216,6 +245,6 @@ void Promise.all([
     });
   })
   .catch((error) => {
-    console.error('💥 [Server/Knowledge] 知识星云表初始化失败:', error);
+    console.error('💥 [Server/Init] 服务初始化失败:', error);
     process.exit(1);
   });

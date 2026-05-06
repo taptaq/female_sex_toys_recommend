@@ -18,7 +18,7 @@ async function backfillSafeDisplayName() {
     await client.query('BEGIN');
 
     await client.query(`
-      ALTER TABLE public.recommender_items
+      ALTER TABLE public.recommender_toys
       ADD COLUMN IF NOT EXISTS safe_display_name TEXT
     `);
 
@@ -27,7 +27,7 @@ async function backfillSafeDisplayName() {
       name: string;
     }>(`
       SELECT id, name
-      FROM public.recommender_items
+      FROM public.recommender_toys
       WHERE safe_display_name IS NULL
          OR NULLIF(BTRIM(safe_display_name), '') IS NULL
     `);
@@ -38,7 +38,7 @@ async function backfillSafeDisplayName() {
       const safeDisplayName = buildSafeDisplayName(row.name);
       await client.query(
         `
-          UPDATE public.recommender_items
+          UPDATE public.recommender_toys
           SET safe_display_name = $2,
               updated_at = NOW()
           WHERE id = $1

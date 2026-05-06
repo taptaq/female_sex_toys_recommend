@@ -7,38 +7,16 @@ dotenv.config();
 
 const { Pool } = pg;
 
-async function resolveTargetTable(client: pg.PoolClient) {
-  const result = await client.query<{ table_name: string }>(
-    `
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_name IN ('recommender_toys', 'recommender_items')
-      ORDER BY CASE
-        WHEN table_name = 'recommender_toys' THEN 0
-        ELSE 1
-      END
-      LIMIT 1
-    `,
-  );
-
-  const tableName = result.rows[0]?.table_name;
-  if (!tableName) {
-    throw new Error('public.recommender_toys / public.recommender_items 均不存在');
-  }
-  return tableName;
-}
-
 async function recleanItemNames() {
   const pool = new Pool({
     connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL,
   });
 
   const client = await pool.connect();
+  const tableName = "recommender_toys";
 
   try {
     await client.query('BEGIN');
-    const tableName = await resolveTargetTable(client);
 
     console.log(`[backfill-reclean-item-names] 开始回填 ${tableName}.name ...`);
 

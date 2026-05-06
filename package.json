@@ -15,6 +15,8 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:backfill:item-max-db": "tsx -r dotenv/config src/db/backfill-item-max-db.ts",
+    "db:backfill:item-type-code": "tsx -r dotenv/config src/db/backfill-item-type-code.ts",
+    "db:merge:recommender-items-into-toys": "tsx -r dotenv/config src/db/merge-recommender-items-into-toys.ts",
     "db:backfill:reclean-item-names": "tsx -r dotenv/config src/db/backfill-reclean-item-names.ts",
     "db:backfill:safe-display-name": "tsx -r dotenv/config src/db/backfill-safe-display-name.ts",
     "db:backfill:knowledge-embeddings": "tsx -r dotenv/config src/db/backfill-knowledge-nebula-embeddings.ts",

@@ -1,13 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUp, ChevronDown } from "lucide-react";
-import { Product } from "../data/mock.ts";
+import type { Product } from "../data/mock.ts";
 import { ProductCardContent } from "../components/ProductCardContent.tsx";
 import { PRICE_RANGE_OPTIONS, matchesPriceRange } from "../lib/app-shell.ts";
 import { shouldShowLibraryBackToTop } from "../lib/library-back-to-top.ts";
+import {
+  getAllowedLibrarySubtypeCodes,
+  getLibrarySubtypeLabel,
+  getAllowedLibraryTypeCodes,
+  getLibraryTypeLabel,
+  sanitizeLibrarySubtypeSelection,
+  sanitizeLibraryTypeSelection,
+  type LibraryAudienceGender,
+} from "../lib/library-product-types.ts";
+import {
+  resolveLibrarySubtypeCode,
+  resolveLibraryTypeCode,
+} from "../lib/library-product-type-classifier.ts";
 
 export function LibraryPage({
   allProducts,
   filterGender,
+  filterType = "all",
+  filterSubtype = "all",
   filterBrand,
   filterOrigin,
   filterMaterial,
@@ -17,6 +32,8 @@ export function LibraryPage({
   error,
   onReload,
   onFilterGenderChange,
+  onFilterTypeChange = () => {},
+  onFilterSubtypeChange = () => {},
   onFilterBrandChange,
   onFilterOriginChange,
   onFilterMaterialChange,
@@ -26,6 +43,8 @@ export function LibraryPage({
 }: {
   allProducts: Product[];
   filterGender: string;
+  filterType?: string;
+  filterSubtype?: string;
   filterBrand: string;
   filterOrigin: string;
   filterMaterial: string;
@@ -35,6 +54,8 @@ export function LibraryPage({
   error: string | null;
   onReload: () => void;
   onFilterGenderChange: (value: string) => void;
+  onFilterTypeChange?: (value: string) => void;
+  onFilterSubtypeChange?: (value: string) => void;
   onFilterBrandChange: (value: string) => void;
   onFilterOriginChange: (value: string) => void;
   onFilterMaterialChange: (value: string) => void;
@@ -43,6 +64,24 @@ export function LibraryPage({
   onBack: () => void;
 }) {
   const products = Array.isArray(allProducts) ? allProducts : [];
+  const normalizedFilterGender: LibraryAudienceGender =
+    filterGender === "female" || filterGender === "male" || filterGender === "unisex"
+      ? filterGender
+      : "all";
+  const allowedTypeCodes = getAllowedLibraryTypeCodes(normalizedFilterGender);
+  const effectiveFilterType = sanitizeLibraryTypeSelection(
+    filterType,
+    normalizedFilterGender,
+  );
+  const allowedSubtypeCodes = getAllowedLibrarySubtypeCodes(
+    normalizedFilterGender,
+    effectiveFilterType,
+  );
+  const effectiveFilterSubtype = sanitizeLibrarySubtypeSelection(
+    filterSubtype,
+    normalizedFilterGender,
+    effectiveFilterType,
+  );
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
@@ -117,6 +156,44 @@ export function LibraryPage({
                 <option value="unisex">通用型</option>
               </select>
             </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                类型
+              </label>
+              <select
+                value={effectiveFilterType}
+                onChange={(e) => onFilterTypeChange(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+              >
+                <option value="all">全部类型</option>
+                {allowedTypeCodes.map((typeCode) => (
+                  <option key={typeCode} value={typeCode}>
+                    {getLibraryTypeLabel(typeCode)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {allowedSubtypeCodes.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  类型细分
+                </label>
+                <select
+                  value={effectiveFilterSubtype}
+                  onChange={(e) => onFilterSubtypeChange(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
+                >
+                  <option value="all">全部细分</option>
+                  {allowedSubtypeCodes.map((subtypeCode) => (
+                    <option key={subtypeCode} value={subtypeCode}>
+                      {getLibrarySubtypeLabel(subtypeCode)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
@@ -278,8 +355,29 @@ export function LibraryPage({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {products
             .filter((product) => {
+              const resolvedTypeCode = resolveLibraryTypeCode(product.typeCode, {
+                gender: product.gender,
+                physicalForm: product.physicalForm,
+                name: product.canonicalName || product.name,
+                rawDescription: product.rawDescription ?? null,
+                tags: product.tags ?? [],
+              });
+              const resolvedSubtypeCode = resolveLibrarySubtypeCode(product.subtypeCode, {
+                typeCode: resolvedTypeCode,
+                gender: product.gender,
+                physicalForm: product.physicalForm,
+                name: product.canonicalName || product.name,
+                rawDescription: product.rawDescription ?? null,
+                tags: product.tags ?? [],
+              });
               const matchGender =
                 filterGender === "all" || product.gender === filterGender;
+              const matchType =
+                effectiveFilterType === "all" ||
+                resolvedTypeCode === effectiveFilterType;
+              const matchSubtype =
+                effectiveFilterSubtype === "all" ||
+                resolvedSubtypeCode === effectiveFilterSubtype;
               const matchBrand =
                 filterBrand === "all" || product.brand === filterBrand;
               const matchOrigin =
@@ -299,6 +397,8 @@ export function LibraryPage({
 
               return (
                 matchGender &&
+                matchType &&
+                matchSubtype &&
                 matchBrand &&
                 matchOrigin &&
                 matchDb &&

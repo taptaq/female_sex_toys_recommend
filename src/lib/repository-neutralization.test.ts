@@ -16,14 +16,15 @@ test("core project identifiers use neutral naming", () => {
   assert.doesNotMatch(packageSource, /db:backfill:\x74oy-max-db/i);
   assert.doesNotMatch(appSource, /\/api\/recommender\/items\b/i);
   assert.doesNotMatch(serverSource, /\/api\/recommender\/items\b/i);
-  assert.doesNotMatch(serverSource, /\brecommender_\x74oys\b/i);
-  assert.doesNotMatch(schemaSource, /\brecommender_\x74oys\b/i);
+  assert.doesNotMatch(serverSource, /\brecommender_items\b/i);
+  assert.doesNotMatch(schemaSource, /\brecommender_items\b/i);
 
   assert.match(packageSource, /inner_space_gear_navigator/i);
   assert.match(packageSource, /db:backfill:item-max-db/i);
   assert.match(appSource, /\/api\/recommender\/toys\b/i);
   assert.match(serverSource, /\/api\/recommender\/toys\b/i);
-  assert.match(schemaSource, /\brecommender_items\b/i);
+  assert.match(serverSource, /\brecommender_\x74oys\b/i);
+  assert.match(schemaSource, /\brecommender_\x74oys\b/i);
 });
 
 test("recommender items keep canonical names and expose a separate safe display field", () => {
@@ -61,16 +62,22 @@ test("scraper cleaners persist safe display names alongside canonical names", ()
   for (const file of cleanerFiles) {
     const source = read(file);
     assert.match(source, /\bsafe_display_name:\s*buildSafeDisplayName\(/);
+    assert.doesNotMatch(source, /\bprisma\.recommender_items\b/);
+    assert.match(source, /\bprisma\.recommender_toys\b/);
   }
 });
 
 test("repo ships a backfill script for safe display names", () => {
   const packageSource = read("package.json");
   const scriptSource = read("src/db/backfill-safe-display-name.ts");
+  const maxDbScriptSource = read("src/db/backfill-item-max-db.ts");
+  const syncMockSource = read("src/db/syncMock.ts");
 
   assert.match(packageSource, /db:backfill:safe-display-name/);
-  assert.match(scriptSource, /UPDATE public\.recommender_items/);
+  assert.match(scriptSource, /UPDATE public\.recommender_toys/);
   assert.match(scriptSource, /safe_display_name/);
+  assert.match(maxDbScriptSource, /UPDATE public\.recommender_toys/);
+  assert.match(syncMockSource, /FROM public\.recommender_toys/);
 });
 
 test("repo ships a recovery backfill for qq-corrupted product names", () => {
@@ -78,9 +85,20 @@ test("repo ships a recovery backfill for qq-corrupted product names", () => {
   const scriptSource = read("src/db/backfill-reclean-item-names.ts");
 
   assert.match(packageSource, /db:backfill:reclean-item-names/);
-  assert.match(scriptSource, /recommender_toys|recommender_items/);
+  assert.match(scriptSource, /recommender_toys/);
+  assert.doesNotMatch(scriptSource, /recommender_items/);
   assert.match(scriptSource, /recoverCanonicalProductName/);
   assert.match(scriptSource, /UPDATE public\.products/);
+});
+
+test("repo ships a type code backfill script for recommender_toys", () => {
+  const packageSource = read("package.json");
+  const scriptSource = read("src/db/backfill-item-type-code.ts");
+
+  assert.match(packageSource, /db:backfill:item-type-code/);
+  assert.match(scriptSource, /UPDATE public\.recommender_toys/);
+  assert.match(scriptSource, /classifyLibraryTypeCode/);
+  assert.doesNotMatch(scriptSource, /recommender_items/);
 });
 
 test("public metadata avoids direct high-risk wording", () => {

@@ -706,8 +706,8 @@ ${item.rawDescription}
           updated_at: new Date(),
         };
 
-        await prisma.recommender_items.deleteMany({ where: { name: canonicalName } });
-        await prisma.recommender_items.create({ data: itemPayload });
+        await prisma.recommender_toys.deleteMany({ where: { name: canonicalName } });
+        await prisma.recommender_toys.create({ data: itemPayload });
       });
 
       console.log(`[完成] \`${canonicalName}\` 数据已注入数据库。`);

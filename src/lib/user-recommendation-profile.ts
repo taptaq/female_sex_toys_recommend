@@ -7,6 +7,7 @@ import type { BackupCandidate } from "./recommendation-results.ts";
 type RecommendationProfileProduct = {
   id: string;
   name: string;
+  displayName?: string;
   score: number;
 };
 
@@ -43,11 +44,14 @@ async function readApiErrorMessage(response: Response, fallback: string) {
 }
 
 function pickProductSnapshot(
-  product: Pick<RankedProduct, "id" | "name" | "safeDisplayName" | "score">,
+  product: Pick<RankedProduct, "id" | "name" | "displayName" | "safeDisplayName" | "score">,
 ): RecommendationProfileProduct {
+  const displayName = getProductDisplayName(product);
+
   return {
     id: product.id,
-    name: getProductDisplayName(product),
+    name: displayName,
+    displayName,
     score: product.score,
   };
 }

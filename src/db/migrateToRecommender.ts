@@ -25,8 +25,8 @@ async function migrate() {
     // 1. 创建表结构 (DDL)
     console.log('[1/3] 正在构建物理表结构 (新增 品牌/材质 维度)...');
     await pool.query(`
-      DROP TABLE IF EXISTS public.recommender_items;
-      CREATE TABLE public.recommender_items (
+      DROP TABLE IF EXISTS public.recommender_toys;
+      CREATE TABLE public.recommender_toys (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         original_id UUID,
         name TEXT NOT NULL,
@@ -46,7 +46,7 @@ async function migrate() {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
       
-      COMMENT ON TABLE public.recommender_items IS '专属推荐器清洗后的标准商品池 (V2)';
+      COMMENT ON TABLE public.recommender_toys IS '专属推荐器清洗后的标准商品池 (V2)';
     `);
 
     // 2. 提取并清洗数据 (通过 JOIN 获取品牌名)
@@ -103,7 +103,7 @@ async function migrate() {
       };
 
       await pool.query(`
-        INSERT INTO public.recommender_items 
+        INSERT INTO public.recommender_toys 
         (original_id, name, safe_display_name, price, max_db, waterproof, appearance, physical_form, motor_type, gender, brand, material, image_url, raw_description)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `, [

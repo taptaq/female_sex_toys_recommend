@@ -86,6 +86,7 @@ test("normalizeProductsPayload preserves typeCode from cached products", () => {
       motorType: "gentle",
       gender: "female",
       typeCode: "suction",
+      subtypeCode: "suction_pure",
       brand: "Womanizer",
       material: "硅胶",
       imagePlaceholder: "",
@@ -93,4 +94,54 @@ test("normalizeProductsPayload preserves typeCode from cached products", () => {
   ]);
 
   assert.equal(products[0]?.typeCode, "suction");
+  assert.equal(products[0]?.subtypeCode, "suction_pure");
+});
+
+test("normalizeProductsPayload derives typeCode for cached legacy products that are missing it", () => {
+  const products = normalizeProductsPayload([
+    {
+      id: "p2",
+      name: "Womanizer Liberty",
+      safeDisplayName: "Womanizer Liberty",
+      canonicalName: "Womanizer Liberty",
+      price: 999,
+      maxDb: 42,
+      waterproof: 7,
+      appearance: "normal",
+      physicalForm: "external",
+      motorType: "gentle",
+      gender: "female",
+      brand: "Womanizer",
+      material: "硅胶",
+      imagePlaceholder: "",
+      rawDescription: "气脉冲吸感，外部刺激设备",
+      tags: [],
+    },
+  ]);
+
+  assert.equal(products[0]?.typeCode, "suction");
+  assert.equal(products[0]?.subtypeCode, "suction_pure");
+});
+
+test("normalizeProductsPayload stores a unified displayName for user-visible product surfaces", () => {
+  const products = normalizeProductsPayload([
+    {
+      id: "p3",
+      name: "情趣用品 套装",
+      safeDisplayName: "个人护理用品 套装",
+      canonicalName: "情趣用品 套装",
+      price: 299,
+      maxDb: 45,
+      waterproof: 7,
+      appearance: "normal",
+      physicalForm: "external",
+      motorType: "gentle",
+      gender: "female",
+      brand: "Brand",
+      material: "硅胶",
+      imagePlaceholder: "",
+    },
+  ]);
+
+  assert.equal(products[0]?.displayName, "个人护理用品 套装");
 });

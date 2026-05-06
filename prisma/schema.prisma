@@ -498,7 +498,7 @@ model webauthn_credentials {
 model brand_characteristics_history {
   id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   competitor_id String      @db.Uuid
-  \x61nalysis_data Json
+  analysis_data Json
   created_at    DateTime    @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
   competitors   competitors @relation(fields: [competitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -509,7 +509,7 @@ model brand_characteristics_history {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model comparison_history {
   id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  \x61nalysis      Json
+  analysis      Json
   products      Json
   created_at    DateTime? @default(now()) @db.Timestamptz(6)
   product_ids   String[]
@@ -544,8 +544,8 @@ model competitors {
   sentiment                     Json?
   is_domestic                   Boolean?                        @default(true)
   created_at                    DateTime?                       @default(now()) @db.Timestamptz(6)
-  brand_characteristic_\x61nalysis Json?
-  qa_\x61nalysis                   Json?
+  brand_characteristic_analysis Json?
+  qa_analysis                   Json?
   major_user_group_profile      String?
   brand_characteristics_history brand_characteristics_history[]
   deep_reports                  deep_reports[]
@@ -623,13 +623,13 @@ model products {
   gender                   String?
   specs                    Json?
   price_history            Json?
-  \x61nalysis                 Json?
+  analysis                 Json?
   reviews                  Json?
   created_at               DateTime?               @default(now()) @db.Timestamptz(6)
-  price_\x61nalysis           Json?
+  price_analysis           Json?
   use_scenario             String?
-  persona_\x61nalysis         String?
-  standardization_\x61nalysis Json?
+  persona_analysis         String?
+  standardization_analysis Json?
   deep_reports             deep_reports[]
   favorites                favorites[]
   competitors              competitors?            @relation(fields: [competitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -686,14 +686,14 @@ model thinking_notes {
   position_index Int?      @default(0)
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
   updated_at     DateTime? @default(now()) @db.Timestamptz(6)
-  \x61nalysis       Json?
+  analysis       Json?
 
   @@schema("public")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model recommender_items {
+model recommender_toys {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   original_id   String?   @db.Uuid
   name          String
@@ -709,6 +709,8 @@ model recommender_items {
   material      String?
   image_url     String?
   raw_description String? @db.Text
+  type_code     String?
+  subtype_code  String?
   created_at    DateTime? @default(now()) @db.Timestamptz(6)
   updated_at    DateTime? @default(now()) @db.Timestamptz(6)
 

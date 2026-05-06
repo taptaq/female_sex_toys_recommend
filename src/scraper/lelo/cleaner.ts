@@ -59,7 +59,7 @@ async function callGlmFallback(prompt: string) {
 
 // 映射性别字段以符合数据库 Check 约束
 // products 表通常要求首字母大写 ('Male', 'Female', 'Unisex')
-// recommender_items 表要求全小写 ('male', 'female', 'unisex')
+// recommender_toys 表要求全小写 ('male', 'female', 'unisex')
 const mapGender = (raw: string, format: 'lowercase' | 'capitalized' = 'lowercase'): string => {
   const val = (raw || '').toLowerCase();
   let result = 'unisex';
@@ -251,8 +251,8 @@ ${item.rawDescription}
         console.log(`  -> [products] 全新原始记录已创建 (ID: ${originalId})`);
       }
 
-      // --- 第二步：推入 `recommender_items` 表 (关联 original_id) ---
-      console.log(`[数据库] 2/2 正在同步 \`recommender_items\` 表...`);
+      // --- 第二步：推入 `recommender_toys` 表 (关联 original_id) ---
+      console.log(`[数据库] 2/2 正在同步 \`recommender_toys\` 表...`);
 
       const itemPayload = {
          original_id:   originalId, // 绑定溯源 ID
@@ -273,12 +273,12 @@ ${item.rawDescription}
       };
 
       // 【去重策略】: 清除同名记录后\u63d2\u5165
-      await prisma.recommender_items.deleteMany({
+      await prisma.recommender_toys.deleteMany({
          where: { name: item.name }
       });
       
-      await prisma.recommender_items.create({ data: itemPayload });
-      console.log(`  -> [recommender_items] 推荐器标准模型已就绪 (Linked to ${originalId})`);
+      await prisma.recommender_toys.create({ data: itemPayload });
+      console.log(`  -> [recommender_toys] 推荐器标准模型已就绪 (Linked to ${originalId})`);
 
     } catch (e) {
        console.error(`[故障] JSON解析失败或数据库推入错误:`, e);

@@ -1,5 +1,10 @@
 import { Product } from "../data/mock";
 import { buildSafeDisplayName } from "./product-display-name.ts";
+import {
+  resolveLibrarySubtypeCode,
+  resolveLibraryTypeCode,
+} from "./library-product-type-classifier.ts";
+import { getProductDisplayName } from "./product-display-name.ts";
 
 export type AppRoute =
   | "/"
@@ -74,11 +79,37 @@ export function normalizeProductsPayload(payload: unknown): Product[] {
 
       const typedProduct = product as Product;
       const canonicalName = typedProduct.canonicalName || typedProduct.name;
+      const resolvedTypeCode = resolveLibraryTypeCode(typedProduct.typeCode, {
+        gender: typedProduct.gender,
+        physicalForm: typedProduct.physicalForm,
+        name: canonicalName,
+        rawDescription: typedProduct.rawDescription ?? null,
+        tags: typedProduct.tags ?? [],
+      });
+      const resolvedSubtypeCode = resolveLibrarySubtypeCode(
+        typedProduct.subtypeCode,
+        {
+          typeCode: resolvedTypeCode,
+          gender: typedProduct.gender,
+          physicalForm: typedProduct.physicalForm,
+          name: canonicalName,
+          rawDescription: typedProduct.rawDescription ?? null,
+          tags: typedProduct.tags ?? [],
+        },
+      );
+      const safeDisplayName =
+        typedProduct.safeDisplayName || buildSafeDisplayName(canonicalName);
       return {
         ...typedProduct,
         canonicalName,
-        safeDisplayName:
-          typedProduct.safeDisplayName || buildSafeDisplayName(canonicalName),
+        displayName: getProductDisplayName({
+          name: canonicalName,
+          safeDisplayName,
+          displayName: typedProduct.displayName,
+        }),
+        typeCode: resolvedTypeCode,
+        subtypeCode: resolvedSubtypeCode,
+        safeDisplayName,
       };
     }) as Product[];
   }

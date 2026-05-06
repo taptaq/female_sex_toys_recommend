@@ -146,7 +146,7 @@ async function main() {
       item.rawDescription = translatedRaw;
     }
 
-    const itemUpdate = await prisma.recommender_items.updateMany({
+    const itemUpdate = await prisma.recommender_toys.updateMany({
       where: {
         name,
         brand: { equals: 'Lovense', mode: 'insensitive' },
@@ -197,7 +197,7 @@ async function main() {
       {
         cleaned_file_total: rows.length,
         translated_count: translatedCount,
-        recommender_items_updated: itemsUpdated,
+        recommender_toys_updated: itemsUpdated,
         products_updated: productsUpdated,
         cleaned_path: CLEANED_PATH,
         cache_path: CACHE_PATH,

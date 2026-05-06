@@ -428,8 +428,8 @@ export async function runCleaner() {
           originalId = created.id;
         }
 
-        await prisma.recommender_items.deleteMany({ where: { name: canonicalName } });
-        await prisma.recommender_items.create({
+        await prisma.recommender_toys.deleteMany({ where: { name: canonicalName } });
+        await prisma.recommender_toys.create({
           data: {
             original_id: originalId,
             ...itemPayload,

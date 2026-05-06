@@ -36,7 +36,11 @@ export function buildSafeDisplayName(rawName: string) {
 }
 
 export function getProductDisplayName(
-  product: Pick<Product, "name" | "safeDisplayName">,
+  product: Pick<Product, "name" | "safeDisplayName" | "displayName">,
 ) {
-  return normalizeWhitespace(product.safeDisplayName || "") || buildSafeDisplayName(product.name);
+  return (
+    normalizeWhitespace(product.displayName || "") ||
+    normalizeWhitespace(product.safeDisplayName || "") ||
+    buildSafeDisplayName(product.name)
+  );
 }

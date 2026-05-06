@@ -19,19 +19,19 @@ async function syncProductsToMock() {
   });
 
   try {
-    console.log('[探测] 正在连接云端专属 recommender_items 表...');
+    console.log('[探测] 正在连接云端专属 recommender_toys 表...');
     
     // 取消 LIMIT 30，获取全量清洗后的数据
     const res = await pool.query(`
       SELECT t.*, p.link
-      FROM public.recommender_items t
+      FROM public.recommender_toys t
       LEFT JOIN public.products p ON t.original_id = p.id
       ORDER BY t.created_at DESC
     `);
     const rows = res.rows;
     
     if (rows.length === 0) {
-      console.log('[中止] 数据库中没有发现 recommender_items 记录。');
+      console.log('[中止] 数据库中没有发现 recommender_toys 记录。');
       return;
     }
 
