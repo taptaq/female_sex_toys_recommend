@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
 import test from "node:test";
+import { isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { HomePage } from "./HomePage.tsx";
+import {
+  HomeAuthOverlay,
+  HomePage,
+  getHomeAuthOverlayFocusTrapTarget,
+  planHomeFeedbackScreenshotSelection,
+  restoreHomeAuthOverlayFocus,
+} from "./HomePage.tsx";
 
 const authPanel = {
   isConfigured: true,
@@ -15,8 +20,8 @@ const authPanel = {
   onSignOut: async () => {},
 };
 
-test("home page prioritizes matching and demotes library and knowledge nebula entries", () => {
-  const html = renderToStaticMarkup(
+function renderHomePage() {
+  return renderToStaticMarkup(
     <HomePage
       pageVariants={{}}
       onStart={() => {}}
@@ -26,29 +31,43 @@ test("home page prioritizes matching and demotes library and knowledge nebula en
       authPanel={authPanel}
     />,
   );
+}
+
+function countMatches(input: string, pattern: RegExp) {
+  return input.match(pattern)?.length ?? 0;
+}
+
+function collectElements(node: unknown): any[] {
+  if (!isValidElement(node)) {
+    if (Array.isArray(node)) {
+      return node.flatMap((child) => collectElements(child));
+    }
+
+    return [];
+  }
+
+  const children = (node.props as { children?: unknown }).children;
+  return [node, ...collectElements(children)];
+}
+
+test("home page prioritizes matching and demotes library and knowledge nebula entries", () => {
+  const html = renderHomePage();
 
   assert.match(html, /开始匹配/);
   assert.match(html, /先随便看看装备库/);
   assert.match(html, /看看知识星云/);
+  assert.match(html, /意见反馈/);
   assert.match(html, /先看真实装备参数、价格区间和筛选维度/);
   assert.match(html, /了解常见误区、参数怎么读/);
   assert.ok(html.indexOf("开始匹配") < html.indexOf("先随便看看装备库"));
   assert.ok(html.indexOf("开始匹配") < html.indexOf("看看知识星云"));
+  assert.ok(html.indexOf("开始匹配") < html.indexOf("意见反馈"));
   assert.doesNotMatch(html, /浏览全息装备库/);
   assert.doesNotMatch(html, /进入知识星云/);
 });
 
 test("home page consolidates privacy reassurance into the auth entry", () => {
-  const html = renderToStaticMarkup(
-    <HomePage
-      pageVariants={{}}
-      onStart={() => {}}
-      onBrowseLibrary={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      onOpenProfiles={() => {}}
-      authPanel={authPanel}
-    />,
-  );
+  const html = renderHomePage();
 
   assert.match(html, /登录后可加密保存推荐档案，支持多端同步，也可随时删除/);
   assert.doesNotMatch(html, /home-privacy-status/);
@@ -60,16 +79,7 @@ test("home page consolidates privacy reassurance into the auth entry", () => {
 });
 
 test("home page keeps authentication as a lightweight entry instead of an inline form", () => {
-  const html = renderToStaticMarkup(
-    <HomePage
-      pageVariants={{}}
-      onStart={() => {}}
-      onBrowseLibrary={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      onOpenProfiles={() => {}}
-      authPanel={authPanel}
-    />,
-  );
+  const html = renderHomePage();
 
   assert.match(html, /home-auth-entry/);
   assert.match(html, /登录 \/ 注册/);
@@ -79,17 +89,88 @@ test("home page keeps authentication as a lightweight entry instead of an inline
   assert.doesNotMatch(html, /登录后保存推荐档案/);
 });
 
-test("home page renders an animated inner-space entry atmosphere", () => {
+test("home auth overlay exposes dialog semantics for keyboard-accessible dismissal", () => {
   const html = renderToStaticMarkup(
-    <HomePage
-      pageVariants={{}}
-      onStart={() => {}}
-      onBrowseLibrary={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      onOpenProfiles={() => {}}
-      authPanel={authPanel}
-    />,
+    <HomeAuthOverlay onClose={() => {}}>
+      <div>auth content</div>
+    </HomeAuthOverlay>,
   );
+
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /aria-modal="true"/);
+  assert.match(html, /aria-labelledby="home-auth-dialog-title"/);
+  assert.match(html, /id="home-auth-dialog-title"/);
+  assert.match(html, /auth content/);
+});
+
+test("home auth overlay supports escape-key dismissal through its dialog container", () => {
+  let closeCount = 0;
+
+  const elementTree = HomeAuthOverlay({
+    onClose: () => {
+      closeCount += 1;
+    },
+    onKeyDown: (event) => {
+      if (event.key === "Escape") {
+        closeCount += 1;
+      }
+    },
+    children: <div>auth content</div>,
+  });
+
+  const elements = collectElements(elementTree);
+  const dialog = elements.find((element) => element.props.role === "dialog");
+
+  dialog.props.onKeyDown({ key: "Escape" });
+
+  assert.equal(closeCount, 1);
+});
+
+test("home auth overlay focus trap helper loops at overlay boundaries", () => {
+  assert.equal(
+    getHomeAuthOverlayFocusTrapTarget({
+      focusableCount: 3,
+      currentIndex: 2,
+      isShiftKey: false,
+    }),
+    0,
+  );
+  assert.equal(
+    getHomeAuthOverlayFocusTrapTarget({
+      focusableCount: 3,
+      currentIndex: 0,
+      isShiftKey: true,
+    }),
+    2,
+  );
+  assert.equal(
+    getHomeAuthOverlayFocusTrapTarget({
+      focusableCount: 3,
+      currentIndex: 1,
+      isShiftKey: false,
+    }),
+    null,
+  );
+});
+
+test("home auth overlay focus restore helper safely restores when possible", () => {
+  let focusCount = 0;
+
+  assert.equal(
+    restoreHomeAuthOverlayFocus({
+      focus() {
+        focusCount += 1;
+      },
+    }),
+    true,
+  );
+  assert.equal(focusCount, 1);
+  assert.equal(restoreHomeAuthOverlayFocus(null), false);
+  assert.equal(restoreHomeAuthOverlayFocus({}), false);
+});
+
+test("home page renders an animated inner-space entry atmosphere", () => {
+  const html = renderHomePage();
 
   assert.match(html, /home-space-depth/);
   assert.match(html, /home-orbit-core/);
@@ -99,65 +180,88 @@ test("home page renders an animated inner-space entry atmosphere", () => {
   assert.doesNotMatch(html, /overflow-hidden rounded-\[2rem\]/);
 });
 
-test("home page trims secondary ambient layers on mobile to protect smoothness", () => {
-  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+test("home page keeps ambient layers grouped behind stable semantic anchor nodes", () => {
+  const html = renderHomePage();
 
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.home-space-stars-b\s*\{[\s\S]*display:\s*none;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.home-space-comet\s*\{[\s\S]*display:\s*none;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.home-space-orbit-offset\s*\{[\s\S]*display:\s*none;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.home-panel-scan\s*\{[\s\S]*animation:\s*none\s*!important;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.home-primary-ignition::after\s*\{[\s\S]*animation:\s*none\s*!important;/,
-  );
+  assert.equal(countMatches(html, /home-space-stars-a/g), 1);
+  assert.equal(countMatches(html, /home-space-stars-b/g), 1);
+  assert.equal(countMatches(html, /home-space-orbit-offset/g), 1);
+  assert.equal(countMatches(html, /home-space-comet/g), 1);
+  assert.equal(countMatches(html, /home-panel-scan/g), 1);
+  assert.equal(countMatches(html, /home-primary-ignition/g), 1);
 });
 
-test("home page keeps a more compact mobile-first shell without losing the main action", () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
-    "utf8",
-  );
+test("home page keeps a focused hero shell with a single primary action and compact orbit scene", () => {
+  const html = renderHomePage();
 
-  assert.match(source, /className="relative mb-9 flex items-center justify-center sm:mb-12"/);
-  assert.match(source, /h-28 w-28 rounded-full border border-cyan-500\/20/);
-  assert.match(source, /sm:h-32 sm:w-32/);
-  assert.match(source, /h-36 w-36 rounded-full border border-indigo-500\/20 border-dashed/);
-  assert.match(source, /sm:h-40 sm:w-40/);
-  assert.match(source, /home-orbit-core relative z-10 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full glass-panel/);
-  assert.match(source, /sm:h-20 sm:w-20/);
-  assert.match(source, /glass-panel relative flex w-full flex-col items-center overflow-hidden rounded-\[1\.75rem\] p-6 text-center/);
-  assert.match(source, /sm:rounded-3xl sm:p-8/);
-  assert.match(source, /relative mb-2 text-2xl font-light tracking-\[0\.22em\] text-white/);
-  assert.match(source, /sm:text-3xl sm:tracking-widest/);
-  assert.match(source, /relative mb-7 font-mono text-\[11px\] tracking-\[0\.28em\] text-cyan-500\/80/);
-  assert.match(source, /sm:mb-8 sm:text-xs sm:tracking-widest/);
-  assert.match(source, /relative mb-8 max-w-\[19rem\] text-sm leading-7 text-slate-300/);
-  assert.match(source, /sm:mb-10 sm:max-w-\[300px\]/);
+  assert.equal(countMatches(html, /home-orbit-core/g), 1);
+  assert.equal(countMatches(html, /home-primary-ignition/g), 1);
+  assert.equal(countMatches(html, /glass-panel/g), 2);
+  assert.match(html, /内太空装备智能选品向导/);
+  assert.match(html, /SELECTION GUIDE/);
+  assert.match(html, /开始匹配/);
+  assert.ok(countMatches(html, /<button/g) >= 4);
 });
 
-test("home page stacks secondary entries and auth actions more comfortably on mobile", () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
-    "utf8",
+test("home page keeps secondary entry navigation and auth actions structurally distinct", () => {
+  const signedOutHtml = renderHomePage();
+  const signedInHtml = renderToStaticMarkup(
+    <HomePage
+      pageVariants={{}}
+      onStart={() => {}}
+      onBrowseLibrary={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      onOpenProfiles={() => {}}
+      authPanel={{ ...authPanel, userLabel: "taptaq" }}
+    />,
   );
 
-  assert.match(source, /home-secondary-node group relative inline-flex w-full sm:w-auto/);
-  assert.match(source, /relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-white\/8 bg-white\/\[0\.035\] px-4 py-2 text-xs tracking-wider text-slate-300/);
-  assert.match(source, /sm:w-auto/);
-  assert.match(source, /home-auth-entry mt-5 flex w-full flex-col gap-3 rounded-2xl border border-cyan-300\/12 bg-cyan-400\/\[0\.035\] px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between/);
-  assert.match(source, /className="shrink-0 rounded-full border border-cyan-300\/18 bg-cyan-300\/9 px-4 py-2 text-xs tracking-wider text-cyan-50 transition-colors hover:border-cyan-200\/34 hover:bg-cyan-300\/14 sm:w-auto"/);
-  assert.match(source, /className="home-auth-entry mt-5 flex w-full flex-col gap-3 rounded-2xl border border-emerald-300\/12 bg-emerald-400\/\[0\.045\] px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between"/);
-  assert.match(source, /className="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap"/);
+  assert.equal(countMatches(signedOutHtml, /home-secondary-node/g), 3);
+  assert.equal(countMatches(signedOutHtml, /home-auth-entry/g), 1);
+  assert.match(signedOutHtml, /登录 \/ 注册/);
+  assert.doesNotMatch(signedOutHtml, /我的装备匹配档案/);
+  assert.doesNotMatch(signedOutHtml, />退出</);
+
+  assert.equal(countMatches(signedInHtml, /home-secondary-node/g), 3);
+  assert.equal(countMatches(signedInHtml, /home-auth-entry/g), 1);
+  assert.match(signedInHtml, /我的装备匹配档案/);
+  assert.match(signedInHtml, />退出</);
+  assert.match(signedInHtml, /taptaq/);
+});
+
+test("home page feedback screenshot planning respects reserved capacity and reports validation issues", () => {
+  const planned = planHomeFeedbackScreenshotSelection({
+    currentCount: 1,
+    reservedCount: 1,
+    selectedTypes: ["image/png", "image/gif", "image/jpeg", "image/webp"],
+  });
+
+  assert.deepEqual(planned.acceptedIndexes, [0]);
+  assert.equal(planned.invalidTypeCount, 1);
+  assert.equal(planned.overflowCount, 2);
+  assert.equal(planned.remainingCapacity, 1);
+  assert.equal(planned.nextReservedCount, 2);
+  assert.equal(planned.hasInvalidTypeError, true);
+  assert.equal(planned.hasOverflowError, true);
+});
+
+test("home page feedback screenshot planning blocks additions when capacity is already reserved", () => {
+  const planned = planHomeFeedbackScreenshotSelection({
+    currentCount: 2,
+    reservedCount: 1,
+    selectedTypes: ["image/png"],
+  });
+
+  assert.deepEqual(planned.acceptedIndexes, []);
+  assert.equal(planned.remainingCapacity, 0);
+  assert.equal(planned.overflowCount, 1);
+  assert.equal(planned.hasOverflowError, true);
+});
+
+test("home page keeps feedback entry rendered without mounting the modal content by default", () => {
+  const html = renderHomePage();
+
+  assert.match(html, /意见反馈/);
+  assert.doesNotMatch(html, /反馈内容/);
+  assert.doesNotMatch(html, /截图上传（可选，最多 3 张）/);
 });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowUp, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowUp, Check, ChevronDown } from "lucide-react";
 import type { Product } from "../data/mock.ts";
 import { ProductCardContent } from "../components/ProductCardContent.tsx";
 import { PRICE_RANGE_OPTIONS, matchesPriceRange } from "../lib/app-shell.ts";
@@ -17,6 +17,126 @@ import {
   resolveLibrarySubtypeCode,
   resolveLibraryTypeCode,
 } from "../lib/library-product-type-classifier.ts";
+
+const libraryFilterLabelClassName =
+  "text-[10px] uppercase tracking-[0.24em] text-slate-500/90 font-mono";
+const libraryFilterTriggerClassName =
+  "library-filter-trigger flex w-full items-center justify-between gap-3 rounded-xl border border-cyan-400/15 bg-slate-950/70 px-3.5 py-2.5 text-left text-sm text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm transition-all hover:border-cyan-300/30 focus:border-cyan-300/45 focus:outline-none focus:ring-2 focus:ring-cyan-400/15";
+const libraryFilterOptionsClassName =
+  "library-filter-options absolute left-0 right-0 top-[calc(100%+0.55rem)] z-30 origin-top rounded-2xl border border-cyan-400/18 bg-slate-950/96 p-2 shadow-[0_18px_60px_rgba(2,12,27,0.72)] backdrop-blur-xl transition-all duration-150";
+const libraryFilterOptionClassName =
+  "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-200 transition-colors hover:bg-cyan-400/10 hover:text-white";
+
+type LibraryFilterOption = {
+  value: string;
+  label: string;
+};
+
+function LibraryFilterSelect({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: LibraryFilterOption[];
+  onChange: (value: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption =
+    options.find((option) => option.value === value) ?? options[0] ?? null;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`${libraryFilterTriggerClassName} ${
+          isOpen
+            ? "border-cyan-300/45 bg-slate-950/88 ring-2 ring-cyan-400/15"
+            : ""
+        }`}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className="truncate">
+          {selectedOption?.label ?? options[0]?.label ?? ""}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-cyan-200/55 transition-all ${
+            isOpen ? "rotate-180 text-cyan-100/80" : ""
+          }`}
+        />
+      </button>
+
+      <div
+        role="listbox"
+        aria-hidden={!isOpen}
+        className={`${libraryFilterOptionsClassName} ${
+          isOpen
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-1 opacity-0"
+        }`}
+      >
+        <div className="max-h-72 overflow-y-auto">
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`${libraryFilterOptionClassName} ${
+                  isSelected
+                    ? "bg-cyan-500/14 text-cyan-50 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.16)]"
+                    : ""
+                }`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="truncate">{option.label}</span>
+                <Check
+                  className={`h-4 w-4 shrink-0 transition-opacity ${
+                    isSelected ? "opacity-100 text-cyan-200" : "opacity-0"
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function LibraryPage({
   allProducts,
@@ -139,77 +259,72 @@ export function LibraryPage({
           </button>
         </div>
 
-        <div className="glass-panel rounded-[1.35rem] p-4 mb-8 border border-white/5 bg-white/5 sm:rounded-2xl sm:p-6 sm:mb-10">
+        <div className="glass-panel relative z-20 rounded-[1.35rem] p-4 mb-8 border border-white/5 bg-white/5 sm:rounded-2xl sm:p-6 sm:mb-10">
           <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+              <label className={libraryFilterLabelClassName}>
                 适用对象
               </label>
-              <select
+              <LibraryFilterSelect
                 value={filterGender}
-                onChange={(e) => onFilterGenderChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                <option value="all">全部性别</option>
-                <option value="female">女性向</option>
-                <option value="male">男性向</option>
-                <option value="unisex">通用型</option>
-              </select>
+                onChange={onFilterGenderChange}
+                options={[
+                  { value: "all", label: "全部性别" },
+                  { value: "female", label: "女性向" },
+                  { value: "male", label: "男性向" },
+                  { value: "unisex", label: "通用型" },
+                ]}
+              />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+              <label className={libraryFilterLabelClassName}>
                 类型
               </label>
-              <select
+              <LibraryFilterSelect
                 value={effectiveFilterType}
-                onChange={(e) => onFilterTypeChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                <option value="all">全部类型</option>
-                {allowedTypeCodes.map((typeCode) => (
-                  <option key={typeCode} value={typeCode}>
-                    {getLibraryTypeLabel(typeCode)}
-                  </option>
-                ))}
-              </select>
+                onChange={onFilterTypeChange}
+                options={[
+                  { value: "all", label: "全部类型" },
+                  ...allowedTypeCodes.map((typeCode) => ({
+                    value: typeCode,
+                    label: getLibraryTypeLabel(typeCode),
+                  })),
+                ]}
+              />
             </div>
 
             {allowedSubtypeCodes.length > 0 && (
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                <label className={libraryFilterLabelClassName}>
                   类型细分
                 </label>
-                <select
+                <LibraryFilterSelect
                   value={effectiveFilterSubtype}
-                  onChange={(e) => onFilterSubtypeChange(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-                >
-                  <option value="all">全部细分</option>
-                  {allowedSubtypeCodes.map((subtypeCode) => (
-                    <option key={subtypeCode} value={subtypeCode}>
-                      {getLibrarySubtypeLabel(subtypeCode)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={onFilterSubtypeChange}
+                  options={[
+                    { value: "all", label: "全部细分" },
+                    ...allowedSubtypeCodes.map((subtypeCode) => ({
+                      value: subtypeCode,
+                      label: getLibrarySubtypeLabel(subtypeCode),
+                    })),
+                  ]}
+                />
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+              <label className={libraryFilterLabelClassName}>
                 价格区间
               </label>
-              <select
+              <LibraryFilterSelect
                 value={filterPriceRange}
-                onChange={(e) => onFilterPriceRangeChange(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-              >
-                {PRICE_RANGE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onChange={onFilterPriceRangeChange}
+                options={PRICE_RANGE_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+              />
             </div>
 
             <div className="space-y-2">
@@ -251,67 +366,65 @@ export function LibraryPage({
             {isAdvancedFiltersOpen && (
               <div className="mt-4 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  <label className={libraryFilterLabelClassName}>
                     品牌厂商
                   </label>
-                  <select
+                  <LibraryFilterSelect
                     value={filterBrand}
-                    onChange={(e) => onFilterBrandChange(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-                  >
-                    <option value="all">所有品牌</option>
-                    {Array.from(new Set(products.map((product) => product.brand)))
-                      .sort()
-                      .map((brand) => (
-                        <option key={brand} value={brand}>
-                          {brand}
-                        </option>
-                      ))}
-                  </select>
+                    onChange={onFilterBrandChange}
+                    options={[
+                      { value: "all", label: "所有品牌" },
+                      ...Array.from(new Set(products.map((product) => product.brand)))
+                        .sort()
+                        .map((brand) => ({
+                          value: brand,
+                          label: brand,
+                        })),
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  <label className={libraryFilterLabelClassName}>
                     出品地区
                   </label>
-                  <select
+                  <LibraryFilterSelect
                     value={filterOrigin}
-                    onChange={(e) => onFilterOriginChange(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-                  >
-                    <option value="all">不限产地</option>
-                    <option value="domestic">国产品牌</option>
-                    <option value="international">海外品牌</option>
-                  </select>
+                    onChange={onFilterOriginChange}
+                    options={[
+                      { value: "all", label: "不限产地" },
+                      { value: "domestic", label: "国产品牌" },
+                      { value: "international", label: "海外品牌" },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-mono">
+                  <label className={libraryFilterLabelClassName}>
                     材质偏好
                   </label>
-                  <select
+                  <LibraryFilterSelect
                     value={filterMaterial}
-                    onChange={(e) => onFilterMaterialChange(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500/50 appearance-none"
-                  >
-                    <option value="all">所有材质</option>
-                    {Array.from(
-                      new Set(
-                        products.map((product) => {
-                          if (product.material.includes("硅胶")) return "硅胶";
-                          if (product.material.includes("ABS")) return "ABS";
-                          if (product.material.includes("TPE")) return "TPE";
-                          return product.material;
-                        }),
-                      ),
-                    )
-                      .sort()
-                      .map((material) => (
-                        <option key={material} value={material}>
-                          {material}
-                        </option>
-                      ))}
-                  </select>
+                    onChange={onFilterMaterialChange}
+                    options={[
+                      { value: "all", label: "所有材质" },
+                      ...Array.from(
+                        new Set(
+                          products.map((product) => {
+                            if (product.material.includes("硅胶")) return "硅胶";
+                            if (product.material.includes("ABS")) return "ABS";
+                            if (product.material.includes("TPE")) return "TPE";
+                            return product.material;
+                          }),
+                        ),
+                      )
+                        .sort()
+                        .map((material) => ({
+                          value: material,
+                          label: material,
+                        })),
+                    ]}
+                  />
                 </div>
               </div>
             )}
@@ -352,7 +465,7 @@ export function LibraryPage({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+          <div className="relative z-0 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {products
             .filter((product) => {
               const resolvedTypeCode = resolveLibraryTypeCode(product.typeCode, {

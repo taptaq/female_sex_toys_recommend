@@ -58,6 +58,9 @@ test("library page keeps primary filters visible and moves admin-like filters be
   assert.match(html, /价格区间/);
   assert.match(html, /静音阈值/);
   assert.match(html, /高级筛选/);
+  assert.match(html, /library-filter-trigger/);
+  assert.match(html, /library-filter-options/);
+  assert.doesNotMatch(html, /<select/);
   assert.doesNotMatch(html, /品牌厂商/);
   assert.doesNotMatch(html, /出品地区/);
   assert.doesNotMatch(html, /材质偏好/);
@@ -349,7 +352,7 @@ test("library page keeps a calmer mobile-first shell and lighter filter density"
   assert.match(source, /sm:pb-24/);
   assert.match(source, /text-center mb-8 sm:mb-10/);
   assert.match(source, /text-2xl font-light tracking-\[0\.2em\] text-white mb-2 sm:text-3xl sm:tracking-widest/);
-  assert.match(source, /glass-panel rounded-\[1\.35rem\] p-4 mb-8 border border-white\/5 bg-white\/5 sm:rounded-2xl sm:p-6 sm:mb-10/);
+  assert.match(source, /glass-panel relative z-20 rounded-\[1\.35rem\] p-4 mb-8 border border-white\/5 bg-white\/5 sm:rounded-2xl sm:p-6 sm:mb-10/);
   assert.match(source, /grid grid-cols-1 gap-4/);
   assert.match(source, /sm:gap-6 md:grid-cols-3/);
   assert.match(source, /mt-4 border-t border-white\/8 pt-4 sm:mt-5/);
@@ -384,7 +387,7 @@ test("library page product grid and back-to-top affordance stay mobile-friendly"
     />,
   );
 
-  assert.match(source, /grid grid-cols-1 gap-4/);
+  assert.match(source, /relative z-0 grid grid-cols-1 gap-4/);
   assert.match(source, /sm:grid-cols-2 sm:gap-6 lg:grid-cols-3/);
   assert.match(source, /glass-panel rounded-\[1\.35rem\] overflow-hidden flex flex-col group hover:border-cyan-500\/40 transition-all hover:bg-white\/5 sm:rounded-2xl/);
   assert.match(source, /fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full/);

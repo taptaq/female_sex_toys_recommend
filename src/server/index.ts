@@ -20,6 +20,11 @@ import {
   createSaveUserRecommendationProfileHandler,
 } from './user-recommendation-route.ts';
 import { createUserRecommendationStore } from './user-recommendation-store.ts';
+import {
+  createUserFeedbackStore,
+  ensureUserFeedbackSchema,
+} from './user-feedback-store.ts';
+import { createSaveUserFeedbackHandler } from './user-feedback-route.ts';
 import { createUsernameRegistrationHandler } from './user-register-route.ts';
 import { createUsernameRegistrationService } from './user-register-service.ts';
 import { createSupabaseAccessTokenVerifier } from './user-auth.ts';
@@ -54,6 +59,7 @@ const knowledgeNebulaStore = createKnowledgeNebulaStore({
   embeddingService: knowledgeEmbeddingService,
 });
 const userRecommendationStore = createUserRecommendationStore({ pool });
+const userFeedbackStore = createUserFeedbackStore({ pool });
 const usernameRegistrationService = createUsernameRegistrationService({
   supabaseUrl: process.env.VITE_SUPABASE_URL,
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -223,6 +229,12 @@ app.post(
   createKnowledgeNebulaRecordCardViewHandler({ store: knowledgeNebulaStore }),
 );
 app.post(
+  '/api/feedback',
+  createSaveUserFeedbackHandler({
+    store: userFeedbackStore,
+  }),
+);
+app.post(
   '/api/user/recommendation-profiles',
   createSaveUserRecommendationProfileHandler({
     encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
@@ -244,6 +256,7 @@ app.get(
 void Promise.all([
   ensureRecommenderItemsSchema(pool),
   ensureKnowledgeNebulaSchema(pool),
+  ensureUserFeedbackSchema(pool),
   ensureUserRecommendationSchema(pool),
 ])
   .then(() => {
