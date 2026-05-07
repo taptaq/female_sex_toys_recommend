@@ -11,7 +11,7 @@ type SelectContaminantToyIds = (rows: Array<{
   product_raw_description: string | null;
 }>) => string[];
 
-test("selectContaminantToyIds selects adapter and machine rows but excludes clean products", async () => {
+test("selectContaminantToyIds selects adapter, connector, accessory, and machine rows but excludes clean and care products", async () => {
   const loadModule = new Function(
     "specifier",
     "return import(specifier);",
@@ -51,9 +51,27 @@ test("selectContaminantToyIds selects adapter and machine rows but excludes clea
         id: "toy-machine",
         gender: "female",
         physical_form: "external",
-        name: "Lovense Sex Machine",
-        raw_description: "机座驱动平台，适配多种配件",
-        product_tags: ["机座", "平台设备", "配件兼容"],
+        name: "LovenseSex Machine",
+        raw_description: null,
+        product_tags: null,
+        product_raw_description: null,
+      },
+      {
+        id: "toy-connector",
+        gender: "unisex",
+        physical_form: "external",
+        name: "Magnetic Connector",
+        raw_description: "用于连接主机与替换头的磁吸连接器配件",
+        product_tags: ["连接器", "配件", "replacement"],
+        product_raw_description: null,
+      },
+      {
+        id: "toy-accessory",
+        gender: "male",
+        physical_form: "external",
+        name: "TENGA FLIP 0(ZERO)异次元配件",
+        raw_description: null,
+        product_tags: null,
         product_raw_description: null,
       },
       {
@@ -66,6 +84,24 @@ test("selectContaminantToyIds selects adapter and machine rows but excludes clea
         product_raw_description: null,
       },
       {
+        id: "toy-machine-generic",
+        gender: "female",
+        physical_form: "external",
+        name: "Spinel",
+        raw_description: "应用程序控制、多附件抽插、震动与加热假阳具机器",
+        product_tags: ["APP控制", "远程遥控"],
+        product_raw_description: null,
+      },
+      {
+        id: "toy-lube",
+        gender: "male",
+        physical_form: "external",
+        name: "Water-Based Lubricant 100ml",
+        raw_description: "人体润滑液，水基配方，亲肤易清洗",
+        product_tags: ["润滑液", "水基"],
+        product_raw_description: null,
+      },
+      {
         id: "toy-remote-legit",
         gender: "unisex",
         physical_form: "external",
@@ -75,6 +111,6 @@ test("selectContaminantToyIds selects adapter and machine rows but excludes clea
         product_raw_description: null,
       },
     ]),
-    ["toy-adapter", "toy-machine"],
+    ["toy-adapter", "toy-machine", "toy-connector", "toy-accessory", "toy-machine-generic"],
   );
 });

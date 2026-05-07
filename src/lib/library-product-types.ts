@@ -10,6 +10,7 @@ export type LibraryTypeCode =
   | "cock_ring"
   | "couples"
   | "wearable_remote"
+  | "care_accessory"
   | "unknown";
 
 export type LibrarySelectableTypeCode = LibraryTypeCode;
@@ -36,7 +37,10 @@ export type LibrarySubtypeCode =
   | "external_couples"
   | "panty_wearable"
   | "insertable_remote"
-  | "dual_wearable_remote";
+  | "dual_wearable_remote"
+  | "lube_care"
+  | "condom"
+  | "lingerie";
 
 export type LibrarySubtypeSelection = LibrarySubtypeCode | "all";
 
@@ -50,6 +54,7 @@ const TYPE_LABELS: Record<LibraryTypeCode, string> = {
   cock_ring: "环类/穿戴",
   couples: "双人互动",
   wearable_remote: "远控穿戴",
+  care_accessory: "护理与周边",
   unknown: "其他",
 };
 
@@ -74,6 +79,9 @@ const SUBTYPE_LABELS: Record<LibrarySubtypeCode, string> = {
   panty_wearable: "隐形穿戴",
   insertable_remote: "入体远控",
   dual_wearable_remote: "双人远控",
+  lube_care: "润滑护理",
+  condom: "避孕套",
+  lingerie: "内衣服饰",
 };
 
 const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]> = {
@@ -87,11 +95,20 @@ const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]
     "cock_ring",
     "couples",
     "wearable_remote",
+    "care_accessory",
     "unknown",
   ],
-  female: ["suction", "external_vibe", "insertable", "dual_stimulation", "unknown"],
-  male: ["masturbator", "prostate", "cock_ring", "unknown"],
-  unisex: ["couples", "wearable_remote", "unknown"],
+  female: [
+    "suction",
+    "external_vibe",
+    "insertable",
+    "dual_stimulation",
+    "wearable_remote",
+    "care_accessory",
+    "unknown",
+  ],
+  male: ["masturbator", "prostate", "cock_ring", "care_accessory", "unknown"],
+  unisex: ["couples", "wearable_remote", "care_accessory", "unknown"],
 };
 
 const TYPE_TO_SUBTYPES: Partial<Record<Exclude<LibrarySelectableTypeCode, "unknown">, LibrarySubtypeCode[]>> = {
@@ -104,6 +121,7 @@ const TYPE_TO_SUBTYPES: Partial<Record<Exclude<LibrarySelectableTypeCode, "unkno
   cock_ring: ["classic_cock_ring", "vibrating_cock_ring"],
   couples: ["insertable_couples", "external_couples"],
   wearable_remote: ["panty_wearable", "insertable_remote", "dual_wearable_remote"],
+  care_accessory: ["lube_care", "condom", "lingerie"],
 };
 
 const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCode> = {
@@ -127,6 +145,9 @@ const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCo
   panty_wearable: "wearable_remote",
   insertable_remote: "wearable_remote",
   dual_wearable_remote: "wearable_remote",
+  lube_care: "care_accessory",
+  condom: "care_accessory",
+  lingerie: "care_accessory",
 };
 
 export function getLibraryTypeLabel(typeCode: LibraryTypeCode) {

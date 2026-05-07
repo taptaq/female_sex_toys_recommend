@@ -101,6 +101,16 @@ test("repo ships a type code backfill script for recommender_toys", () => {
   assert.doesNotMatch(scriptSource, /recommender_items/);
 });
 
+test("repo ships a contaminant purge script for recommender_toys", () => {
+  const packageSource = read("package.json");
+  const scriptSource = read("src/db/purge-recommender-toy-contaminants.ts");
+
+  assert.match(packageSource, /db:purge:contaminant-toys/);
+  assert.match(scriptSource, /DELETE FROM public\.recommender_toys/);
+  assert.match(scriptSource, /selectContaminantToyIds/);
+  assert.doesNotMatch(scriptSource, /recommender_items/);
+});
+
 test("public metadata avoids direct high-risk wording", () => {
   const metadataSource = read("metadata.json");
   const readmeSource = read("README.md");

@@ -25,6 +25,7 @@ import { createUsernameRegistrationService } from './user-register-service.ts';
 import { createSupabaseAccessTokenVerifier } from './user-auth.ts';
 import { buildSafeDisplayName } from '../lib/product-display-name.ts';
 import {
+  resolveLibraryAudienceGender,
   resolveLibrarySubtypeCode,
   resolveLibraryTypeCode,
 } from '../lib/library-product-type-classifier.ts';
@@ -91,8 +92,17 @@ app.get('/api/recommender/toys', async (_req, res) => {
 
     // 格式化输出为前端兼容的驼峰命名
     const normalized = result.rows.map((t) => {
-      const resolvedTypeCode = resolveLibraryTypeCode(t.type_code, {
+      const resolvedGender = resolveLibraryAudienceGender({
         gender: t.gender,
+        physicalForm: t.physical_form,
+        name: t.name,
+        rawDescription: [t.raw_description, t.product_raw_description]
+          .filter(Boolean)
+          .join('\n') || null,
+        tags: Array.isArray(t.tags) ? t.tags : [],
+      });
+      const resolvedTypeCode = resolveLibraryTypeCode(t.type_code, {
+        gender: resolvedGender,
         physicalForm: t.physical_form,
         name: t.name,
         rawDescription: [t.raw_description, t.product_raw_description]
@@ -102,7 +112,7 @@ app.get('/api/recommender/toys', async (_req, res) => {
       });
       const resolvedSubtypeCode = resolveLibrarySubtypeCode(t.subtype_code, {
         typeCode: resolvedTypeCode,
-        gender: t.gender,
+        gender: resolvedGender,
         physicalForm: t.physical_form,
         name: t.name,
         rawDescription: [t.raw_description, t.product_raw_description]
@@ -123,7 +133,7 @@ app.get('/api/recommender/toys', async (_req, res) => {
         appearance: t.appearance,
         physicalForm: t.physical_form,
         motorType: t.motor_type,
-        gender: t.gender,
+        gender: resolvedGender,
         typeCode: resolvedTypeCode,
         subtypeCode: resolvedSubtypeCode,
         brand: t.brand || '探索品牌',

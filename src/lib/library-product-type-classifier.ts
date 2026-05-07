@@ -13,14 +13,27 @@ export type LibraryTypeClassifierInput = {
   typeCode?: string | null;
 };
 
+export type ResolvedLibraryAudienceGender = "female" | "male" | "unisex";
+
 function normalizeValue(value?: string | null) {
   return String(value ?? "")
     .trim()
     .toLowerCase();
 }
 
+const DESCRIPTION_LEAD_SIGNAL_LIMIT = 420;
+
+function buildDescriptionLeadText(rawDescription?: string | null) {
+  const normalized = normalizeValue(rawDescription);
+  const [localLeadText] = normalized.split(/\[英文正文摘录\]|\[英文详情\]/u, 1);
+
+  return localLeadText.slice(0, DESCRIPTION_LEAD_SIGNAL_LIMIT);
+}
+
 function collectSignalText(input: LibraryTypeClassifierInput) {
-  return [input.name, input.rawDescription, ...(input.tags ?? [])]
+  const descriptionLeadText = buildDescriptionLeadText(input.rawDescription);
+
+  return [input.name, descriptionLeadText, ...(input.tags ?? [])]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join("\n")
     .toLowerCase();
@@ -64,8 +77,10 @@ const EXTERNAL_VIBE_PATTERNS = [
   /口红/u,
   /按摩棒/u,
   /震动棒/u,
+  /振动棒/u,
   /魔杖/u,
   /\bvibe\b/u,
+  /\bvibrator\b/u,
   /\bwand\b/u,
 ];
 
@@ -117,6 +132,8 @@ const INSERTABLE_STRONG_PATTERNS = [
   /包裹/u,
   /g点棒/u,
   /阴道/u,
+  /假阳具/u,
+  /\bdildo\b/u,
   /\binternal\b/u,
 ];
 
@@ -133,9 +150,20 @@ const CLITORAL_PATTERNS = [
 
 const MASTURBATOR_PATTERNS = [
   /飞机杯/u,
+  /飞机/u,
   /自慰杯/u,
+  /男性自慰器/u,
+  /男用自慰器/u,
+  /自慰蛋/u,
   /手冲杯/u,
+  /男用杯/u,
+  /胶杯/u,
+  /软胶杯/u,
   /名器/u,
+  /伸缩杯/u,
+  /\bfleshlight\b/u,
+  /\begg\s*(set)?\b/u,
+  /\bspinner\b/u,
   /\bmasturbator\b/u,
   /\bstroker\b/u,
   /\bcup\b/u,
@@ -187,10 +215,14 @@ const COCK_RING_PATTERNS = [
   /锁精环/u,
   /延时环/u,
   /震动环/u,
+  /阴茎环/u,
+  /阴茎按摩器/u,
+  /阴茎振动器/u,
   /环体/u,
   /环类/u,
   /cock\s*ring/u,
   /penis\s*ring/u,
+  /penis\s*(massager|vibrator)/u,
 ];
 
 const RING_POWER_PATTERNS = [
@@ -206,6 +238,10 @@ const COUPLES_PATTERNS = [
   /共玩/u,
   /互动/u,
   /共享/u,
+  /for\s+two/u,
+  /for\s+couples/u,
+  /for\s+couple/u,
+  /orgasms?\s+for\s+two/u,
   /\bcouple/u,
 ];
 
@@ -243,8 +279,73 @@ const NEGATED_WEARABLE_PATTERNS = [
   /not\s+wearable/u,
 ];
 
-const CONTAMINANT_NAME_PATTERNS = [
-  /\bsex\s*machine\b/u,
+const LUBE_STRONG_PATTERNS = [
+  /润滑液/u,
+  /润滑剂/u,
+  /人体润滑/u,
+  /润滑啫喱/u,
+  /润滑凝胶/u,
+  /水基/u,
+  /玻尿酸/u,
+  /\blube\b/iu,
+  /\blubricant\b/iu,
+  /water[-\s]*based/iu,
+];
+
+const CONDOM_STRONG_PATTERNS = [
+  /避孕套/u,
+  /安全套/u,
+  /套套/u,
+  /\bcondom(s)?\b/iu,
+];
+
+const LINGERIE_STRONG_PATTERNS = [
+  /情趣内衣/u,
+  /内衣/u,
+  /蕾丝/u,
+  /连体衣/u,
+  /睡衣/u,
+  /\blingerie\b/iu,
+  /\bbodysuit\b/iu,
+  /\bsleepwear\b/iu,
+  /\blace\b/iu,
+];
+
+const DEVICE_BLOCKER_PATTERNS = [
+  ...SUCTION_PATTERNS,
+  ...EXTERNAL_VIBE_PATTERNS,
+  ...DUAL_STIMULATION_PATTERNS,
+  ...INSERTABLE_PATTERNS,
+  ...MASTURBATOR_PATTERNS,
+  ...PROSTATE_PATTERNS,
+  ...COCK_RING_PATTERNS,
+  ...COUPLES_PATTERNS,
+  ...REMOTE_PATTERNS,
+  /肛塞/u,
+  /后庭/u,
+  /\banal\b/u,
+  /\bbutt\s*plug\b/u,
+  /\bplug\b/u,
+  /假阳具/u,
+  /\bdildo\b/u,
+];
+
+const CONTAMINANT_STRONG_NAME_PATTERNS = [
+  /sex\s*machine/u,
+  /\badapter\b/u,
+  /\bconnector\b/u,
+  /\breplacement\b/u,
+  /\bwebcam\b/u,
+  /适配器/u,
+  /连接器/u,
+  /配件/u,
+  /替换(头|件|装|配件)/u,
+  /转接器/u,
+  /机座/u,
+  /摄像头/u,
+];
+
+const CONTAMINANT_TAG_NAME_PATTERNS = [
   /\badapter\b/u,
   /\bwebcam\b/u,
   /适配器/u,
@@ -263,6 +364,64 @@ const CONTAMINANT_SUPPORT_PATTERNS = [
   /replacement/u,
 ];
 
+const CONTAMINANT_DESCRIPTION_PATTERNS = [
+  /性爱机器/u,
+  /假阳具机器/u,
+  /口交机器/u,
+  /抽插.{0,8}机器/u,
+];
+
+const FEMALE_AUDIENCE_PATTERNS = [
+  /女性/u,
+  /女用/u,
+  /她/u,
+  /\bfemale\b/u,
+  /阴蒂/u,
+  /g点/u,
+  /g-spot/u,
+  /c点/u,
+  /跳蛋/u,
+  /震动棒/u,
+  /按摩棒/u,
+  /吮吸/u,
+  /兔耳/u,
+  /兔嘴/u,
+  /兔子/u,
+  /口红/u,
+  /lipstick/u,
+  /bullet/u,
+  /panty/u,
+];
+
+const MALE_AUDIENCE_PATTERNS = [
+  /男性/u,
+  /男用/u,
+  /男士/u,
+  /\bmale\b/u,
+  /for\s+men/u,
+  /飞机杯/u,
+  /自慰杯/u,
+  /自慰蛋/u,
+  /自慰器/u,
+  /阴茎/u,
+  /龟头/u,
+  /前列腺/u,
+  /阴茎环/u,
+  /\bpenis\b/u,
+  /\bcock\s*ring\b/u,
+  /\bfleshlight\b/u,
+  /\bstroker\b/u,
+];
+
+const UNISEX_AUDIENCE_PATTERNS = [
+  /通用/u,
+  /男女/u,
+  /双方/u,
+  /for\s+two/u,
+  /for\s+couples/u,
+  /\bunisex\b/u,
+];
+
 type SignalCorpus = {
   nameText: string;
   descriptionText: string;
@@ -275,22 +434,124 @@ function buildSignalCorpus(input: LibraryTypeClassifierInput): SignalCorpus {
   return {
     nameText: normalizeValue(input.name),
     descriptionText: normalizeValue(input.rawDescription),
-    descriptionLeadText: normalizeValue(input.rawDescription).slice(0, 320),
+    descriptionLeadText: buildDescriptionLeadText(input.rawDescription),
     tagText: (input.tags ?? []).join("\n").toLowerCase(),
     signalText: collectSignalText(input),
   };
 }
 
 function isAccessoryOrMachineLike(corpus: SignalCorpus) {
-  if (hasAnySignal(corpus.nameText, CONTAMINANT_NAME_PATTERNS)) {
+  if (hasAnySignal(corpus.nameText, CONTAMINANT_STRONG_NAME_PATTERNS)) {
+    return true;
+  }
+
+  if (hasAnySignal(corpus.descriptionLeadText, CONTAMINANT_DESCRIPTION_PATTERNS)) {
     return true;
   }
 
   return (
-    hasAnySignal(corpus.tagText, CONTAMINANT_NAME_PATTERNS) ||
+    hasAnySignal(corpus.tagText, CONTAMINANT_TAG_NAME_PATTERNS) ||
     (hasAnySignal(corpus.tagText, CONTAMINANT_SUPPORT_PATTERNS) &&
       hasAnySignal(corpus.nameText, CONTAMINANT_SUPPORT_PATTERNS))
   );
+}
+
+function selectCareSubtypeFromText(text: string) {
+  if (!text) {
+    return null;
+  }
+
+  if (hasAnySignal(text, LINGERIE_STRONG_PATTERNS)) {
+    return "lingerie" as const;
+  }
+
+  if (hasAnySignal(text, CONDOM_STRONG_PATTERNS)) {
+    return "condom" as const;
+  }
+
+  if (hasAnySignal(text, LUBE_STRONG_PATTERNS)) {
+    return "lube_care" as const;
+  }
+
+  return null;
+}
+
+function selectCareAccessorySubtype(corpus: SignalCorpus) {
+  const nameSubtype = selectCareSubtypeFromText(corpus.nameText);
+  if (nameSubtype) {
+    return nameSubtype;
+  }
+
+  const trustedDeviceText = [
+    corpus.nameText,
+    corpus.tagText,
+    corpus.descriptionLeadText,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  if (hasAnySignal(trustedDeviceText, DEVICE_BLOCKER_PATTERNS)) {
+    return null;
+  }
+
+  const tagSubtype = selectCareSubtypeFromText(corpus.tagText);
+  if (tagSubtype) {
+    return tagSubtype;
+  }
+
+  return null;
+}
+
+function normalizeAudienceGender(
+  gender?: string | null,
+): ResolvedLibraryAudienceGender | null {
+  const normalizedGender = normalizeValue(gender);
+  if (
+    normalizedGender === "female" ||
+    normalizedGender === "male" ||
+    normalizedGender === "unisex"
+  ) {
+    return normalizedGender;
+  }
+
+  return null;
+}
+
+function inferExplicitAudienceGender(corpus: SignalCorpus) {
+  const trustedAudienceText = [
+    corpus.nameText,
+    corpus.tagText,
+    corpus.descriptionLeadText,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const hasUnisexAudienceSignals = hasAnySignal(
+    trustedAudienceText,
+    UNISEX_AUDIENCE_PATTERNS,
+  );
+  const hasFemaleAudienceSignals = hasAnySignal(
+    trustedAudienceText,
+    FEMALE_AUDIENCE_PATTERNS,
+  );
+  const hasMaleAudienceSignals = hasAnySignal(
+    trustedAudienceText,
+    MALE_AUDIENCE_PATTERNS,
+  );
+
+  if (hasUnisexAudienceSignals) {
+    return "unisex" as const;
+  }
+
+  if (hasFemaleAudienceSignals && !hasMaleAudienceSignals) {
+    return "female" as const;
+  }
+
+  if (hasMaleAudienceSignals && !hasFemaleAudienceSignals) {
+    return "male" as const;
+  }
+
+  return null;
 }
 
 export function isLibraryContaminantInput(input: LibraryTypeClassifierInput) {
@@ -308,9 +569,92 @@ function scoreBySource(
 ) {
   return (
     scoreSignalMatches(corpus.nameText, patterns, weights.name ?? 0) +
-    scoreSignalMatches(corpus.descriptionText, patterns, weights.description ?? 0) +
+    scoreSignalMatches(corpus.descriptionLeadText, patterns, weights.description ?? 0) +
     scoreSignalMatches(corpus.tagText, patterns, weights.tags ?? 0)
   );
+}
+
+type LibraryTypeClassificationContext = {
+  storedGender: ResolvedLibraryAudienceGender | null;
+  physicalForm: string;
+  corpus: SignalCorpus;
+  signalText: string;
+  tagText: string;
+  hasSuction: boolean;
+  hasExternalVibe: boolean;
+  hasDualStimulation: boolean;
+  hasInsertable: boolean;
+  hasMasturbator: boolean;
+  hasProstate: boolean;
+  hasCockRing: boolean;
+  hasCouples: boolean;
+  hasRemote: boolean;
+  hasWearable: boolean;
+  hasPantyWearableSignals: boolean;
+  hasCuratedGSpotTag: boolean;
+  hasCuratedClitoralTag: boolean;
+  hasCuratedDualTag: boolean;
+  hasPairedTargetZones: boolean;
+  hasRabbitSimultaneousSignals: boolean;
+  careAccessorySubtype: "lingerie" | "condom" | "lube_care" | null;
+};
+
+function buildClassificationContext(
+  input: LibraryTypeClassifierInput,
+): LibraryTypeClassificationContext {
+  const physicalForm = normalizeValue(input.physicalForm);
+  const corpus = buildSignalCorpus(input);
+  const signalText = corpus.signalText;
+  const tagText = corpus.tagText;
+  const hasSuction = hasAnySignal(signalText, SUCTION_PATTERNS);
+  const hasExternalVibe = hasAnySignal(signalText, EXTERNAL_VIBE_PATTERNS);
+  const hasDualStimulation = hasAnySignal(signalText, DUAL_STIMULATION_PATTERNS);
+  const hasInsertable = hasAnySignal(signalText, INSERTABLE_PATTERNS);
+  const hasMasturbator = hasAnySignal(signalText, MASTURBATOR_PATTERNS);
+  const hasProstate = hasAnySignal(signalText, PROSTATE_PATTERNS);
+  const hasCockRing = hasAnySignal(signalText, COCK_RING_PATTERNS);
+  const hasCouples = hasAnySignal(signalText, COUPLES_PATTERNS);
+  const hasRemote = hasAnySignal(signalText, REMOTE_PATTERNS);
+  const hasWearable =
+    hasAnySignal(signalText, WEARABLE_PATTERNS) &&
+    !hasAnySignal(signalText, NEGATED_WEARABLE_PATTERNS);
+  const hasPantyWearableSignals = hasAnySignal(signalText, PANTY_WEARABLE_PATTERNS);
+  const hasCuratedGSpotTag = /g点刺激/u.test(tagText);
+  const hasCuratedClitoralTag = /阴蒂刺激/u.test(tagText);
+  const hasCuratedDualTag =
+    /双刺激|兔耳双刺激|内外刺激|双头/u.test(tagText) ||
+    (hasCuratedGSpotTag && hasCuratedClitoralTag);
+  const hasPairedTargetZones =
+    hasCuratedDualTag ||
+    /g点.{0,8}(阴蒂|clit|clitoral)/u.test(signalText) ||
+    /(阴蒂|clit|clitoral).{0,8}g点/u.test(signalText);
+  const hasRabbitSimultaneousSignals =
+    /兔嘴兔耳|兔耳.{0,6}同时刺激|同时刺激/u.test(signalText);
+
+  return {
+    storedGender: normalizeAudienceGender(input.gender),
+    physicalForm,
+    corpus,
+    signalText,
+    tagText,
+    hasSuction,
+    hasExternalVibe,
+    hasDualStimulation,
+    hasInsertable,
+    hasMasturbator,
+    hasProstate,
+    hasCockRing,
+    hasCouples,
+    hasRemote,
+    hasWearable,
+    hasPantyWearableSignals,
+    hasCuratedGSpotTag,
+    hasCuratedClitoralTag,
+    hasCuratedDualTag,
+    hasPairedTargetZones,
+    hasRabbitSimultaneousSignals,
+    careAccessorySubtype: selectCareAccessorySubtype(corpus),
+  };
 }
 
 function selectTopScoredType(
@@ -331,6 +675,234 @@ function selectTopScoredType(
   }
 
   return bestScore >= minimumScore ? bestType : "unknown";
+}
+
+function classifyFemaleTypeFromContext(
+  context: LibraryTypeClassificationContext,
+): LibraryTypeCode {
+  const insertableStrongScore = scoreBySource(
+    context.corpus,
+    INSERTABLE_STRONG_PATTERNS,
+    { name: 5, description: 4, tags: 4 },
+  );
+  const insertableWeakScore = scoreBySource(
+    context.corpus,
+    INSERTABLE_WEAK_PATTERNS,
+    { name: 1, description: 1, tags: 1 },
+  );
+  const clitoralScore = scoreBySource(
+    context.corpus,
+    CLITORAL_PATTERNS,
+    { name: 2, description: 2, tags: 2 },
+  );
+  const hasSemanticEvidence =
+    context.hasSuction ||
+    context.hasExternalVibe ||
+    context.hasDualStimulation ||
+    context.hasInsertable ||
+    context.hasCuratedDualTag ||
+    context.hasCuratedGSpotTag ||
+    context.hasCuratedClitoralTag ||
+    insertableStrongScore > 0 ||
+    insertableWeakScore > 0 ||
+    clitoralScore > 0;
+
+  const scores: Record<LibraryTypeCode, number> = {
+    suction: scoreBySource(context.corpus, SUCTION_PATTERNS, {
+      name: 7,
+      description: 6,
+      tags: 5,
+    }),
+    external_vibe: scoreBySource(context.corpus, EXTERNAL_VIBE_PATTERNS, {
+      name: 5,
+      description: 4,
+      tags: 4,
+    }),
+    insertable: insertableStrongScore + insertableWeakScore,
+    dual_stimulation: scoreBySource(context.corpus, DUAL_STIMULATION_PATTERNS, {
+      name: 6,
+      description: 5,
+      tags: 5,
+    }),
+    masturbator: 0,
+    prostate: 0,
+    cock_ring: 0,
+    couples: 0,
+    wearable_remote: 0,
+    care_accessory: 0,
+    unknown: 0,
+  };
+
+  if (context.physicalForm === "composite" && hasSemanticEvidence) {
+    scores.dual_stimulation += 6;
+  }
+
+  if (
+    context.physicalForm === "internal" &&
+    (context.hasInsertable || insertableStrongScore > 0 || insertableWeakScore > 0)
+  ) {
+    scores.insertable += 4;
+  }
+
+  if (context.physicalForm === "external") {
+    if (context.hasExternalVibe || clitoralScore > 0) {
+      scores.external_vibe += 3;
+    }
+
+    if (context.hasSuction) {
+      scores.suction += 2;
+    }
+  }
+
+  if (context.hasRemote && context.hasWearable) {
+    scores.wearable_remote += context.hasPantyWearableSignals ? 10 : 8;
+  }
+
+  if (context.hasCuratedDualTag) {
+    scores.dual_stimulation += 5;
+  }
+
+  if (context.hasPairedTargetZones && context.hasSuction) {
+    scores.dual_stimulation += 7;
+  }
+
+  if (
+    context.hasRabbitSimultaneousSignals &&
+    (context.hasSuction || insertableStrongScore > 0)
+  ) {
+    scores.dual_stimulation += 7;
+  }
+
+  if (
+    insertableStrongScore > 0 &&
+    (clitoralScore > 0 || context.hasExternalVibe || context.hasSuction)
+  ) {
+    scores.dual_stimulation += 4;
+  } else if (
+    insertableWeakScore > 0 &&
+    clitoralScore > 0 &&
+    (context.hasExternalVibe || context.hasSuction)
+  ) {
+    scores.dual_stimulation += 3;
+  }
+
+  if (clitoralScore > 0) {
+    scores.external_vibe += Math.min(clitoralScore, 2);
+  }
+
+  return selectTopScoredType(
+    scores,
+    ["wearable_remote", "dual_stimulation", "suction", "external_vibe", "insertable"],
+    3,
+  );
+}
+
+function classifyMaleTypeFromContext(
+  context: LibraryTypeClassificationContext,
+): LibraryTypeCode {
+  if (context.hasProstate) {
+    return "prostate";
+  }
+
+  if (context.hasCockRing) {
+    return "cock_ring";
+  }
+
+  if (context.hasMasturbator) {
+    return "masturbator";
+  }
+
+  return "unknown";
+}
+
+function classifyUnisexTypeFromContext(
+  context: LibraryTypeClassificationContext,
+  femaleTypeCode: LibraryTypeCode,
+  maleTypeCode: LibraryTypeCode,
+): LibraryTypeCode {
+  if (context.hasRemote && context.hasWearable) {
+    return "wearable_remote";
+  }
+
+  if (context.hasCouples) {
+    return "couples";
+  }
+
+  if (femaleTypeCode !== "unknown" && maleTypeCode !== "unknown") {
+    return "couples";
+  }
+
+  return "unknown";
+}
+
+function selectCareAudienceGender(
+  context: LibraryTypeClassificationContext,
+  explicitAudienceGender: ResolvedLibraryAudienceGender | null,
+): ResolvedLibraryAudienceGender {
+  if (explicitAudienceGender) {
+    return explicitAudienceGender;
+  }
+
+  if (context.careAccessorySubtype === "lingerie") {
+    return context.storedGender === "male" ? "male" : "female";
+  }
+
+  return context.storedGender ?? "unisex";
+}
+
+function resolveAudienceGenderFromContext(
+  context: LibraryTypeClassificationContext,
+  femaleTypeCode: LibraryTypeCode,
+  maleTypeCode: LibraryTypeCode,
+  unisexTypeCode: LibraryTypeCode,
+): ResolvedLibraryAudienceGender {
+  const explicitAudienceGender = inferExplicitAudienceGender(context.corpus);
+
+  if (context.careAccessorySubtype) {
+    return selectCareAudienceGender(context, explicitAudienceGender);
+  }
+
+  if (explicitAudienceGender === "unisex") {
+    return "unisex";
+  }
+
+  if (explicitAudienceGender === "female" && femaleTypeCode !== "unknown") {
+    return "female";
+  }
+
+  if (explicitAudienceGender === "male" && maleTypeCode !== "unknown") {
+    return "male";
+  }
+
+  if (context.storedGender === "female" && femaleTypeCode !== "unknown") {
+    return "female";
+  }
+
+  if (context.storedGender === "male" && maleTypeCode !== "unknown") {
+    return "male";
+  }
+
+  if (context.storedGender === "unisex" && unisexTypeCode !== "unknown") {
+    return "unisex";
+  }
+
+  if (femaleTypeCode !== "unknown" && maleTypeCode === "unknown") {
+    return "female";
+  }
+
+  if (maleTypeCode !== "unknown" && femaleTypeCode === "unknown") {
+    return "male";
+  }
+
+  if (
+    femaleTypeCode !== "unknown" &&
+    maleTypeCode !== "unknown" &&
+    unisexTypeCode !== "unknown"
+  ) {
+    return "unisex";
+  }
+
+  return context.storedGender ?? "unisex";
 }
 
 function selectSubtypeFromSignals(
@@ -435,6 +1007,10 @@ function selectSubtypeFromSignals(
   }
 
   if (resolvedTypeCode === "wearable_remote") {
+    if (hasPantyWearableSignals) {
+      return "panty_wearable";
+    }
+
     if (hasCouplesSignals) {
       return "dual_wearable_remote";
     }
@@ -443,8 +1019,8 @@ function selectSubtypeFromSignals(
       return "insertable_remote";
     }
 
-    if (hasPantyWearableSignals || (hasRemoteSignals && hasWearableSignals)) {
-      return hasPantyWearableSignals ? "panty_wearable" : null;
+    if (hasRemoteSignals && hasWearableSignals) {
+      return null;
     }
 
     return null;
@@ -484,180 +1060,65 @@ function selectSubtypeFromSignals(
 export function classifyLibraryTypeCode(
   input: LibraryTypeClassifierInput,
 ): LibraryTypeCode {
-  const gender = normalizeValue(input.gender);
-  const physicalForm = normalizeValue(input.physicalForm);
-  const corpus = buildSignalCorpus(input);
-  const signalText = corpus.signalText;
-  const tagText = corpus.tagText;
+  const context = buildClassificationContext(input);
 
-  const hasSuction = hasAnySignal(signalText, SUCTION_PATTERNS);
-  const hasExternalVibe = hasAnySignal(signalText, EXTERNAL_VIBE_PATTERNS);
-  const hasDualStimulation = hasAnySignal(signalText, DUAL_STIMULATION_PATTERNS);
-  const hasInsertable = hasAnySignal(signalText, INSERTABLE_PATTERNS);
-  const hasMasturbator = hasAnySignal(signalText, MASTURBATOR_PATTERNS);
-  const hasProstate = hasAnySignal(signalText, PROSTATE_PATTERNS);
-  const hasCockRing = hasAnySignal(signalText, COCK_RING_PATTERNS);
-  const hasCouples = hasAnySignal(signalText, COUPLES_PATTERNS);
-  const hasRemote = hasAnySignal(signalText, REMOTE_PATTERNS);
-  const hasWearable =
-    hasAnySignal(signalText, WEARABLE_PATTERNS) &&
-    !hasAnySignal(signalText, NEGATED_WEARABLE_PATTERNS);
-  const hasCuratedGSpotTag = /g点刺激/u.test(tagText);
-  const hasCuratedClitoralTag = /阴蒂刺激/u.test(tagText);
-  const hasCuratedDualTag =
-    /双刺激|兔耳双刺激|内外刺激|双头/u.test(tagText) ||
-    (hasCuratedGSpotTag && hasCuratedClitoralTag);
-  const hasPairedTargetZones =
-    hasCuratedDualTag ||
-    /g点.{0,8}(阴蒂|clit|clitoral)/u.test(signalText) ||
-    /(阴蒂|clit|clitoral).{0,8}g点/u.test(signalText);
-  const hasRabbitSimultaneousSignals =
-    /兔嘴兔耳|兔耳.{0,6}同时刺激|同时刺激/u.test(signalText);
-
-  if (gender === "female") {
-    if (isAccessoryOrMachineLike(corpus)) {
-      return "unknown";
-    }
-
-    const insertableStrongScore = scoreBySource(
-      corpus,
-      INSERTABLE_STRONG_PATTERNS,
-      { name: 5, description: 4, tags: 4 },
-    );
-    const insertableWeakScore = scoreBySource(
-      corpus,
-      INSERTABLE_WEAK_PATTERNS,
-      { name: 1, description: 1, tags: 1 },
-    );
-    const clitoralScore = scoreBySource(
-      corpus,
-      CLITORAL_PATTERNS,
-      { name: 2, description: 2, tags: 2 },
-    );
-    const hasSemanticEvidence =
-      hasSuction ||
-      hasExternalVibe ||
-      hasDualStimulation ||
-      hasInsertable ||
-      hasCuratedDualTag ||
-      hasCuratedGSpotTag ||
-      hasCuratedClitoralTag ||
-      insertableStrongScore > 0 ||
-      insertableWeakScore > 0 ||
-      clitoralScore > 0;
-
-    const scores: Record<LibraryTypeCode, number> = {
-      suction: scoreBySource(corpus, SUCTION_PATTERNS, {
-        name: 7,
-        description: 6,
-        tags: 5,
-      }),
-      external_vibe: scoreBySource(corpus, EXTERNAL_VIBE_PATTERNS, {
-        name: 5,
-        description: 4,
-        tags: 4,
-      }),
-      insertable: insertableStrongScore + insertableWeakScore,
-      dual_stimulation: scoreBySource(corpus, DUAL_STIMULATION_PATTERNS, {
-        name: 6,
-        description: 5,
-        tags: 5,
-      }),
-      masturbator: 0,
-      prostate: 0,
-      cock_ring: 0,
-      couples: 0,
-      wearable_remote: 0,
-      unknown: 0,
-    };
-
-    if (physicalForm === "composite" && hasSemanticEvidence) {
-      scores.dual_stimulation += 6;
-    }
-
-    if (
-      physicalForm === "internal" &&
-      (hasInsertable || insertableStrongScore > 0 || insertableWeakScore > 0)
-    ) {
-      scores.insertable += 4;
-    }
-
-    if (physicalForm === "external") {
-      if (hasExternalVibe || clitoralScore > 0) {
-        scores.external_vibe += 3;
-      }
-
-      if (hasSuction) {
-        scores.suction += 2;
-      }
-    }
-
-    if (hasCuratedDualTag) {
-      scores.dual_stimulation += 5;
-    }
-
-    if (hasPairedTargetZones && hasSuction) {
-      scores.dual_stimulation += 7;
-    }
-
-    if (hasRabbitSimultaneousSignals && (hasSuction || insertableStrongScore > 0)) {
-      scores.dual_stimulation += 7;
-    }
-
-    if (insertableStrongScore > 0 && (clitoralScore > 0 || hasExternalVibe || hasSuction)) {
-      scores.dual_stimulation += 4;
-    } else if (
-      insertableWeakScore > 0 &&
-      clitoralScore > 0 &&
-      (hasExternalVibe || hasSuction)
-    ) {
-      scores.dual_stimulation += 3;
-    }
-
-    if (clitoralScore > 0) {
-      scores.external_vibe += Math.min(clitoralScore, 2);
-    }
-
-    return selectTopScoredType(
-      scores,
-      ["dual_stimulation", "suction", "external_vibe", "insertable"],
-      3,
-    );
-  }
-
-  if (gender === "male") {
-    if (hasProstate) {
-      return "prostate";
-    }
-
-    if (hasCockRing) {
-      return "cock_ring";
-    }
-
-    if (hasMasturbator) {
-      return "masturbator";
-    }
-
+  if (isAccessoryOrMachineLike(context.corpus)) {
     return "unknown";
   }
 
-  if (gender === "unisex") {
-    if (isAccessoryOrMachineLike(corpus)) {
-      return "unknown";
-    }
-
-    if (hasRemote && hasWearable) {
-      return "wearable_remote";
-    }
-
-    if (hasCouples) {
-      return "couples";
-    }
-
-    return "unknown";
+  if (context.careAccessorySubtype) {
+    return "care_accessory";
   }
 
-  return "unknown";
+  const femaleTypeCode = classifyFemaleTypeFromContext(context);
+  const maleTypeCode = classifyMaleTypeFromContext(context);
+  const unisexTypeCode = classifyUnisexTypeFromContext(
+    context,
+    femaleTypeCode,
+    maleTypeCode,
+  );
+  const resolvedAudienceGender = resolveAudienceGenderFromContext(
+    context,
+    femaleTypeCode,
+    maleTypeCode,
+    unisexTypeCode,
+  );
+
+  if (resolvedAudienceGender === "female") {
+    return femaleTypeCode;
+  }
+
+  if (resolvedAudienceGender === "male") {
+    return maleTypeCode;
+  }
+
+  return unisexTypeCode;
+}
+
+export function resolveLibraryAudienceGender(
+  input: LibraryTypeClassifierInput,
+): ResolvedLibraryAudienceGender {
+  const context = buildClassificationContext(input);
+  const explicitAudienceGender = inferExplicitAudienceGender(context.corpus);
+
+  if (context.careAccessorySubtype) {
+    return selectCareAudienceGender(context, explicitAudienceGender);
+  }
+
+  const femaleTypeCode = classifyFemaleTypeFromContext(context);
+  const maleTypeCode = classifyMaleTypeFromContext(context);
+  const unisexTypeCode = classifyUnisexTypeFromContext(
+    context,
+    femaleTypeCode,
+    maleTypeCode,
+  );
+
+  return resolveAudienceGenderFromContext(
+    context,
+    femaleTypeCode,
+    maleTypeCode,
+    unisexTypeCode,
+  );
 }
 
 export function classifyLibrarySubtypeCode(
@@ -685,6 +1146,10 @@ export function classifyLibrarySubtypeCode(
     INSERTABLE_STRONG_PATTERNS,
     { name: 5, description: 4, tags: 4 },
   );
+
+  if (resolvedTypeCode === "care_accessory") {
+    return selectCareAccessorySubtype(corpus);
+  }
 
   return selectSubtypeFromSignals(
     resolvedTypeCode as LibraryTypeCode,

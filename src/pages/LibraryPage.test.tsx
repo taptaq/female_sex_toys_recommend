@@ -95,7 +95,58 @@ test("library page shows only male type options when male gender is selected", (
   assert.match(html, /类型/);
   assert.match(html, /飞机杯/);
   assert.match(html, /前列腺探索/);
+  assert.match(html, /护理与周边/);
   assert.doesNotMatch(html, /吮吸类/);
+});
+
+test("library page filters care accessory products by subtype", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({
+          id: "c1",
+          name: "Water-Based Lubricant 100ml",
+          gender: "male",
+          typeCode: "care_accessory",
+          subtypeCode: "lube_care",
+        }),
+        makeProduct({
+          id: "c2",
+          name: "Lace Bodysuit",
+          gender: "female",
+          typeCode: "care_accessory",
+          subtypeCode: "lingerie",
+        }),
+      ]}
+      filterGender="all"
+      filterType="care_accessory"
+      filterSubtype="lube_care"
+      filterBrand="all"
+      filterOrigin="all"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterSubtypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /护理与周边/);
+  assert.match(html, /润滑护理/);
+  assert.match(html, /避孕套/);
+  assert.match(html, /内衣服饰/);
+  assert.match(html, /Water-Based Lubricant 100ml/);
+  assert.doesNotMatch(html, /Lace Bodysuit/);
 });
 
 test("library page filters products by selected type code", () => {
