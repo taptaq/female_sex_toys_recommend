@@ -40,7 +40,10 @@ import {
   resolveCurrentResultSourceState,
   type ResultRecalibrationResponse,
 } from "./lib/result-recalibration";
-import { tuneResultAnswers, type ResultTuningMode } from "./lib/result-tuning";
+import {
+  applyResultTuningModes,
+  type ResultTuningMode,
+} from "./lib/result-tuning";
 import {
   buildRecommendationProfilePayload,
   listRecommendationProfiles,
@@ -53,6 +56,7 @@ import {
   sanitizeLibraryTypeSelection,
   type LibraryAudienceGender,
 } from "./lib/library-product-types.ts";
+import { buildRecommendationCandidatePool } from "./lib/recommendation-candidate-pool.ts";
 import {
   getCurrentSupabaseSession,
   isSupabaseAuthConfigured,
@@ -80,6 +84,7 @@ import { ProfilesPage } from "./pages/ProfilesPage";
 import {
   buildKnowledgeNebulaPath,
   parseKnowledgeNebulaPath,
+  resolveKnowledgeBackNavigation,
 } from "./lib/knowledge-nebula-route";
 import type { KnowledgeNebulaTopicSlug } from "./data/knowledge-nebula";
 
@@ -116,6 +121,8 @@ type AppAiProxyResponse<T> = {
 type PersistedAppState = {
   step?: number;
   answers?: AnswerState;
+  resultBaseAnswers?: AnswerState;
+  appliedResultTuningModes?: ResultTuningMode[];
   topProducts?: RankedProduct[];
   backupProducts?: BackupProduct[];
   recommendationTips?: string[];
@@ -606,6 +613,12 @@ export default function App() {
   const [answers, setAnswers] = useState<AnswerState>(
     persistedState.answers ?? { tags: [] },
   );
+  const [resultBaseAnswers, setResultBaseAnswers] = useState<AnswerState | null>(
+    persistedState.resultBaseAnswers ?? null,
+  );
+  const [appliedResultTuningModes, setAppliedResultTuningModes] = useState<
+    ResultTuningMode[]
+  >(persistedState.appliedResultTuningModes ?? []);
   const [allProducts, setAllProducts] = useState<Product[]>(cachedProducts);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(cachedProducts.length > 0);
@@ -794,6 +807,30 @@ export default function App() {
     return "/";
   };
 
+  const clearResultTuningTracking = () => {
+    setResultBaseAnswers(null);
+    setAppliedResultTuningModes([]);
+  };
+
+  const resetResultViewState = () => {
+    setTopProducts([]);
+    setBackupProducts([]);
+    setRecommendationTips([]);
+    setShoppingGuidance([]);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
+    setResultRecalibrationAttemptCount(0);
+    applyResultSourceState(clearResultSourceState());
+  };
+
+  const startFreshQuizSession = () => {
+    clearResultTuningTracking();
+    resetResultViewState();
+    setAnswers({ tags: [] });
+    setStep(0);
+    navigateTo("/quiz");
+  };
+
   useEffect(() => {
     if (currentRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
       navigateToKnowledgeNebula(undefined, undefined, true);
@@ -937,6 +974,8 @@ export default function App() {
       {
         step,
         answers,
+        resultBaseAnswers,
+        appliedResultTuningModes,
         topProducts,
         backupProducts,
         recommendationTips,
@@ -956,6 +995,8 @@ export default function App() {
   }, [
     step,
     answers,
+    resultBaseAnswers,
+    appliedResultTuningModes,
     topProducts,
     backupProducts,
     recommendationTips,
@@ -1109,15 +1150,11 @@ export default function App() {
       (question) => question.id === questionByCondition.id,
     );
 
-    setAnswers(removeQuizQuestionAnswer(answers, questionByCondition));
-    setTopProducts([]);
-    setBackupProducts([]);
-    setRecommendationTips([]);
-    setShoppingGuidance([]);
-    setResultRecalibrationError(null);
-    setIsRecalibratingResults(false);
-    setResultRecalibrationAttemptCount(0);
-    applyResultSourceState(clearResultSourceState());
+    const editableAnswers = resultBaseAnswers ?? answers;
+
+    clearResultTuningTracking();
+    setAnswers(removeQuizQuestionAnswer(editableAnswers, questionByCondition));
+    resetResultViewState();
     setStep(questionIndex);
     navigateTo("/quiz");
   };
@@ -1125,21 +1162,17 @@ export default function App() {
   const handleJumpToQuizQuestion = (questionIndex: number) => {
     if (questionIndex < 0 || questionIndex >= step) return;
 
+    const editableAnswers = resultBaseAnswers ?? answers;
+
+    clearResultTuningTracking();
     setAnswers(
       removeQuizAnswersFromQuestionIndex(
-        answers,
+        editableAnswers,
         activeQuestions.slice(questionIndex),
         0,
       ),
     );
-    setTopProducts([]);
-    setBackupProducts([]);
-    setRecommendationTips([]);
-    setShoppingGuidance([]);
-    setResultRecalibrationError(null);
-    setIsRecalibratingResults(false);
-    setResultRecalibrationAttemptCount(0);
-    applyResultSourceState(clearResultSourceState());
+    resetResultViewState();
     setStep(questionIndex);
   };
 
@@ -1158,51 +1191,24 @@ export default function App() {
     currentAnswers: AnswerState,
     productsData: Product[],
   ): LocalResultComputation {
-    const filtered = productsData.filter((p) => {
-      if (
-        currentAnswers.budget &&
-        (p.price < currentAnswers.budget[0] ||
-          p.price > currentAnswers.budget[1])
-      ) {
-        return false;
-      }
-      if (
-        currentAnswers.maxDb &&
-        p.maxDb != null &&
-        p.maxDb > currentAnswers.maxDb
-      ) {
-        return false;
-      }
-      if (
-        currentAnswers.appearance === "high_disguise" &&
-        p.appearance !== "high_disguise"
-      ) {
-        return false;
-      }
-      if (
-        currentAnswers.gender &&
-        p.gender !== "unisex" &&
-        p.gender !== currentAnswers.gender
-      ) {
-        return false;
-      }
-      return true;
-    });
+    const recommendationPool = buildRecommendationCandidatePool(
+      currentAnswers,
+      productsData,
+    );
+    const filtered = recommendationPool.filteredProducts;
+    const relaxedProducts = recommendationPool.relaxedProducts;
 
     const recommendationTips: string[] = [];
 
     if (filtered.length < 3) {
       if (currentAnswers.budget) {
-        const potentialByBudget = productsData.filter((p) => {
+        const potentialByBudget = relaxedProducts.filter((p) => {
           const matchOther =
             (!currentAnswers.maxDb ||
               p.maxDb == null ||
               p.maxDb <= currentAnswers.maxDb) &&
             (currentAnswers.appearance !== "high_disguise" ||
-              p.appearance === "high_disguise") &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
+              p.appearance === "high_disguise");
           return (
             matchOther &&
             (p.price < currentAnswers.budget[0] ||
@@ -1217,17 +1223,14 @@ export default function App() {
       }
 
       if (currentAnswers.appearance === "high_disguise") {
-        const potentialByAppearance = productsData.filter((p) => {
+        const potentialByAppearance = relaxedProducts.filter((p) => {
           const matchOther =
             (!currentAnswers.maxDb ||
               p.maxDb == null ||
               p.maxDb <= currentAnswers.maxDb) &&
             (!currentAnswers.budget ||
               (p.price >= currentAnswers.budget[0] &&
-                p.price <= currentAnswers.budget[1])) &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
+                p.price <= currentAnswers.budget[1]));
           return matchOther && p.appearance !== "high_disguise";
         });
         if (potentialByAppearance.length > 0) {
@@ -1238,16 +1241,13 @@ export default function App() {
       }
 
       if (currentAnswers.maxDb && currentAnswers.maxDb < 60) {
-        const potentialByNoise = productsData.filter((p) => {
+        const potentialByNoise = relaxedProducts.filter((p) => {
           const matchOther =
             (currentAnswers.appearance !== "high_disguise" ||
               p.appearance === "high_disguise") &&
             (!currentAnswers.budget ||
               (p.price >= currentAnswers.budget[0] &&
-                p.price <= currentAnswers.budget[1])) &&
-            (!currentAnswers.gender ||
-              p.gender === "unisex" ||
-              p.gender === currentAnswers.gender);
+                p.price <= currentAnswers.budget[1]));
           return (
             matchOther && p.maxDb != null && p.maxDb > currentAnswers.maxDb
           );
@@ -1260,7 +1260,7 @@ export default function App() {
       }
     }
 
-    const candidates = filtered.length >= 3 ? filtered : productsData;
+    const candidates = recommendationPool.rankedInputProducts;
     const scorePreset = selectScorePreset(currentAnswers, candidates);
     const rankedCandidates = candidates
       .map((product) =>
@@ -1559,9 +1559,15 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   }
 
   function handleTuneResults(mode: ResultTuningMode) {
-    const tunedAnswers = tuneResultAnswers(answers, mode);
+    const baseAnswers = resultBaseAnswers ?? answers;
+    const nextAppliedModes = appliedResultTuningModes.includes(mode)
+      ? appliedResultTuningModes
+      : [...appliedResultTuningModes, mode];
+    const tunedAnswers = applyResultTuningModes(baseAnswers, nextAppliedModes);
     const localResult = buildLocalResultComputation(tunedAnswers, allProducts);
 
+    setResultBaseAnswers(baseAnswers);
+    setAppliedResultTuningModes(nextAppliedModes);
     setAnswers(tunedAnswers);
     setResultRecalibrationError(null);
     setIsRecalibratingResults(false);
@@ -1679,6 +1685,8 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
     activeQs: Question[] = activeQuestions,
     productsData: Product[] = allProducts,
   ) => {
+    setResultBaseAnswers(currentAnswers);
+    setAppliedResultTuningModes([]);
     const localResult = buildLocalResultComputation(currentAnswers, productsData);
 
     setIsAiMatching(true);
@@ -1839,6 +1847,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
   };
 
   const resetQuiz = () => {
+    clearResultTuningTracking();
     applyResultSourceState(clearResultSourceState());
     setStep(0);
     setAnswers({ tags: [] });
@@ -1853,6 +1862,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
 
   const handleBackHomeFromQuiz = () => {
     const clearedState = createClearedQuizSessionState();
+    clearResultTuningTracking();
     applyResultSourceState(clearResultSourceState());
     setStep(clearedState.step);
     setAnswers(clearedState.answers);
@@ -1989,10 +1999,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
           {currentRoute === "/" && (
             <HomePage
               pageVariants={pageVariants}
-              onStart={() => {
-                setStep(0);
-                navigateTo("/quiz");
-              }}
+              onStart={startFreshQuizSession}
               onBrowseLibrary={() => {
                 navigateTo("/library");
               }}
@@ -2033,6 +2040,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
             <ResultsPage
               pageVariants={pageVariants}
               answers={answers}
+              appliedResultTuningModes={appliedResultTuningModes}
               topProducts={topProducts}
               backupProducts={backupProducts}
               shoppingGuidance={shoppingGuidance}
@@ -2053,6 +2061,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               isSavingRecommendationProfile={isSavingRecommendationProfile}
               saveRecommendationProfileMessage={saveRecommendationProfileMessage}
               authPanel={authPanel}
+              onBackHome={handleBackHomeFromQuiz}
               onReset={resetQuiz}
             />
           )}
@@ -2074,11 +2083,17 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
               topicSlug={selectedKnowledgeTopicSlug}
               sectionId={selectedKnowledgeSectionId}
               onBack={() => {
-                if (selectedKnowledgeTopicSlug) {
+                const backNavigation = resolveKnowledgeBackNavigation(
+                  knowledgeOriginRoute,
+                  selectedKnowledgeTopicSlug,
+                );
+
+                if (backNavigation.kind === "knowledge-hub") {
                   navigateToKnowledgeNebula(undefined, undefined, true);
                   return;
                 }
-                navigateTo(knowledgeOriginRoute ?? "/");
+
+                navigateTo(backNavigation.route);
               }}
               onSelectTopic={(topicSlug) => {
                 navigateToKnowledgeNebula(topicSlug, undefined);

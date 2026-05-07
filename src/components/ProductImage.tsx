@@ -4,13 +4,19 @@ import { Sparkles } from "lucide-react";
 const DEFAULT_FALLBACK_CLASS_NAME =
   "bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-cyan-950/90";
 
-function isRemoteProductImage(value: string) {
-  return /^https?:\/\//i.test(value.trim());
+function isRenderableProductImageSource(value: string) {
+  const trimmed = value.trim();
+
+  return (
+    /^https?:\/\//i.test(trimmed) ||
+    /^data:image\//i.test(trimmed) ||
+    /^blob:/i.test(trimmed)
+  );
 }
 
 export function getInitialProductImageState(imageValue: string) {
   const trimmed = imageValue.trim();
-  const isRemoteImage = isRemoteProductImage(trimmed);
+  const isRemoteImage = isRenderableProductImageSource(trimmed);
 
   return {
     isRemoteImage,
@@ -23,7 +29,7 @@ export function getNextProductImageStateOnError(imageValue: string) {
 
   return {
     isRemoteImage: false,
-    resolvedImageClassName: isRemoteProductImage(trimmed) ? "" : trimmed,
+    resolvedImageClassName: isRenderableProductImageSource(trimmed) ? "" : trimmed,
   };
 }
 

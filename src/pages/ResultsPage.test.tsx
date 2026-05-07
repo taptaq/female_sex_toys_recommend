@@ -81,6 +81,75 @@ test("results page shows confidence, fit reasons, and caveats for the primary re
   assert.match(html, /防水表现达到 IPX7/);
 });
 
+test("results page exposes a detail link for the primary recommendation when a product url is available", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[
+        makeProduct({
+          id: "p1",
+          name: "Primary Pick",
+          sourceUrl: "https://example.com/primary-pick",
+        }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /href="https:\/\/example.com\/primary-pick"/);
+  assert.match(html, /点击查看详情/);
+});
+
+test("results page makes the primary image area and title share the same detail link hotspot", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[
+        makeProduct({
+          id: "p1",
+          name: "Primary Pick",
+          sourceUrl: "https://example.com/primary-pick",
+          imagePlaceholder: "",
+        }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(
+    html,
+    /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*Primary Pick 默认图片[\s\S]*Primary Pick[\s\S]*<\/a>/,
+  );
+});
+
 test("results page shows what not to prioritize when the user still has strong constraints or uncertainty", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
@@ -207,10 +276,98 @@ test("results page prioritizes the primary recommendation before secondary contr
     "primary recommendation should be rendered before save/login controls",
   );
   assert.ok(
-    html.indexOf("快速微调结果") < html.indexOf("Top 3 快速对比"),
-    "quick tuning should stay near the primary result instead of competing with comparison",
+    html.indexOf("主推荐横向对比") < html.indexOf("快速微调结果"),
+    "comparison should follow the formal candidates before result-adjustment controls",
   );
   assert.doesNotMatch(html, /算法最匹配（第 1 推荐）/);
+});
+
+test("results page keeps comparison and backup headings in the same Chinese tone", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[
+        makeProduct({ id: "p1", name: "Primary Pick" }),
+        makeProduct({ id: "p2", name: "Second Pick", score: 88 }),
+        makeProduct({ id: "p3", name: "Third Pick", score: 82 }),
+      ]}
+      backupProducts={[
+        {
+          ...makeProduct({ id: "b1", name: "Backup Pick", score: 80 }),
+          backupLabel: "更静音",
+          backupReason: "更适合低打扰场景。",
+        },
+      ]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /主推荐横向对比/);
+  assert.match(html, /换个侧重点看看/);
+  assert.doesNotMatch(html, /Top 3 快速对比/);
+});
+
+test("results page groups formal candidates together before adjustment actions and final checks", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音", "高伪装"], appearance: "high_disguise" }}
+      topProducts={[
+        makeProduct({ id: "p1", name: "Primary Pick" }),
+        makeProduct({ id: "p2", name: "Second Pick", score: 88 }),
+        makeProduct({ id: "p3", name: "Third Pick", score: 82 }),
+      ]}
+      backupProducts={[
+        {
+          ...makeProduct({ id: "b1", name: "Backup Pick", score: 80 }),
+          backupLabel: "更静音",
+          backupReason: "更适合低打扰场景。",
+        },
+      ]}
+      shoppingGuidance={[
+        "购买前优先确认是否有明确售后和材质说明。",
+        "收到后先完成基础清洁，再进入第一次使用。",
+      ]}
+      recommendationTips={["如果同住，先优先比较更安静的路线。"]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.ok(
+    html.indexOf("探索备选") < html.indexOf("主推荐横向对比"),
+    "secondary formal candidates should appear before the comparison section",
+  );
+  assert.ok(
+    html.indexOf("换个侧重点看看") < html.indexOf("快速微调结果"),
+    "backup directions should stay with candidate exploration before adjustment controls",
+  );
+  assert.ok(
+    html.indexOf("下一步建议") < html.indexOf("购买前最终自检"),
+    "final self-check should close the page after the action-oriented next steps",
+  );
 });
 
 test("results page shows tuning feedback and disables already applied tuning modes", () => {
@@ -218,6 +375,7 @@ test("results page shows tuning feedback and disables already applied tuning mod
     <ResultsPage
       pageVariants={{}}
       answers={{ tags: ["静音", "微调：更安静"] }}
+      appliedResultTuningModes={["quieter"]}
       topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
       backupProducts={[]}
       shoppingGuidance={[]}
@@ -239,6 +397,41 @@ test("results page shows tuning feedback and disables already applied tuning mod
   assert.match(html, /已应用更安静一点/);
   assert.match(html, /已应用：更安静一点/);
   assert.match(html, /disabled=""/);
+});
+
+test("results page does not disable tuning buttons just because stale tuning tags exist in answers", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["静音", "微调：更安静", "微调：预算更低", "微调：新手友好"],
+      }}
+      appliedResultTuningModes={[]}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.doesNotMatch(html, /已应用更安静一点/);
+  assert.doesNotMatch(html, /已应用预算低一点/);
+  assert.doesNotMatch(html, /已应用更适合新手/);
+  assert.match(
+    html,
+    /正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。/,
+  );
 });
 
 test("results page offers direct entry points to revise key quiz conditions", () => {
@@ -677,4 +870,32 @@ test("results page hides model selection details and only exposes a regenerate r
   assert.doesNotMatch(html, /Mimo（DMX）/);
   assert.doesNotMatch(html, /Qwen（DMX）/);
   assert.doesNotMatch(html, /mimo-v2\.5-free/);
+});
+
+test("results page offers separate restart and return-home actions", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.match(html, /重新回答偏好问题/);
+  assert.match(html, /返回首页/);
 });

@@ -19,7 +19,6 @@ import { dedupeDisplayTags } from "../lib/display-tags.ts";
 import {
   RESULT_TUNING_OPTIONS,
   type ResultTuningMode,
-  getResultTuningAppliedTag,
 } from "../lib/result-tuning.ts";
 import {
   buildResultComparisonRows,
@@ -306,6 +305,7 @@ function renderConfidenceSummary(
 type ResultsPageProps = {
   pageVariants: any;
   answers: AnswerState;
+  appliedResultTuningModes?: ResultTuningMode[];
   topProducts: RankedProduct[];
   backupProducts: ResultsBackupProduct[];
   shoppingGuidance: string[];
@@ -328,12 +328,14 @@ type ResultsPageProps = {
     onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
     onSignOut: () => Promise<void>;
   };
+  onBackHome?: () => void;
   onReset: () => void;
 };
 
 export function ResultsPage({
   pageVariants,
   answers,
+  appliedResultTuningModes = [],
   topProducts,
   backupProducts,
   shoppingGuidance,
@@ -349,6 +351,7 @@ export function ResultsPage({
   isSavingRecommendationProfile,
   saveRecommendationProfileMessage,
   authPanel,
+  onBackHome,
   onReset,
 }: ResultsPageProps) {
   const [isRecalibrationPanelOpen, setIsRecalibrationPanelOpen] = useState(false);
@@ -382,6 +385,12 @@ export function ResultsPage({
     comparisonRows,
     comparisonProducts.length,
   );
+  const primaryProductHref = topProducts[0]
+    ? getProductHref(topProducts[0])
+    : undefined;
+  const primaryProductDisplayName = topProducts[0]
+    ? getProductDisplayName(topProducts[0])
+    : "";
   const backupDirectionTeaser = buildBackupDirectionTeaser(backupProducts);
   const primaryConfidenceSummary = topProducts[0]
     ? buildResultConfidenceSummary(topProducts[0], answers)
@@ -394,7 +403,7 @@ export function ResultsPage({
   const visibleResultTags = resultTags.slice(0, 4);
   const hiddenResultTagCount = Math.max(resultTags.length - visibleResultTags.length, 0);
   const appliedTuningOptions = RESULT_TUNING_OPTIONS.filter((option) =>
-    answers.tags.includes(getResultTuningAppliedTag(option.mode)),
+    appliedResultTuningModes.includes(option.mode),
   );
   const isSignedIn = Boolean(authPanel.userLabel);
   const sortedParameterPreviewItems = getSortedParameterPreviewItems(answers);
@@ -461,21 +470,61 @@ export function ResultsPage({
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent" />
           <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-stretch">
             <div className="relative min-h-56 overflow-hidden rounded-3xl border border-white/8 bg-black/20">
-              {renderProductImage(topProducts[0], "h-8 w-8 text-white/50")}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                <div>
-                  <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                    主推荐方案
-                  </span>
-                  <h3 className="break-words text-xl font-medium leading-snug text-white">
-                    {getProductDisplayName(topProducts[0])}
-                  </h3>
-                </div>
-                <span className="shrink-0 text-xl font-semibold text-cyan-300">
-                  ¥{topProducts[0].price}
-                </span>
-              </div>
+              {primaryProductHref ? (
+                <>
+                  <a
+                    href={primaryProductHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`查看 ${primaryProductDisplayName} 详情`}
+                    className="group absolute inset-0 block overflow-hidden rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  >
+                    {renderProductImage(topProducts[0], "h-8 w-8 text-white/50")}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent transition-opacity group-hover:opacity-90" />
+                    <div className="absolute bottom-4 left-4 right-24">
+                      <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
+                        主推荐方案
+                      </span>
+                      <h3 className="break-words text-xl font-medium leading-snug text-white transition-colors group-hover:text-cyan-50">
+                        {primaryProductDisplayName}
+                      </h3>
+                    </div>
+                  </a>
+                  <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex shrink-0 flex-col items-end gap-2">
+                    <span className="text-xl font-semibold text-cyan-300">
+                      ¥{topProducts[0].price}
+                    </span>
+                    <a
+                      href={primaryProductHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="pointer-events-auto group inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                    >
+                      {renderClickableHint()}
+                    </a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {renderProductImage(topProducts[0], "h-8 w-8 text-white/50")}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                    <div>
+                      <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
+                        主推荐方案
+                      </span>
+                      <h3 className="break-words text-xl font-medium leading-snug text-white">
+                        {primaryProductDisplayName}
+                      </h3>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      <span className="text-xl font-semibold text-cyan-300">
+                        ¥{topProducts[0].price}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col justify-between gap-4">
@@ -604,426 +653,6 @@ export function ResultsPage({
         </section>
       )}
 
-      {topProducts.length > 0 && (
-        <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-white">快速微调结果</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-400">
-                保留当前问卷，只轻微调整一个侧重点。
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {RESULT_TUNING_OPTIONS.map((option) => {
-                const isApplied = answers.tags.includes(getResultTuningAppliedTag(option.mode));
-                const isActive = activeTuningMode === option.mode;
-
-                return (
-                  <button
-                    key={option.mode}
-                    type="button"
-                    onClick={() => handleTuneResultClick(option.mode)}
-                    disabled={isRecalibratingResults || isApplied || activeTuningMode != null}
-                    className={[
-                      "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors",
-                      isApplied
-                        ? "border-emerald-300/18 bg-emerald-400/8 text-emerald-100/70"
-                        : "border-cyan-400/18 bg-cyan-400/8 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/14",
-                      isRecalibratingResults || isApplied || activeTuningMode != null
-                        ? "cursor-not-allowed opacity-65"
-                        : "",
-                    ].join(" ")}
-                  >
-                    {isActive && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
-                    <span>{isApplied ? `已应用${option.label}` : option.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-            </div>
-
-            <div className="min-h-5 text-xs leading-5 text-cyan-100/62">
-              {activeTuningMode
-                ? getTuningProgressLabel(activeTuningMode)
-                : appliedTuningOptions.length > 0
-                  ? `已应用：${appliedTuningOptions.map((option) => option.label).join("、")}`
-                  : "正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。"}
-            </div>
-
-            {onEditQuizCondition && (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      想改一个条件？
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      不用重做整套问卷，直接回到关键题重新选择。
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      ["budget", "改预算"],
-                      ["quietness", "改静音"],
-                      ["scene", "改场景"],
-                    ].map(([condition, label]) => (
-                      <button
-                        key={condition}
-                        type="button"
-                        onClick={() =>
-                          onEditQuizCondition(condition as ResultEditableCondition)
-                        }
-                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2 rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.045] p-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-2">
-                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/75" />
-                <div>
-                  <p className="text-sm font-medium text-cyan-50">
-                    {isSignedIn ? "已登录，可加密保存" : "登录后可加密保存"}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-cyan-100/55">
-                    {isSignedIn
-                      ? `${authPanel.userLabel} 的推荐档案会加密同步，方便多端继续比较。`
-                      : "保存问卷偏好和推荐快照，方便多端继续比较。"}
-                  </p>
-                </div>
-              </div>
-              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                {!isSignedIn && (
-                  <button
-                    type="button"
-                    onClick={() => setIsSavePanelOpen((isOpen) => !isOpen)}
-                    className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:bg-white/[0.07]"
-                  >
-                    {isSavePanelOpen ? "收起登录" : "登录 / 注册"}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void onSaveRecommendationProfile()}
-                  disabled={isSavingRecommendationProfile}
-                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-300/12 px-3 py-2 text-xs text-cyan-50 transition-colors hover:border-cyan-200/45 hover:bg-cyan-300/18 disabled:cursor-wait disabled:opacity-60"
-                >
-                  {isSavingRecommendationProfile ? "保存中..." : "保存推荐档案"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onOpenRecommendationProfiles}
-                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:bg-white/[0.07]"
-                >
-                  查看档案
-                </button>
-              </div>
-          </div>
-
-            {saveRecommendationProfileMessage && (
-              <p className="text-xs leading-5 text-cyan-100/65">
-                {saveRecommendationProfileMessage}
-              </p>
-            )}
-
-            {!isSignedIn && isSavePanelOpen && <AuthPanel {...authPanel} />}
-          </div>
-        </section>
-      )}
-
-      {comparisonProducts.length >= 2 && (
-        <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
-          <button
-            type="button"
-            onClick={() => setIsComparisonPanelOpen((isOpen) => !isOpen)}
-            aria-expanded={isComparisonPanelOpen}
-            className="flex w-full items-center justify-between gap-3 text-left"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-medium text-white">Top 3 快速对比</h3>
-                <span className="rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
-                  {comparisonTeaser.countText}
-                </span>
-              </div>
-              <p className="mt-1 text-xs leading-5 text-slate-400">
-                {comparisonTeaser.dimensionText}，需要纠结时再展开看差异。
-              </p>
-            </div>
-            <ChevronDown
-              className={[
-                "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-                isComparisonPanelOpen ? "rotate-180" : "",
-              ].join(" ")}
-            />
-          </button>
-
-          <div
-            className={[
-              "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-              isComparisonPanelOpen
-                ? "grid-rows-[1fr] opacity-100"
-                : "grid-rows-[0fr] opacity-0",
-            ].join(" ")}
-          >
-            <div className="overflow-hidden">
-              <div className="border-t border-white/8 pt-4">
-                <div className="space-y-3 md:hidden">
-                  <div className="rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.05] px-3 py-3">
-                    <p className="text-[11px] font-medium text-cyan-100/82">
-                      手机快速对比
-                    </p>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-400">
-                      不用横向大表格，先快速看每个候选的关键差异。
-                    </p>
-                  </div>
-
-                  {comparisonProducts.map((product, index) => (
-                    <div
-                      key={`mobile-comparison-${product.id}`}
-                      className="rounded-2xl border border-white/8 bg-white/[0.03] p-3"
-                    >
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[10px] text-cyan-200/70">
-                            第 {index + 1} 推荐
-                          </p>
-                          <p className="mt-1 break-words text-sm font-medium text-white">
-                            {getProductDisplayName(product)}
-                          </p>
-                        </div>
-                        <span className="shrink-0 rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
-                          匹配 {Math.round(product.score)}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {comparisonRows.map((row) => (
-                          <div
-                            key={`mobile-${product.id}-${row.id}`}
-                            className="rounded-xl border border-white/8 bg-black/10 px-3 py-2.5"
-                          >
-                            <p className="text-[10px] text-slate-500">{row.label}</p>
-                            <p className="mt-1 text-[11px] leading-5 text-slate-200">
-                              {row.values[index]}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="hidden md:block overflow-x-auto">
-                  <div>
-                    <div
-                      className="grid gap-2 border-b border-white/8 pb-3"
-                      style={{
-                        gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
-                      }}
-                    >
-                      <div className="text-xs text-slate-500">维度</div>
-                      {comparisonProducts.map((product, index) => (
-                        <div key={product.id} className="min-w-0">
-                          <div className="mb-1 text-[10px] text-cyan-200/70">
-                            第 {index + 1} 推荐
-                          </div>
-                          <div className="truncate text-xs font-medium text-white">
-                            {getProductDisplayName(product)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="divide-y divide-white/8">
-                      {comparisonRows.map((row) => (
-                        <div
-                          key={row.id}
-                          className="grid gap-2 py-3"
-                          style={{
-                            gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
-                          }}
-                        >
-                          <div className="text-xs text-slate-400">{row.label}</div>
-                          {row.values.map((value, index) => (
-                            <div
-                              key={`${row.id}-${comparisonProducts[index]?.id ?? index}`}
-                              className="text-xs leading-5 text-slate-200"
-                            >
-                              {value}
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {topProducts[0] && (
-        <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">
-          <div className="pointer-events-none absolute inset-y-4 left-0 w-px bg-gradient-to-b from-transparent via-emerald-200/35 to-transparent" />
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-white">
-                购买前最终自检
-              </h3>
-              <p className="mt-1 text-xs leading-5 text-emerald-100/58">
-                下单前快速过一遍，把推荐放回真实使用场景里确认。
-              </p>
-            </div>
-            <span className="inline-flex shrink-0 self-start rounded-full border border-emerald-300/18 bg-emerald-300/10 px-3 py-1.5 text-[11px] text-emerald-100/78">
-              FINAL CHECK
-            </span>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            {prePurchaseChecklist.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-2xl border border-white/8 bg-slate-950/22 px-3 py-3"
-              >
-                <p className="text-[11px] font-medium text-emerald-100/88">
-                  {item.title}
-                </p>
-                <p className="mt-1.5 text-xs leading-5 text-slate-300">
-                  {item.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {canShowRecalibrationModule && (
-        <motion.section
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5"
-        >
-          <div className="relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
-              aria-expanded={isRecalibrationPanelOpen}
-              className="flex w-full items-center justify-between gap-3 text-left"
-            >
-              <div className="min-w-0">
-                <h3 className="text-sm font-medium text-white">
-                  对当前结果不满意？
-                </h3>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  我们会基于当前问卷和候选池，再重新生成一版更适合你的推荐结果。
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100/82">
-                  重新生成推荐
-                </span>
-                <ChevronDown
-                  className={[
-                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-                    isRecalibrationPanelOpen ? "rotate-180" : "",
-                  ].join(" ")}
-                />
-              </div>
-            </button>
-
-            {isRecalibrationPanelOpen ? (
-              <div className="space-y-4 border-t border-white/8 pt-4">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left">
-                  <p className="text-sm text-slate-200">
-                    重新生成时会保留当前问卷和候选范围，只重新整理推荐顺序、说明理由和选购建议。
-                  </p>
-                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                    如果你觉得当前结果不够贴合，这里更适合先试一次重新生成，而不是重新答题。
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    type="button"
-                    onClick={onRecalibrateResults}
-                    disabled={isRecalibratingResults}
-                    className={[
-                      "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all sm:w-auto sm:self-start",
-                      isRecalibratingResults
-                        ? "cursor-wait border border-cyan-300/20 bg-cyan-300/10 text-cyan-100/80"
-                        : "border border-cyan-400/30 bg-cyan-400/15 text-cyan-100 hover:bg-cyan-400/20",
-                    ].join(" ")}
-                  >
-                    {isRecalibratingResults ? (
-                      <>
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        <span>正在重新生成推荐，请稍候</span>
-                      </>
-                    ) : (
-                      <span>{recalibrationButtonLabel}</span>
-                    )}
-                  </button>
-
-                  {resultRecalibrationError && (
-                    <div className="flex items-start gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100/90">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-                      <div>
-                        <p>重新生成失败，当前结果已保留。</p>
-                        <p className="mt-1 text-rose-100/75">{resultRecalibrationError}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </motion.section>
-      )}
-
-      {nextStepGroups.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-auto max-w-3xl rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 sm:p-5"
-        >
-          <div className="flex items-center gap-2 mb-2 text-amber-400">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium tracking-wide">下一步建议</span>
-          </div>
-          <div className="space-y-4">
-            {nextStepGroups.map((group) => (
-              <div
-                key={group.id}
-                className="rounded-2xl border border-white/8 bg-black/10 p-3"
-              >
-                <h3 className="mb-2 text-sm font-medium text-amber-200">
-                  {group.title}
-                </h3>
-                <ul className="space-y-2">
-                  {group.items.map((tip, index) => (
-                    <li
-                      key={`${group.id}-${index}`}
-                      className="flex items-start gap-2 text-sm leading-6 text-amber-100/85"
-                    >
-                      <span className="mt-1 shrink-0 text-amber-300">•</span>
-                      <span className="break-words">{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
       {topProducts.length > 0 ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1133,7 +762,7 @@ export function ResultsPage({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-medium text-white">
-                      想换一种侧重点？
+                      换个侧重点看看
                     </h3>
                     <span className="rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
                       {backupDirectionTeaser.countText}
@@ -1301,13 +930,444 @@ export function ResultsPage({
         </div>
       )}
 
-      <button
-        onClick={onReset}
-        disabled={isRecalibratingResults}
-        className="w-full py-4 mt-8 rounded-xl bg-white/5 text-slate-300 transition-colors text-sm hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/5"
-      >
-        重新回答偏好问题
-      </button>
+      {comparisonProducts.length >= 2 && (
+        <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
+          <button
+            type="button"
+            onClick={() => setIsComparisonPanelOpen((isOpen) => !isOpen)}
+            aria-expanded={isComparisonPanelOpen}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-medium text-white">主推荐横向对比</h3>
+                <span className="rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
+                  {comparisonTeaser.countText}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-400">
+                {comparisonTeaser.dimensionText}，需要纠结时再展开看差异。
+              </p>
+            </div>
+            <ChevronDown
+              className={[
+                "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                isComparisonPanelOpen ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          </button>
+
+          <div
+            className={[
+              "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
+              isComparisonPanelOpen
+                ? "grid-rows-[1fr] opacity-100"
+                : "grid-rows-[0fr] opacity-0",
+            ].join(" ")}
+          >
+            <div className="overflow-hidden">
+              <div className="border-t border-white/8 pt-4">
+                <div className="space-y-3 md:hidden">
+                  <div className="rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.05] px-3 py-3">
+                    <p className="text-[11px] font-medium text-cyan-100/82">
+                      手机快速对比
+                    </p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                      不用横向大表格，先快速看每个候选的关键差异。
+                    </p>
+                  </div>
+
+                  {comparisonProducts.map((product, index) => (
+                    <div
+                      key={`mobile-comparison-${product.id}`}
+                      className="rounded-2xl border border-white/8 bg-white/[0.03] p-3"
+                    >
+                      <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-[10px] text-cyan-200/70">
+                            第 {index + 1} 推荐
+                          </p>
+                          <p className="mt-1 break-words text-sm font-medium text-white">
+                            {getProductDisplayName(product)}
+                          </p>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
+                          匹配 {Math.round(product.score)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {comparisonRows.map((row) => (
+                          <div
+                            key={`mobile-${product.id}-${row.id}`}
+                            className="rounded-xl border border-white/8 bg-black/10 px-3 py-2.5"
+                          >
+                            <p className="text-[10px] text-slate-500">{row.label}</p>
+                            <p className="mt-1 text-[11px] leading-5 text-slate-200">
+                              {row.values[index]}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="hidden md:block overflow-x-auto">
+                  <div>
+                    <div
+                      className="grid gap-2 border-b border-white/8 pb-3"
+                      style={{
+                        gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      <div className="text-xs text-slate-500">维度</div>
+                      {comparisonProducts.map((product, index) => (
+                        <div key={product.id} className="min-w-0">
+                          <div className="mb-1 text-[10px] text-cyan-200/70">
+                            第 {index + 1} 推荐
+                          </div>
+                          <div className="truncate text-xs font-medium text-white">
+                            {getProductDisplayName(product)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="divide-y divide-white/8">
+                      {comparisonRows.map((row) => (
+                        <div
+                          key={row.id}
+                          className="grid gap-2 py-3"
+                          style={{
+                            gridTemplateColumns: `8rem repeat(${comparisonProducts.length}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          <div className="text-xs text-slate-400">{row.label}</div>
+                          {row.values.map((value, index) => (
+                            <div
+                              key={`${row.id}-${comparisonProducts[index]?.id ?? index}`}
+                              className="text-xs leading-5 text-slate-200"
+                            >
+                              {value}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {topProducts.length > 0 && (
+        <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-white">快速微调结果</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  保留当前问卷，只轻微调整一个侧重点。
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {RESULT_TUNING_OPTIONS.map((option) => {
+                  const isApplied = appliedResultTuningModes.includes(option.mode);
+                  const isActive = activeTuningMode === option.mode;
+
+                  return (
+                    <button
+                      key={option.mode}
+                      type="button"
+                      onClick={() => handleTuneResultClick(option.mode)}
+                      disabled={isRecalibratingResults || isApplied || activeTuningMode != null}
+                      className={[
+                        "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors",
+                        isApplied
+                          ? "border-emerald-300/18 bg-emerald-400/8 text-emerald-100/70"
+                          : "border-cyan-400/18 bg-cyan-400/8 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/14",
+                        isRecalibratingResults || isApplied || activeTuningMode != null
+                          ? "cursor-not-allowed opacity-65"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {isActive && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{isApplied ? `已应用${option.label}` : option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="min-h-5 text-xs leading-5 text-cyan-100/62">
+              {activeTuningMode
+                ? getTuningProgressLabel(activeTuningMode)
+                : appliedTuningOptions.length > 0
+                  ? `已应用：${appliedTuningOptions.map((option) => option.label).join("、")}`
+                  : "正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。"}
+            </div>
+
+            {onEditQuizCondition && (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      想改一个条件？
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      不用重做整套问卷，直接回到关键题重新选择。
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      ["budget", "改预算"],
+                      ["quietness", "改静音"],
+                      ["scene", "改场景"],
+                    ].map(([condition, label]) => (
+                      <button
+                        key={condition}
+                        type="button"
+                        onClick={() =>
+                          onEditQuizCondition(condition as ResultEditableCondition)
+                        }
+                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.045] p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-2">
+                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300/75" />
+                <div>
+                  <p className="text-sm font-medium text-cyan-50">
+                    {isSignedIn ? "已登录，可加密保存" : "登录后可加密保存"}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-cyan-100/55">
+                    {isSignedIn
+                      ? `${authPanel.userLabel} 的推荐档案会加密同步，方便多端继续比较。`
+                      : "保存问卷偏好和推荐快照，方便多端继续比较。"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                {!isSignedIn && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSavePanelOpen((isOpen) => !isOpen)}
+                    className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:bg-white/[0.07]"
+                  >
+                    {isSavePanelOpen ? "收起登录" : "登录 / 注册"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void onSaveRecommendationProfile()}
+                  disabled={isSavingRecommendationProfile}
+                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-300/12 px-3 py-2 text-xs text-cyan-50 transition-colors hover:border-cyan-200/45 hover:bg-cyan-300/18 disabled:cursor-wait disabled:opacity-60"
+                >
+                  {isSavingRecommendationProfile ? "保存中..." : "保存推荐档案"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenRecommendationProfiles}
+                  className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:bg-white/[0.07]"
+                >
+                  查看档案
+                </button>
+              </div>
+            </div>
+
+            {saveRecommendationProfileMessage && (
+              <p className="text-xs leading-5 text-cyan-100/65">
+                {saveRecommendationProfileMessage}
+              </p>
+            )}
+
+            {!isSignedIn && isSavePanelOpen && <AuthPanel {...authPanel} />}
+          </div>
+        </section>
+      )}
+
+      {canShowRecalibrationModule && (
+        <motion.section
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5"
+        >
+          <div className="relative space-y-4">
+            <button
+              type="button"
+              onClick={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
+              aria-expanded={isRecalibrationPanelOpen}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <div className="min-w-0">
+                <h3 className="text-sm font-medium text-white">
+                  对当前结果不满意？
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  我们会基于当前问卷和候选池，再重新生成一版更适合你的推荐结果。
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100/82">
+                  重新生成推荐
+                </span>
+                <ChevronDown
+                  className={[
+                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                    isRecalibrationPanelOpen ? "rotate-180" : "",
+                  ].join(" ")}
+                />
+              </div>
+            </button>
+
+            {isRecalibrationPanelOpen ? (
+              <div className="space-y-4 border-t border-white/8 pt-4">
+                <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left">
+                  <p className="text-sm text-slate-200">
+                    重新生成时会保留当前问卷和候选范围，只重新整理推荐顺序、说明理由和选购建议。
+                  </p>
+                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                    如果你觉得当前结果不够贴合，这里更适合先试一次重新生成，而不是重新答题。
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button
+                    type="button"
+                    onClick={onRecalibrateResults}
+                    disabled={isRecalibratingResults}
+                    className={[
+                      "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all sm:w-auto sm:self-start",
+                      isRecalibratingResults
+                        ? "cursor-wait border border-cyan-300/20 bg-cyan-300/10 text-cyan-100/80"
+                        : "border border-cyan-400/30 bg-cyan-400/15 text-cyan-100 hover:bg-cyan-400/20",
+                    ].join(" ")}
+                  >
+                    {isRecalibratingResults ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        <span>正在重新生成推荐，请稍候</span>
+                      </>
+                    ) : (
+                      <span>{recalibrationButtonLabel}</span>
+                    )}
+                  </button>
+
+                  {resultRecalibrationError && (
+                    <div className="flex items-start gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100/90">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
+                      <div>
+                        <p>重新生成失败，当前结果已保留。</p>
+                        <p className="mt-1 text-rose-100/75">{resultRecalibrationError}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </motion.section>
+      )}
+
+      {nextStepGroups.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-auto max-w-3xl rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 sm:p-5"
+        >
+          <div className="flex items-center gap-2 mb-2 text-amber-400">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-sm font-medium tracking-wide">下一步建议</span>
+          </div>
+          <div className="space-y-4">
+            {nextStepGroups.map((group) => (
+              <div
+                key={group.id}
+                className="rounded-2xl border border-white/8 bg-black/10 p-3"
+              >
+                <h3 className="mb-2 text-sm font-medium text-amber-200">
+                  {group.title}
+                </h3>
+                <ul className="space-y-2">
+                  {group.items.map((tip, index) => (
+                    <li
+                      key={`${group.id}-${index}`}
+                      className="flex items-start gap-2 text-sm leading-6 text-amber-100/85"
+                    >
+                      <span className="mt-1 shrink-0 text-amber-300">•</span>
+                      <span className="break-words">{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {topProducts[0] && (
+        <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">
+          <div className="pointer-events-none absolute inset-y-4 left-0 w-px bg-gradient-to-b from-transparent via-emerald-200/35 to-transparent" />
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-white">
+                购买前最终自检
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-emerald-100/58">
+                下单前快速过一遍，把推荐放回真实使用场景里确认。
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 self-start rounded-full border border-emerald-300/18 bg-emerald-300/10 px-3 py-1.5 text-[11px] text-emerald-100/78">
+              FINAL CHECK
+            </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            {prePurchaseChecklist.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/8 bg-slate-950/22 px-3 py-3"
+              >
+                <p className="text-[11px] font-medium text-emerald-100/88">
+                  {item.title}
+                </p>
+                <p className="mt-1.5 text-xs leading-5 text-slate-300">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {onBackHome ? (
+          <button
+            onClick={onBackHome}
+            disabled={isRecalibratingResults}
+            className="w-full rounded-xl border border-white/10 bg-transparent py-4 text-sm text-slate-300 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+          >
+            返回首页
+          </button>
+        ) : null}
+        <button
+          onClick={onReset}
+          disabled={isRecalibratingResults}
+          className="w-full rounded-xl bg-white/5 py-4 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/5"
+        >
+          重新回答偏好问题
+        </button>
+      </div>
     </motion.div>
   );
 }

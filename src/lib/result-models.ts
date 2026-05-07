@@ -24,7 +24,7 @@ const RESULT_MODEL_METADATA: Readonly<
     description: "想看更详细的推荐解释，可以试它。",
   },
   "dmxapi-qwen": {
-    model: "qwen3.5-plus-free",
+    model: "qwen3.5-27b",
     label: "Qwen（DMX）",
     description: "想要更干脆清晰的结果，可以试它。",
   },
@@ -37,6 +37,31 @@ const RESULT_MODEL_METADATA: Readonly<
     model: "kimi-k2.6-free",
     label: "Kimi（DMX）",
     description: "想看更自然顺滑的说明文字，可以试它。",
+  },
+  "dmxapi-claude": {
+    model: "claude-opus-4-7",
+    label: "Claude（DMX）",
+    description: "想看更细致完整的说明，可以试它。",
+  },
+  "dmxapi-gemini": {
+    model: "gemini-3.1-pro-preview-ssvip",
+    label: "Gemini（DMX）",
+    description: "想换一个更综合的分析视角，可以试它。",
+  },
+  "dmxapi-grok": {
+    model: "grok-4.2-nothinking",
+    label: "Grok（DMX）",
+    description: "想看更直接大胆的一版结果，可以试它。",
+  },
+  "dmxapi-gpt": {
+    model: "gpt-5.4",
+    label: "GPT（DMX）",
+    description: "想看更均衡稳妥的一版结果，可以试它。",
+  },
+  "dmxapi-kimi-k2": {
+    model: "kimi-k2.6",
+    label: "Kimi K2.6（DMX）",
+    description: "想补一层更自然顺滑的表达，可以试它。",
   },
   deepseek: {
     model: "deepseek-v4-flash",

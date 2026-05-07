@@ -238,3 +238,57 @@ test("buildBranchFallbackReason returns branch-specific local reasoning", async 
     /共玩|互动/,
   );
 });
+
+test("branch copy avoids rigid gender-route labels in fallback messaging", async () => {
+  const branching = await import("./quiz-branching.ts").catch(() => null);
+  assert.ok(branching, "quiz-branching.ts should exist");
+
+  const femaleFallback =
+    branching?.buildBranchFallbackReason(
+      makeProduct({
+        gender: "female",
+        physicalForm: "external",
+        motorType: "strong",
+      }),
+      {
+        gender: "female",
+        tags: [],
+      },
+    ) ?? "";
+  const maleFallback =
+    branching?.buildBranchFallbackReason(
+      makeProduct({
+        gender: "male",
+        physicalForm: "internal",
+        motorType: "strong",
+      }),
+      {
+        gender: "male",
+        tags: [],
+      },
+    ) ?? "";
+
+  assert.doesNotMatch(femaleFallback, /女性向/);
+  assert.doesNotMatch(maleFallback, /男性向/);
+});
+
+test("couple branch copy uses scene wording instead of addressing the user group directly", async () => {
+  const branching = await import("./quiz-branching.ts").catch(() => null);
+  assert.ok(branching, "quiz-branching.ts should exist");
+
+  const leadCopy =
+    branching?.getResultLeadCopy({ gender: "unisex", tags: [] }) ?? "";
+  const guidanceLead =
+    branching?.getBranchShoppingGuidanceLead({ gender: "unisex" }, 2) ?? "";
+  const preferenceHints =
+    branching?.getBranchShoppingPreferenceHints({
+      gender: "unisex",
+      maxDb: 45,
+      appearance: "high_disguise",
+      tags: [],
+    }) ?? [];
+
+  assert.doesNotMatch(leadCopy, /你们/);
+  assert.doesNotMatch(guidanceLead, /你们/);
+  assert.ok(preferenceHints.every((line) => !/你们/.test(line)));
+});

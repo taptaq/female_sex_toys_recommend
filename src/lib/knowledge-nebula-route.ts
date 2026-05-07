@@ -2,12 +2,22 @@ import {
   type KnowledgeNebulaTopicSlug,
   getKnowledgeNebulaTopicBySlug,
 } from "../data/knowledge-nebula.ts";
+import type { AppRoute } from "./app-shell.ts";
 
 export type KnowledgeNebulaRouteState = {
   route: "/knowledge";
   topicSlug?: KnowledgeNebulaTopicSlug;
   sectionId?: string;
 };
+
+export type KnowledgeBackNavigation =
+  | {
+      kind: "route";
+      route: AppRoute;
+    }
+  | {
+      kind: "knowledge-hub";
+    };
 
 const KNOWLEDGE_NEBULA_BASE_PATH = "/knowledge";
 
@@ -52,4 +62,34 @@ export function parseKnowledgeNebulaPath(pathname: string): KnowledgeNebulaRoute
   }
 
   return { route: "/knowledge", topicSlug: undefined };
+}
+
+export function resolveKnowledgeBackNavigation(
+  originRoute: AppRoute | undefined,
+  topicSlug?: KnowledgeNebulaTopicSlug,
+): KnowledgeBackNavigation {
+  if (topicSlug) {
+    if (originRoute === "/results") {
+      return {
+        kind: "route",
+        route: "/results",
+      };
+    }
+
+    return {
+      kind: "knowledge-hub",
+    };
+  }
+
+  if (originRoute && originRoute !== "/knowledge") {
+    return {
+      kind: "route",
+      route: originRoute,
+    };
+  }
+
+  return {
+    kind: "route",
+    route: "/",
+  };
 }

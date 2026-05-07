@@ -180,7 +180,7 @@ export function getResultLeadCopy(
     case "male":
       return "基于你的驱动方式、通道体验和使用目标，我们筛出了更顺手的一组装备。";
     case "couple":
-      return "基于你们的互动方式、贴合需求和共玩场景，我们筛出了更适合双人协同的一组装备。";
+      return "基于当前互动方式、贴合需求和共玩场景，我们筛出了更适合双人协同的一组装备。";
   }
 }
 
@@ -196,7 +196,7 @@ export function buildBranchFallbackReason(
       if (answers.physicalForm && product.physicalForm === answers.physicalForm) {
         return "刺激路径贴近你这次更想要的身体反馈路线。";
       }
-      return "整体反馈更稳，适合作为这次女性向探索的平衡选择。";
+      return "整体反馈更稳，适合作为这次路线下的平衡选择。";
     case "male":
       if (answers.sessionGoal === "daily") {
         return "顺手度和日常复用感更友好，适合稳定进入常用名单。";
@@ -204,13 +204,13 @@ export function buildBranchFallbackReason(
       if (answers.driveMode === "manual" && product.physicalForm === "external") {
         return "更适合自主掌控节奏，保留你想要的参与感。";
       }
-      return "驱动和刺激路线更贴近这次男性向使用目标。";
+      return "驱动和刺激路线更贴近这次使用目标。";
     case "couple":
       if (product.gender === "unisex") {
         return "更适合情侣共玩，互动和协同成本都更低。";
       }
       if (answers.maxDb != null && answers.maxDb < 100 && product.maxDb != null && product.maxDb <= answers.maxDb) {
-        return "静音表现更稳，不容易打断你们的互动氛围。";
+        return "静音表现更稳，不容易打断当前互动氛围。";
       }
       return "更贴近这次双人互动的节奏和共玩场景。";
   }
@@ -317,7 +317,7 @@ export function getBranchShoppingGuidanceLead(
       case "male":
         return "候选池比较窄，先看备选卡片，比较哪款更顺手、更适合复用。";
       case "couple":
-        return "候选池比较窄，先看备选卡片，优先比较更适合你们互动节奏的方向。";
+        return "候选池比较窄，先看备选卡片，优先比较更适合当前互动节奏的方向。";
     }
   }
 
@@ -327,7 +327,7 @@ export function getBranchShoppingGuidanceLead(
     case "male":
       return "当前结果已经收窄，可以重点比较更顺手的差异化备选。";
     case "couple":
-      return "当前结果已经收窄，可以重点比较更适合你们共玩氛围的差异化备选。";
+      return "当前结果已经收窄，可以重点比较更适合当前共玩氛围的差异化备选。";
   }
 }
 
@@ -349,7 +349,7 @@ export function getBranchShoppingPreferenceHints(
         hints.push("你在意静音，可优先比较更低存在感、更顺手复用的备选。");
         break;
       case "couple":
-        hints.push("你们在意静音，优先比较不容易打断互动氛围的备选。");
+        hints.push("当前场景在意静音，优先比较不容易打断互动氛围的备选。");
         break;
     }
   }
@@ -363,7 +363,7 @@ export function getBranchShoppingPreferenceHints(
         hints.push("你也在意收纳压力，可顺手看更低存在感的备选。");
         break;
       case "couple":
-        hints.push("你们也在意收纳压力，可顺手看更低压力收纳的共玩备选。");
+        hints.push("当前场景也在意收纳压力，可顺手看更低压力收纳的共玩备选。");
         break;
     }
   }

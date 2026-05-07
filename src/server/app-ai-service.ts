@@ -35,6 +35,11 @@ const PROVIDER_LABELS: Record<AppAiProvider, string> = {
   "dmxapi-qwen": "DMXAPI Qwen",
   "dmxapi-glm": "DMXAPI GLM",
   "dmxapi-kimi": "DMXAPI Kimi",
+  "dmxapi-claude": "DMXAPI Claude",
+  "dmxapi-gemini": "DMXAPI Gemini",
+  "dmxapi-grok": "DMXAPI Grok",
+  "dmxapi-gpt": "DMXAPI GPT",
+  "dmxapi-kimi-k2": "DMXAPI Kimi K2.6",
   deepseek: "DeepSeek",
   qwen: "Qwen",
   glm: "GLM",
@@ -73,6 +78,31 @@ const PROVIDER_RUNTIME_CONFIG: Record<
     baseURL: "https://www.dmxapi.cn/v1",
     topP: 1,
   },
+  "dmxapi-claude": {
+    apiKeyEnv: "DMXAPI_API_KEY",
+    baseURL: "https://www.dmxapi.cn/v1",
+    topP: 1,
+  },
+  "dmxapi-gemini": {
+    apiKeyEnv: "DMXAPI_API_KEY",
+    baseURL: "https://www.dmxapi.cn/v1",
+    topP: 1,
+  },
+  "dmxapi-grok": {
+    apiKeyEnv: "DMXAPI_API_KEY",
+    baseURL: "https://www.dmxapi.cn/v1",
+    topP: 1,
+  },
+  "dmxapi-gpt": {
+    apiKeyEnv: "DMXAPI_API_KEY",
+    baseURL: "https://www.dmxapi.cn/v1",
+    topP: 1,
+  },
+  "dmxapi-kimi-k2": {
+    apiKeyEnv: "DMXAPI_API_KEY",
+    baseURL: "https://www.dmxapi.cn/v1",
+    topP: 1,
+  },
   deepseek: {
     apiKeyEnv: "DEEPSEEK_API_KEY",
     baseURL: "https://api.deepseek.com/v1",
@@ -90,9 +120,14 @@ const PROVIDER_RUNTIME_CONFIG: Record<
 const PROXY_PROVIDER_MODELS: Record<AppAiProvider, string> = {
   "dmxapi-mimo": "mimo-v2.5-free",
   "dmxapi-minimax": "MiniMax-M2.7-free",
-  "dmxapi-qwen": "qwen3.5-plus-free",
+  "dmxapi-qwen": "qwen3.5-27b",
   "dmxapi-glm": "glm-5.1-free",
   "dmxapi-kimi": "kimi-k2.6-free",
+  "dmxapi-claude": "claude-opus-4-7",
+  "dmxapi-gemini": "gemini-3.1-pro-preview-ssvip",
+  "dmxapi-grok": "grok-4.2-nothinking",
+  "dmxapi-gpt": "gpt-5.4",
+  "dmxapi-kimi-k2": "kimi-k2.6",
   deepseek: "deepseek-v4-flash",
   qwen: "qwen-turbo",
   glm: "glm-4.6v",
@@ -117,6 +152,27 @@ type RecalibrationPlan = {
   enhancementProvider: AppAiProvider;
   fallbackOrder: AppAiProvider[];
 };
+
+const RERANK_REROLL_ROTATION_ORDER: readonly AppAiProvider[] = Object.freeze([
+  ...APP_RECOMMENDATION_PROVIDER_ORDER.slice(1),
+  APP_RECOMMENDATION_PROVIDER_ORDER[0],
+]);
+
+const DEFAULT_RECALIBRATION_FALLBACK_ORDER: readonly AppAiProvider[] = Object.freeze([
+  "dmxapi-minimax",
+  "dmxapi-qwen",
+  "dmxapi-mimo",
+  "dmxapi-glm",
+  "dmxapi-kimi",
+  "dmxapi-claude",
+  "dmxapi-gemini",
+  "dmxapi-grok",
+  "dmxapi-gpt",
+  "dmxapi-kimi-k2",
+  "deepseek",
+  "qwen",
+  "glm",
+]);
 
 export type AiProxyEnvelope<T> = {
   data: T;
@@ -168,13 +224,6 @@ function hasWeakReason(reason: string) {
   if (!normalized) return true;
   if (normalized.length <= 8) return true;
   return /适合你|也适合你|匹配度高|综合表现好/.test(normalized);
-}
-
-function hasWeakPreviousResult(context: ResultRecalibrationContext | undefined) {
-  if (!context) return false;
-  if (context.previousShoppingGuidanceCount < 3) return true;
-  if (context.previousTopProducts.length < 3) return true;
-  return context.previousTopProducts.some((product) => hasWeakReason(product.reason));
 }
 
 function buildLocalReason(
@@ -517,24 +566,14 @@ export function createAppAiService({
     context: ResultRecalibrationContext | undefined,
   ): RecalibrationPlan {
     const attemptCount = Math.max(1, context?.attemptCount || 1);
-    const isRetryEscalation = attemptCount >= 2;
-    const shouldEscalateRerank =
-      attemptCount >= 3 || (isRetryEscalation && hasWeakPreviousResult(context));
-    const rerankProvider: AppAiProvider = shouldEscalateRerank
-      ? "dmxapi-minimax"
-      : "dmxapi-mimo";
+    const rerankProvider =
+      RERANK_REROLL_ROTATION_ORDER[
+        (attemptCount - 1) % RERANK_REROLL_ROTATION_ORDER.length
+      ];
     const enhancementProvider: AppAiProvider = "dmxapi-qwen";
     const fallbackOrder = dedupeProviderOrder([
       rerankProvider,
-      "dmxapi-minimax",
-      enhancementProvider,
-      "dmxapi-mimo",
-      "dmxapi-qwen",
-      "dmxapi-glm",
-      "dmxapi-kimi",
-      "deepseek",
-      "qwen",
-      "glm",
+      ...DEFAULT_RECALIBRATION_FALLBACK_ORDER,
     ]);
 
     return {

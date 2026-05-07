@@ -33,6 +33,26 @@ test("runAppAiProviderLadder returns the first successful metadata-carrying prov
         calls.push("dmxapi-kimi");
         throw new Error("should-not-run");
       },
+      "dmxapi-claude": async () => {
+        calls.push("dmxapi-claude");
+        throw new Error("should-not-run");
+      },
+      "dmxapi-gemini": async () => {
+        calls.push("dmxapi-gemini");
+        throw new Error("should-not-run");
+      },
+      "dmxapi-grok": async () => {
+        calls.push("dmxapi-grok");
+        throw new Error("should-not-run");
+      },
+      "dmxapi-gpt": async () => {
+        calls.push("dmxapi-gpt");
+        throw new Error("should-not-run");
+      },
+      "dmxapi-kimi-k2": async () => {
+        calls.push("dmxapi-kimi-k2");
+        throw new Error("should-not-run");
+      },
       deepseek: async () => {
         calls.push("deepseek");
         throw new Error("should-not-run");

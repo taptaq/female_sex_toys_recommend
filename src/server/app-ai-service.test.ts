@@ -278,7 +278,7 @@ test("runResultRecalibration uses the automatic provider ladder and recomputes c
   assert.match(requests[1]?.prompt || "", /"descriptionSignals": "易清洗"/);
 });
 
-test("resolveRecalibrationPlan keeps the first retry on the steadier default providers", () => {
+test("resolveRecalibrationPlan starts the first manual reroll on the next rerank provider while keeping the fallback ladder", () => {
   const service = createAppAiService();
 
   const plan = service.resolveRecalibrationPlan({
@@ -289,20 +289,20 @@ test("resolveRecalibrationPlan keeps the first retry on the steadier default pro
     previousShoppingGuidanceCount: 4,
   });
 
-  assert.equal(plan.rerankProvider, "dmxapi-mimo");
+  assert.equal(plan.rerankProvider, "dmxapi-minimax");
   assert.equal(plan.enhancementProvider, "dmxapi-qwen");
   assert.deepEqual(plan.fallbackOrder.slice(0, 3), [
-    "dmxapi-mimo",
     "dmxapi-minimax",
     "dmxapi-qwen",
+    "dmxapi-mimo",
   ]);
 });
 
-test("resolveRecalibrationPlan upgrades providers when the user retries again with weak previous guidance", () => {
+test("resolveRecalibrationPlan rotates rerank providers across repeated rerolls and wraps back around", () => {
   const service = createAppAiService();
 
-  const plan = service.resolveRecalibrationPlan({
-    attemptCount: 3,
+  const secondPlan = service.resolveRecalibrationPlan({
+    attemptCount: 2,
     currentResultProvider: "dmxapi-mimo",
     currentResultModelName: "mimo-v2.5-free",
     previousTopProducts: [
@@ -312,13 +312,27 @@ test("resolveRecalibrationPlan upgrades providers when the user retries again wi
     previousShoppingGuidanceCount: 1,
   });
 
-  assert.equal(plan.rerankProvider, "dmxapi-minimax");
-  assert.equal(plan.enhancementProvider, "dmxapi-qwen");
-  assert.equal(plan.fallbackOrder[0], "dmxapi-minimax");
-  assert.ok(plan.fallbackOrder.includes("dmxapi-mimo"));
+  const wrappedPlan = service.resolveRecalibrationPlan({
+    attemptCount: 8,
+    currentResultProvider: "dmxapi-qwen",
+    currentResultModelName: "qwen3.5-27b",
+    previousTopProducts: [{ id: "p-1", reason: "理由还可以" }],
+    previousShoppingGuidanceCount: 4,
+  });
+
+  assert.equal(secondPlan.rerankProvider, "dmxapi-qwen");
+  assert.equal(secondPlan.enhancementProvider, "dmxapi-qwen");
+  assert.equal(secondPlan.fallbackOrder[0], "dmxapi-qwen");
+  assert.ok(secondPlan.fallbackOrder.includes("dmxapi-minimax"));
+  assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-claude"));
+  assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-gemini"));
+  assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-grok"));
+  assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-gpt"));
+  assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-kimi-k2"));
+  assert.equal(wrappedPlan.rerankProvider, "dmxapi-gpt");
 });
 
-test("runResultRecalibration follows the resolved split-provider plan for rerank and enhancement", async () => {
+test("runResultRecalibration follows the rotated rerank provider while keeping the stable enhancement provider", async () => {
   const requests: ChatCompletionRequest[] = [];
   const service = createAppAiService({
     env: {
@@ -357,7 +371,7 @@ test("runResultRecalibration follows the resolved split-provider plan for rerank
     filteredCount: 3,
     recommendationTips: [],
     recalibrationContext: {
-      attemptCount: 3,
+      attemptCount: 1,
       currentResultProvider: "dmxapi-mimo",
       currentResultModelName: "mimo-v2.5-free",
       previousTopProducts: [{ id: "p-1", reason: "适合你" }],
@@ -368,6 +382,6 @@ test("runResultRecalibration follows the resolved split-provider plan for rerank
   const models = requests.map((request) => request.model);
   assert.deepEqual(models.slice(0, 2), [
     "MiniMax-M2.7-free",
-    "qwen3.5-plus-free",
+    "qwen3.5-27b",
   ]);
 });

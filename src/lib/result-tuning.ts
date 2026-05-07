@@ -13,6 +13,10 @@ export const RESULT_TUNING_OPTIONS: ResultTuningOption[] = [
   { mode: "beginner", label: "更适合新手" },
 ];
 
+export const RESULT_TUNING_APPLIED_TAGS = RESULT_TUNING_OPTIONS.map((option) =>
+  getResultTuningAppliedTag(option.mode),
+);
+
 export function getResultTuningAppliedTag(mode: ResultTuningMode) {
   switch (mode) {
     case "quieter":
@@ -66,4 +70,16 @@ export function tuneResultAnswers(
         tags: nextTags,
       };
   }
+}
+
+export function applyResultTuningModes(
+  baseAnswers: AnswerState,
+  modes: ResultTuningMode[],
+): AnswerState {
+  return modes.reduce((currentAnswers, mode) => {
+    return tuneResultAnswers(currentAnswers, mode);
+  }, {
+    ...baseAnswers,
+    tags: [...baseAnswers.tags],
+  });
 }

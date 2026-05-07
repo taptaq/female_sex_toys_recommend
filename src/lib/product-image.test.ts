@@ -19,6 +19,26 @@ test("getInitialProductImageState keeps valid remote images", () => {
   });
 });
 
+test("getInitialProductImageState keeps base64 data images", () => {
+  assert.deepEqual(
+    getInitialProductImageState("data:image/png;base64,abc123"),
+    {
+      isRemoteImage: true,
+      resolvedImageClassName: "",
+    },
+  );
+});
+
+test("getInitialProductImageState keeps blob images", () => {
+  assert.deepEqual(
+    getInitialProductImageState("blob:https://example.com/abc-123"),
+    {
+      isRemoteImage: true,
+      resolvedImageClassName: "",
+    },
+  );
+});
+
 test("getNextProductImageStateOnError switches a remote image to fallback", () => {
   assert.deepEqual(
     getNextProductImageStateOnError("https://example.com/image.jpg"),
