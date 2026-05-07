@@ -219,12 +219,12 @@ test("home page keeps secondary entry navigation and auth actions structurally d
   assert.equal(countMatches(signedOutHtml, /home-secondary-node/g), 3);
   assert.equal(countMatches(signedOutHtml, /home-auth-entry/g), 1);
   assert.match(signedOutHtml, /登录 \/ 注册/);
-  assert.doesNotMatch(signedOutHtml, /我的装备匹配档案/);
+  assert.doesNotMatch(signedOutHtml, /匹配档案/);
   assert.doesNotMatch(signedOutHtml, />退出</);
 
   assert.equal(countMatches(signedInHtml, /home-secondary-node/g), 3);
   assert.equal(countMatches(signedInHtml, /home-auth-entry/g), 1);
-  assert.match(signedInHtml, /我的装备匹配档案/);
+  assert.match(signedInHtml, /匹配档案/);
   assert.match(signedInHtml, />退出</);
   assert.match(signedInHtml, /taptaq/);
 });

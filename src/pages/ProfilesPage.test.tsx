@@ -55,7 +55,7 @@ test("profiles page renders saved equipment matching profiles", () => {
     />,
   );
 
-  assert.match(html, /我的装备匹配档案/);
+  assert.match(html, /匹配档案/);
   assert.match(html, /EQUIPMENT MATCHING ARCHIVE/);
   assert.match(html, /Nebula Pick 等 2 个推荐/);
   assert.match(html, /已加密同步/);
@@ -74,7 +74,7 @@ test("profiles page renders an empty state", () => {
     />,
   );
 
-  assert.match(html, /还没有保存过装备匹配档案/);
+  assert.match(html, /还没有保存过匹配档案/);
   assert.match(html, /完成一次匹配后/);
 });
 

@@ -106,7 +106,7 @@ export function QuizPage({
         <div className="relative z-10">
           <div className="mb-5 flex items-center justify-between gap-3">
             <span className="text-[10px] tracking-[0.24em] text-cyan-100/55">
-              信号校准中
+              偏好校准
             </span>
             <span className="h-px flex-1 bg-gradient-to-r from-cyan-100/20 to-transparent" />
           </div>

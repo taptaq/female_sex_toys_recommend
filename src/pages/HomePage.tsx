@@ -288,7 +288,7 @@ function HomeAuthEntry({
             onClick={onOpenProfiles}
             className="inline-flex items-center gap-1 rounded-full border border-cyan-200/16 bg-cyan-100/8 px-3 py-1.5 text-xs text-cyan-50 transition-colors hover:bg-cyan-100/14"
           >
-            我的装备匹配档案
+            匹配档案
           </button>
           <button
             type="button"

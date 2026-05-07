@@ -138,7 +138,7 @@ export async function listRecommendationProfiles({
   fetcher?: typeof fetch;
 }) {
   if (!authToken.trim()) {
-    throw new Error("需要登录后才能查看装备匹配档案");
+    throw new Error("需要登录后才能查看匹配档案");
   }
 
   const response = await fetcher("/api/user/recommendation-profiles", {
@@ -150,7 +150,7 @@ export async function listRecommendationProfiles({
 
   if (!response.ok) {
     throw new Error(
-      await readApiErrorMessage(response, "读取装备匹配档案失败，请稍后重试"),
+      await readApiErrorMessage(response, "读取匹配档案失败，请稍后重试"),
     );
   }
 

@@ -812,49 +812,49 @@ textarea:disabled {
 
 .floating-knowledge-slot-matching-1 {
   top: 5%;
-  left: 3%;
+  left: 6%;
   rotate: -13deg;
 }
 
 .floating-knowledge-slot-matching-2 {
   top: 5%;
-  right: 3%;
+  right: 6%;
   rotate: 13deg;
 }
 
 .floating-knowledge-slot-matching-3 {
   top: 21%;
-  left: 2%;
+  left: 5%;
   rotate: -9deg;
 }
 
 .floating-knowledge-slot-matching-4 {
   top: 21%;
-  right: 2%;
+  right: 5%;
   rotate: 9deg;
 }
 
 .floating-knowledge-slot-matching-5 {
   bottom: 19%;
-  left: 2%;
+  left: 5%;
   rotate: 11deg;
 }
 
 .floating-knowledge-slot-matching-6 {
-  right: 2%;
+  right: 5%;
   bottom: 19%;
   rotate: -11deg;
 }
 
 .floating-knowledge-slot-matching-7 {
   top: 12%;
-  left: 13%;
+  left: 15%;
   rotate: -16deg;
 }
 
 .floating-knowledge-slot-matching-8 {
   bottom: 29%;
-  right: 13%;
+  right: 15%;
   rotate: 15deg;
 }
 
@@ -866,49 +866,49 @@ textarea:disabled {
 
 .floating-knowledge-slot-matching-10 {
   top: 42%;
-  left: 1.5%;
+  left: 4.5%;
   rotate: -16deg;
 }
 
 .floating-knowledge-slot-matching-11 {
   top: 42%;
-  right: 1.5%;
+  right: 4.5%;
   rotate: 16deg;
 }
 
 .floating-knowledge-slot-matching-12 {
   bottom: 7%;
-  left: 7%;
+  left: 9%;
   rotate: -7deg;
 }
 
 .floating-knowledge-slot-matching-13 {
-  right: 7%;
+  right: 9%;
   bottom: 7%;
   rotate: 7deg;
 }
 
 .floating-knowledge-slot-matching-14 {
   top: 3%;
-  left: 20%;
+  left: 22%;
   rotate: -8deg;
 }
 
 .floating-knowledge-slot-matching-15 {
   top: 3%;
-  right: 20%;
+  right: 22%;
   rotate: 8deg;
 }
 
 .floating-knowledge-slot-matching-16 {
   top: 61%;
-  left: 4%;
+  left: 6%;
   rotate: 12deg;
 }
 
 .floating-knowledge-slot-matching-17 {
   top: 61%;
-  right: 4%;
+  right: 6%;
   rotate: -12deg;
 }
 
@@ -926,13 +926,13 @@ textarea:disabled {
 
 .floating-knowledge-slot-matching-20 {
   top: 33%;
-  left: 18%;
+  left: 20%;
   rotate: 7deg;
 }
 
 .floating-knowledge-slot-matching-21 {
   top: 34%;
-  right: 18%;
+  right: 20%;
   rotate: -7deg;
 }
 
@@ -1105,41 +1105,41 @@ textarea:disabled {
 
   .floating-knowledge-slot-matching-1 {
     top: 6%;
-    left: 3%;
+    left: 5%;
   }
 
   .floating-knowledge-slot-matching-2 {
     top: 12%;
-    right: 3%;
+    right: 5%;
   }
 
   .floating-knowledge-slot-matching-3 {
     top: 31%;
-    left: 2%;
+    left: 4%;
   }
 
   .floating-knowledge-slot-matching-4 {
     top: 50%;
-    right: 2%;
+    right: 4%;
   }
 
   .floating-knowledge-slot-matching-5 {
     bottom: 9%;
-    left: 5%;
+    left: 7%;
   }
 
   .floating-knowledge-slot-matching-6 {
-    right: 5%;
+    right: 7%;
     bottom: 11%;
   }
 
   .floating-knowledge-slot-matching-7 {
     top: 20%;
-    left: 17%;
+    left: 18.5%;
   }
 
   .floating-knowledge-slot-matching-8 {
-    right: 17%;
+    right: 18.5%;
     bottom: 23%;
   }
 }

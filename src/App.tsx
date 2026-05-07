@@ -872,7 +872,7 @@ export default function App() {
 
     if (!authToken) {
       setRecommendationProfiles([]);
-      setRecommendationProfilesError("需要登录后才能查看我的装备匹配档案。");
+      setRecommendationProfilesError("需要登录后才能查看匹配档案。");
       return;
     }
 
@@ -884,7 +884,7 @@ export default function App() {
       setRecommendationProfiles(result.profiles);
     } catch (error) {
       setRecommendationProfilesError(
-        error instanceof Error ? error.message : "读取装备匹配档案失败，请稍后重试。",
+        error instanceof Error ? error.message : "读取匹配档案失败，请稍后重试。",
       );
     } finally {
       setIsLoadingRecommendationProfiles(false);
@@ -1671,7 +1671,7 @@ ${JSON.stringify(context.backupCandidates, null, 2)}
         }),
       });
       setSaveRecommendationProfileMessage(
-        "已加密保存到我的装备匹配档案，可随时回看。",
+        "已加密保存到匹配档案，可随时回看。",
       );
       void fetchRecommendationProfiles();
     } catch (error) {

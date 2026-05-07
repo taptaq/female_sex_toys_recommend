@@ -66,6 +66,9 @@ export function MatchingPage({
       </div>
 
       <div className="relative z-10 min-h-[11.25rem] w-full max-w-[19rem] space-y-3 text-center sm:min-h-[11rem] sm:max-w-md sm:space-y-4">
+        <h2 className="text-lg font-light tracking-[0.18em] text-white sm:text-xl">
+          链路解析中
+        </h2>
         <p className="text-xs font-mono text-cyan-500/70 tracking-widest">
           {statusText}
         </p>

@@ -440,7 +440,7 @@ export function ResultsPage({
 
       <div className="relative z-10 mb-6 text-center">
         <p className="mb-3 font-mono text-[10px] tracking-[0.34em] text-cyan-200/50">
-          DEEP SPACE REPORT
+          匹配结果
         </p>
         <h2 className="mb-2 text-2xl font-light text-white">
           已锁定 {Math.min(topProducts.length, 3)} 个高匹配方案

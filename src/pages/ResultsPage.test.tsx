@@ -267,6 +267,7 @@ test("results page prioritizes the primary recommendation before secondary contr
   );
 
   assert.match(html, /results-report-shell/);
+  assert.match(html, /匹配结果/);
   assert.match(html, /已锁定/);
   assert.match(html, /主推荐方案/);
   assert.match(html, /登录后可加密保存/);

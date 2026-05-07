@@ -244,7 +244,7 @@ export function ProfilesPage({
             EQUIPMENT MATCHING ARCHIVE
           </p>
           <h1 className="text-2xl font-light tracking-wide text-white">
-            我的装备匹配档案
+            匹配档案
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             回看已加密保存的问卷偏好和推荐快照，方便换设备时继续比较。
@@ -273,12 +273,12 @@ export function ProfilesPage({
         </div>
       ) : isLoading ? (
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center text-sm text-slate-400">
-          正在读取装备匹配档案...
+          正在读取匹配档案...
         </div>
       ) : profiles.length === 0 ? (
         <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center">
           <PackageSearch className="mx-auto mb-3 h-8 w-8 text-cyan-200/45" />
-          <p className="text-sm text-white">还没有保存过装备匹配档案</p>
+          <p className="text-sm text-white">还没有保存过匹配档案</p>
           <p className="mt-2 text-xs leading-5 text-slate-400">
             完成一次匹配后，在结果页点击保存，就会出现在这里。
           </p>
