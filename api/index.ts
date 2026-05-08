@@ -1,3 +1,5 @@
+import * as serverAppModule from "../src/server/app.ts";
+
 export function normalizeVercelApiRequestUrl(currentUrl: string) {
   const parsedUrl = new URL(currentUrl, "http://localhost");
   const path = parsedUrl.searchParams.get("path");
@@ -39,8 +41,7 @@ function respondWithFunctionError(response: ApiResponse, error: unknown) {
 }
 
 export function createApiHandler({
-  loadServerApp = async () =>
-    (await import("../src/server/app.ts")) as ServerAppModule,
+  loadServerApp = async () => serverAppModule as ServerAppModule,
 }: {
   loadServerApp?: () => Promise<ServerAppModule>;
 } = {}) {
