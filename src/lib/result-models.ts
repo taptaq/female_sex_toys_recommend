@@ -34,7 +34,7 @@ const RESULT_MODEL_METADATA: Readonly<
     description: "想快速看一版明确建议，可以试它。",
   },
   kimi: {
-    model: "kimi-k2.6",
+    model: "kimi-k2.5",
     label: "Kimi（官方）",
     description: "想看更自然顺滑的说明文字，可以试它。",
   },

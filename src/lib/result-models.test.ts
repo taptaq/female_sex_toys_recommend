@@ -43,7 +43,7 @@ test("RESULT_MODEL_OPTIONS preserves provider order and labels", () => {
     },
     {
       provider: "kimi",
-      model: "kimi-k2.6",
+      model: "kimi-k2.5",
       label: "Kimi（官方）",
       description: "想看更自然顺滑的说明文字，可以试它。",
     },
@@ -106,7 +106,7 @@ test("RESULT_MODEL_OPTIONS stays aligned with APP_RECOMMENDATION_PROVIDER_ORDER"
 test("getResultModelOption returns the matching option when provider exists", () => {
   assert.deepEqual(getResultModelOption("kimi"), {
     provider: "kimi",
-    model: "kimi-k2.6",
+    model: "kimi-k2.5",
     label: "Kimi（官方）",
     description: "想看更自然顺滑的说明文字，可以试它。",
   });

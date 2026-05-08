@@ -21,6 +21,7 @@
     "db:merge:recommender-items-into-toys": "tsx -r dotenv/config src/db/merge-recommender-items-into-toys.ts",
     "db:backfill:reclean-item-names": "tsx -r dotenv/config src/db/backfill-reclean-item-names.ts",
     "db:backfill:safe-display-name": "tsx -r dotenv/config src/db/backfill-safe-display-name.ts",
+    "db:backfill:toy-materials": "tsx -r dotenv/config src/db/backfill-toy-materials.ts",
     "db:backfill:knowledge-embeddings": "tsx -r dotenv/config src/db/backfill-knowledge-nebula-embeddings.ts",
     "debug:param-chain": "tsx -r dotenv/config src/scraper/darentang/debug-param-chain.ts",
     "debug:param-chain:xiaoguaishou": "tsx -r dotenv/config src/scraper/xiaoguaishou/debug-param-chain.ts",

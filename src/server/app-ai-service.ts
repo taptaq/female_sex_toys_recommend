@@ -119,7 +119,7 @@ const PROXY_PROVIDER_MODELS: Record<AppAiProvider, string> = {
   "dmxapi-minimax": "MiniMax-M2.7-free",
   "dmxapi-qwen": "qwen3.5-27b",
   "dmxapi-glm": "glm-5.1-free",
-  kimi: "kimi-k2.6",
+  kimi: "kimi-k2.5",
   "dmxapi-claude": "claude-opus-4-7",
   "dmxapi-gemini": "gemini-3.1-pro-preview-ssvip",
   "dmxapi-grok": "grok-4.2-nothinking",
