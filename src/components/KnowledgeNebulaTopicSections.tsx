@@ -620,10 +620,10 @@ export function KnowledgeNebulaTopicSections({
           </div>
         ) : null}
 
-        <div className="absolute inset-x-3 bottom-3 z-40 mx-auto max-w-5xl sm:inset-x-4 sm:bottom-7">
-          <div className="relative overflow-hidden rounded-[1.45rem] border border-cyan-100/12 bg-[linear-gradient(180deg,rgba(5,20,36,0.72),rgba(1,6,16,0.9))] px-3.5 py-3 shadow-[0_0_80px_rgba(14,165,233,0.12)] backdrop-blur-xl sm:rounded-[1.75rem] sm:px-5 sm:py-4">
+        <div className="absolute inset-x-2.5 bottom-2 z-40 mx-auto max-w-5xl sm:inset-x-4 sm:bottom-7">
+          <div className="relative overflow-hidden rounded-[1.45rem] border border-cyan-100/12 bg-[linear-gradient(180deg,rgba(5,20,36,0.72),rgba(1,6,16,0.9))] px-3 py-2.5 shadow-[0_0_80px_rgba(14,165,233,0.12)] backdrop-blur-xl sm:rounded-[1.75rem] sm:px-5 sm:py-4">
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,transparent,rgba(125,211,252,0.08),transparent)]" />
-            <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div className="relative z-10 flex flex-col gap-2.5 md:flex-row md:items-end md:justify-between">
               <div className="max-w-2xl">
                 <p className="text-[10px] tracking-[0.28em] text-cyan-100/58">
                   驾驶舱中控台

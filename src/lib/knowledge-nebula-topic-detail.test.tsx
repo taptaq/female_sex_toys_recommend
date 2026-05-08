@@ -144,10 +144,10 @@ test("topic detail cockpit reduces label noise and supports partial screen loadi
   assert.match(sectionsSource, /sm:h-\[68dvh\]/);
   assert.match(sectionsSource, /mt-3 grid min-h-0 flex-1 gap-3 overflow-hidden/);
   assert.match(sectionsSource, /sm:mt-4 sm:gap-4 lg:grid-cols-\[1fr_16rem\]/);
-  assert.match(sectionsSource, /absolute inset-x-3 bottom-3 z-40 mx-auto max-w-5xl/);
+  assert.match(sectionsSource, /absolute inset-x-2\.5 bottom-2 z-40 mx-auto max-w-5xl/);
   assert.match(sectionsSource, /sm:inset-x-4 sm:bottom-7/);
   assert.match(sectionsSource, /rounded-\[1\.45rem\]/);
-  assert.match(sectionsSource, /px-3\.5 py-3/);
+  assert.match(sectionsSource, /px-3 py-2\.5/);
   assert.match(sectionsSource, /sm:rounded-\[1\.75rem\] sm:px-5 sm:py-4/);
   assert.match(nodeLayerSource, /cockpit-screen/);
   assert.match(nodeLayerSource, /SCREEN_SLOT_STYLES/);
