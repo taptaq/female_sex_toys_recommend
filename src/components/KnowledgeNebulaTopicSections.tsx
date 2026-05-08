@@ -58,7 +58,7 @@ const ACCENT_STYLES = {
 
 const COCKPIT_SCREEN_GROUP_SIZE = {
   desktop: 6,
-  mobile: 5,
+  mobile: 4,
 } as const;
 
 const KNOWLEDGE_CARD_VIEWER_KEY = "inner-space-knowledge-card-viewer";

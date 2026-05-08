@@ -131,7 +131,7 @@ test("topic detail cockpit reduces label noise and supports partial screen loadi
   assert.match(sectionsSource, /COCKPIT_SCREEN_GROUP_SIZE/);
   assert.match(sectionsSource, /currentScreenGroupSize/);
   assert.match(sectionsSource, /desktop: 6/);
-  assert.match(sectionsSource, /mobile: 5/);
+  assert.match(sectionsSource, /mobile: 4/);
   assert.match(sectionsSource, /驾驶舱中控台/);
   assert.match(sectionsSource, /expanded-cockpit-main-screen/);
   assert.match(sectionsSource, /主屏展开/);
