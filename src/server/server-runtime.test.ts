@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  createLazyValue,
   createLazyRouteInitializer,
   getRequiredServerEnv,
 } from "./server-runtime.ts";
@@ -55,4 +56,18 @@ test("createLazyRouteInitializer retries after a failure", async () => {
   });
 
   assert.equal(runCount, 2);
+});
+
+test("createLazyValue only creates the expensive dependency once", () => {
+  let createCount = 0;
+  const getValue = createLazyValue(() => {
+    createCount += 1;
+    return { label: "shared-instance" };
+  });
+
+  const first = getValue();
+  const second = getValue();
+
+  assert.equal(createCount, 1);
+  assert.equal(first, second);
 });

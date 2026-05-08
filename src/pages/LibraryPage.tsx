@@ -13,10 +13,6 @@ import {
   sanitizeLibraryTypeSelection,
   type LibraryAudienceGender,
 } from "../lib/library-product-types.ts";
-import {
-  resolveLibrarySubtypeCode,
-  resolveLibraryTypeCode,
-} from "../lib/library-product-type-classifier.ts";
 
 const libraryFilterLabelClassName =
   "text-[10px] uppercase tracking-[0.24em] text-slate-500/90 font-mono";
@@ -502,29 +498,14 @@ export function LibraryPage({
           <div className="relative z-0 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {products
             .filter((product) => {
-              const resolvedTypeCode = resolveLibraryTypeCode(product.typeCode, {
-                gender: product.gender,
-                physicalForm: product.physicalForm,
-                name: product.canonicalName || product.name,
-                rawDescription: product.rawDescription ?? null,
-                tags: product.tags ?? [],
-              });
-              const resolvedSubtypeCode = resolveLibrarySubtypeCode(product.subtypeCode, {
-                typeCode: resolvedTypeCode,
-                gender: product.gender,
-                physicalForm: product.physicalForm,
-                name: product.canonicalName || product.name,
-                rawDescription: product.rawDescription ?? null,
-                tags: product.tags ?? [],
-              });
               const matchGender =
                 filterGender === "all" || product.gender === filterGender;
               const matchType =
                 effectiveFilterType === "all" ||
-                resolvedTypeCode === effectiveFilterType;
+                product.typeCode === effectiveFilterType;
               const matchSubtype =
                 effectiveFilterSubtype === "all" ||
-                resolvedSubtypeCode === effectiveFilterSubtype;
+                product.subtypeCode === effectiveFilterSubtype;
               const matchBrand =
                 filterBrand === "all" || product.brand === filterBrand;
               const matchOrigin =

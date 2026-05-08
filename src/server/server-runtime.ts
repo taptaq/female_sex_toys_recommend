@@ -33,3 +33,16 @@ export function createLazyRouteInitializer() {
     return promise;
   };
 }
+
+export function createLazyValue<T>(factory: () => T) {
+  let cached: T | undefined;
+
+  return function getValue() {
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    cached = factory();
+    return cached;
+  };
+}

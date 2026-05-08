@@ -3,12 +3,6 @@ import dotenv from "dotenv";
 import pg from "pg";
 import type { RequestHandler } from "express";
 
-import { buildSafeDisplayName } from "../lib/product-display-name.js";
-import {
-  resolveLibraryAudienceGender,
-  resolveLibrarySubtypeCode,
-  resolveLibraryTypeCode,
-} from "../lib/library-product-type-classifier.js";
 import { createRecalibrateResultsHandler } from "./app-ai-recalibration-route.js";
 import { createAppAiService } from "./app-ai-service.js";
 import {
@@ -23,7 +17,9 @@ import {
   ensureKnowledgeNebulaSchema,
 } from "./knowledge-nebula-store.js";
 import { ensureRecommenderItemsSchema } from "./recommender-items-schema.js";
+import { createListRecommenderToysHandler } from "./recommender-toys-route.js";
 import {
+  createLazyValue,
   createLazyRouteInitializer,
   getRequiredServerEnv,
 } from "./server-runtime.js";
@@ -55,27 +51,78 @@ const pool = new Pool({
   },
 });
 
-const appAiService = createAppAiService();
-const recalibrateResultsHandler = createRecalibrateResultsHandler({
-  appAiService,
-});
-const knowledgeEmbeddingService = createKnowledgeEmbeddingService();
-const knowledgeNebulaStore = createKnowledgeNebulaStore({
-  pool,
-  embeddingService: knowledgeEmbeddingService,
-});
-const userRecommendationStore = createUserRecommendationStore({ pool });
-const userFeedbackStore = createUserFeedbackStore({ pool });
-const usernameRegistrationService = createUsernameRegistrationService({
-  supabaseUrl: process.env.VITE_SUPABASE_URL,
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-});
-const supabaseAccessTokenVerifier = createSupabaseAccessTokenVerifier({
-  supabaseUrl: process.env.VITE_SUPABASE_URL,
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-});
-
 const ensureRouteInitialized = createLazyRouteInitializer();
+const getAppAiService = createLazyValue(() => createAppAiService());
+const getRecalibrateResultsHandler = createLazyValue(() =>
+  createRecalibrateResultsHandler({
+    appAiService: getAppAiService(),
+  }),
+);
+const getKnowledgeEmbeddingService = createLazyValue(() =>
+  createKnowledgeEmbeddingService(),
+);
+const getKnowledgeNebulaStore = createLazyValue(() =>
+  createKnowledgeNebulaStore({
+    pool,
+    embeddingService: getKnowledgeEmbeddingService(),
+  }),
+);
+const getKnowledgeTopicHandler = createLazyValue(() =>
+  createKnowledgeNebulaTopicHandler({ store: getKnowledgeNebulaStore() }),
+);
+const getKnowledgeCreateCardHandler = createLazyValue(() =>
+  createKnowledgeNebulaCreateCardHandler({ store: getKnowledgeNebulaStore() }),
+);
+const getKnowledgeUpdateCardHandler = createLazyValue(() =>
+  createKnowledgeNebulaUpdateCardHandler({ store: getKnowledgeNebulaStore() }),
+);
+const getKnowledgeRecordCardViewHandler = createLazyValue(() =>
+  createKnowledgeNebulaRecordCardViewHandler({ store: getKnowledgeNebulaStore() }),
+);
+const getUserRecommendationStore = createLazyValue(() =>
+  createUserRecommendationStore({ pool }),
+);
+const getUserFeedbackStore = createLazyValue(() =>
+  createUserFeedbackStore({ pool }),
+);
+const getUsernameRegistrationService = createLazyValue(() =>
+  createUsernameRegistrationService({
+    supabaseUrl: process.env.VITE_SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }),
+);
+const getSupabaseAccessTokenVerifier = createLazyValue(() =>
+  createSupabaseAccessTokenVerifier({
+    supabaseUrl: process.env.VITE_SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }),
+);
+const getRegisterUsernameHandler = createLazyValue(() =>
+  createUsernameRegistrationHandler({
+    service: getUsernameRegistrationService(),
+  }),
+);
+const getSaveUserFeedbackHandler = createLazyValue(() =>
+  createSaveUserFeedbackHandler({
+    store: getUserFeedbackStore(),
+  }),
+);
+const getSaveRecommendationProfileHandler = createLazyValue(() =>
+  createSaveUserRecommendationProfileHandler({
+    encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserRecommendationStore(),
+  }),
+);
+const getListRecommendationProfilesHandler = createLazyValue(() =>
+  createListUserRecommendationProfilesHandler({
+    encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserRecommendationStore(),
+  }),
+);
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -99,6 +146,15 @@ function withRouteInitialization(
       next(error);
     }
   };
+}
+
+function withLazyRouteHandler(
+  ensureReady: () => Promise<void>,
+  getHandler: () => RequestHandler,
+): RequestHandler {
+  return withRouteInitialization(ensureReady, (req, res, next) =>
+    getHandler()(req, res, next),
+  );
 }
 
 function ensureLibraryRouteReady() {
@@ -129,96 +185,13 @@ function ensureUserRecommendationRouteReady() {
   });
 }
 
-app.get("/api/recommender/toys", async (_req, res) => {
-  console.log("📡 [Server] 收到全息库同步指令...");
-
-  try {
-    await ensureLibraryRouteReady();
-
-    const result = await pool.query(`
-      SELECT
-        t.id, t.name, t.safe_display_name, t.price, t.max_db, t.waterproof,
-        t.appearance, t.physical_form, t.motor_type, t.gender, t.type_code, t.subtype_code,
-        t.brand, t.material, t.image_url, t.raw_description,
-        COALESCE(p.specs::jsonb ->> 'rawDescription', NULL) AS product_raw_description,
-        p.link, p.tags, p.persona_\x61nalysis AS persona_analysis,
-        c.is_domestic
-      FROM public.recommender_toys t
-      LEFT JOIN public.products p ON t.original_id = p.id
-      LEFT JOIN public.competitors c ON p.competitor_id = c.id
-      ORDER BY t.created_at DESC
-    `);
-
-    const normalized = result.rows.map((toy) => {
-      const resolvedGender = resolveLibraryAudienceGender({
-        gender: toy.gender,
-        physicalForm: toy.physical_form,
-        name: toy.name,
-        rawDescription: [toy.raw_description, toy.product_raw_description]
-          .filter(Boolean)
-          .join("\n") || null,
-        tags: Array.isArray(toy.tags) ? toy.tags : [],
-      });
-      const resolvedTypeCode = resolveLibraryTypeCode(toy.type_code, {
-        gender: resolvedGender,
-        physicalForm: toy.physical_form,
-        name: toy.name,
-        rawDescription: [toy.raw_description, toy.product_raw_description]
-          .filter(Boolean)
-          .join("\n") || null,
-        tags: Array.isArray(toy.tags) ? toy.tags : [],
-      });
-      const resolvedSubtypeCode = resolveLibrarySubtypeCode(toy.subtype_code, {
-        typeCode: resolvedTypeCode,
-        gender: resolvedGender,
-        physicalForm: toy.physical_form,
-        name: toy.name,
-        rawDescription: [toy.raw_description, toy.product_raw_description]
-          .filter(Boolean)
-          .join("\n") || null,
-        tags: Array.isArray(toy.tags) ? toy.tags : [],
-      });
-
-      return {
-        id: toy.id,
-        name: toy.name,
-        canonicalName: toy.name,
-        displayName: toy.safe_display_name || buildSafeDisplayName(toy.name),
-        safeDisplayName:
-          toy.safe_display_name || buildSafeDisplayName(toy.name),
-        price: Number(toy.price),
-        maxDb: toy.max_db,
-        waterproof: toy.waterproof,
-        appearance: toy.appearance,
-        physicalForm: toy.physical_form,
-        motorType: toy.motor_type,
-        gender: resolvedGender,
-        typeCode: resolvedTypeCode,
-        subtypeCode: resolvedSubtypeCode,
-        brand: toy.brand || "探索品牌",
-        material: toy.material || "亲肤材质",
-        rawDescription:
-          toy.raw_description || toy.product_raw_description || null,
-        imagePlaceholder:
-          toy.image_url || "bg-gradient-to-br from-indigo-900/40 to-blue-900/40",
-        link: toy.link,
-        sourceUrl: toy.link,
-        tags: toy.tags || [],
-        personaAnalysis: toy.persona_analysis,
-        isDomestic: toy.is_domestic,
-      };
-    });
-
-    console.log(`✅ [Server] 已同步 ${normalized.length} 条晶体库数据`);
-    res.json(normalized);
-  } catch (error) {
-    console.error("❌ [Server] 数据库同步中断:", error);
-    res.status(500).json({
-      error: "Database synchronization failed",
-      details: String(error),
-    });
-  }
-});
+app.get(
+  "/api/recommender/toys",
+  createListRecommenderToysHandler({
+    pool,
+    ensureLibraryRouteReady,
+  }),
+);
 
 app.post("/api/ai/rerank", async (req, res) => {
   const prompt = String(req.body?.prompt || "").trim();
@@ -228,7 +201,7 @@ app.post("/api/ai/rerank", async (req, res) => {
   }
 
   try {
-    const result = await appAiService.runServerAiProxy<unknown[]>({
+    const result = await getAppAiService().runServerAiProxy<unknown[]>({
       prompt,
       temperature: 0.1,
       emptyJson: "[]",
@@ -249,7 +222,7 @@ app.post("/api/ai/result-enhancement", async (req, res) => {
   }
 
   try {
-    const result = await appAiService.runServerAiProxy<Record<string, unknown>>({
+    const result = await getAppAiService().runServerAiProxy<Record<string, unknown>>({
       prompt,
       temperature: 0.3,
       emptyJson: "{}",
@@ -265,72 +238,60 @@ app.post("/api/ai/result-enhancement", async (req, res) => {
   }
 });
 
-app.post("/api/ai/recalibrate-results", recalibrateResultsHandler);
+app.post("/api/ai/recalibrate-results", (req, res) =>
+  getRecalibrateResultsHandler()(req, res),
+);
 app.post(
   "/api/auth/register",
-  createUsernameRegistrationHandler({
-    service: usernameRegistrationService,
-  }),
+  (req, res) => getRegisterUsernameHandler()(req, res),
 );
 app.get(
   "/api/knowledge/topics/:slug",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureKnowledgeRouteReady,
-    createKnowledgeNebulaTopicHandler({ store: knowledgeNebulaStore }),
+    getKnowledgeTopicHandler,
   ),
 );
 app.post(
   "/api/knowledge/topics/:slug/cards",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureKnowledgeRouteReady,
-    createKnowledgeNebulaCreateCardHandler({ store: knowledgeNebulaStore }),
+    getKnowledgeCreateCardHandler,
   ),
 );
 app.patch(
   "/api/knowledge/cards/:cardId",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureKnowledgeRouteReady,
-    createKnowledgeNebulaUpdateCardHandler({ store: knowledgeNebulaStore }),
+    getKnowledgeUpdateCardHandler,
   ),
 );
 app.post(
   "/api/knowledge/cards/:cardId/view",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureKnowledgeRouteReady,
-    createKnowledgeNebulaRecordCardViewHandler({ store: knowledgeNebulaStore }),
+    getKnowledgeRecordCardViewHandler,
   ),
 );
 app.post(
   "/api/feedback",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureFeedbackRouteReady,
-    createSaveUserFeedbackHandler({
-      store: userFeedbackStore,
-    }),
+    getSaveUserFeedbackHandler,
   ),
 );
 app.post(
   "/api/user/recommendation-profiles",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureUserRecommendationRouteReady,
-    createSaveUserRecommendationProfileHandler({
-      encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
-      jwtSecret: process.env.JWT_SECRET,
-      authVerifier: supabaseAccessTokenVerifier,
-      store: userRecommendationStore,
-    }),
+    getSaveRecommendationProfileHandler,
   ),
 );
 app.get(
   "/api/user/recommendation-profiles",
-  withRouteInitialization(
+  withLazyRouteHandler(
     ensureUserRecommendationRouteReady,
-    createListUserRecommendationProfilesHandler({
-      encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
-      jwtSecret: process.env.JWT_SECRET,
-      authVerifier: supabaseAccessTokenVerifier,
-      store: userRecommendationStore,
-    }),
+    getListRecommendationProfilesHandler,
   ),
 );
 

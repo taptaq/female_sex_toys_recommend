@@ -1,6 +1,11 @@
 import { Product } from "../data/mock.js";
 import { buildSafeDisplayName } from "./product-display-name.js";
 import {
+  getParentLibraryTypeCodeForSubtype,
+  type LibrarySelectableTypeCode,
+  type LibrarySubtypeCode,
+} from "./library-product-types.js";
+import {
   resolveLibraryAudienceGender,
   resolveLibrarySubtypeCode,
   resolveLibraryTypeCode,
@@ -24,6 +29,46 @@ type ProductsCachePayload = {
   updatedAt: number;
   products: Product[];
 };
+
+function isStoredAudienceGender(
+  value: string | null | undefined,
+): value is Product["gender"] {
+  return value === "female" || value === "male" || value === "unisex";
+}
+
+function isStoredTypeCode(
+  value: string | null | undefined,
+): value is LibrarySelectableTypeCode {
+  return [
+    "suction",
+    "external_vibe",
+    "insertable",
+    "dual_stimulation",
+    "masturbator",
+    "prostate",
+    "cock_ring",
+    "couples",
+    "wearable_remote",
+    "care_accessory",
+    "unknown",
+  ].includes(String(value || ""));
+}
+
+function normalizeStoredSubtypeCode(
+  typeCode: LibrarySelectableTypeCode | null,
+  subtypeCode: string | null | undefined,
+) {
+  if (!typeCode || !subtypeCode) {
+    return null;
+  }
+
+  const parentTypeCode = getParentLibraryTypeCodeForSubtype(subtypeCode);
+  if (parentTypeCode !== typeCode) {
+    return null;
+  }
+
+  return subtypeCode as LibrarySubtypeCode;
+}
 
 export const PRICE_RANGE_OPTIONS = [
   { value: "all", label: "全部价格" },
@@ -80,31 +125,45 @@ export function normalizeProductsPayload(payload: unknown): Product[] {
 
       const typedProduct = product as Product;
       const canonicalName = typedProduct.canonicalName || typedProduct.name;
-      const resolvedGender = resolveLibraryAudienceGender({
-        gender: typedProduct.gender,
-        physicalForm: typedProduct.physicalForm,
-        name: canonicalName,
-        rawDescription: typedProduct.rawDescription ?? null,
-        tags: typedProduct.tags ?? [],
-      });
-      const resolvedTypeCode = resolveLibraryTypeCode(typedProduct.typeCode, {
-        gender: resolvedGender,
-        physicalForm: typedProduct.physicalForm,
-        name: canonicalName,
-        rawDescription: typedProduct.rawDescription ?? null,
-        tags: typedProduct.tags ?? [],
-      });
-      const resolvedSubtypeCode = resolveLibrarySubtypeCode(
+      const storedGender = isStoredAudienceGender(typedProduct.gender)
+        ? typedProduct.gender
+        : null;
+      const storedTypeCode = isStoredTypeCode(typedProduct.typeCode)
+        ? typedProduct.typeCode
+        : null;
+      const reusableStoredGender = storedTypeCode ? storedGender : null;
+      const storedSubtypeCode = normalizeStoredSubtypeCode(
+        storedTypeCode,
         typedProduct.subtypeCode,
-        {
+      );
+      const resolvedGender =
+        reusableStoredGender ??
+        resolveLibraryAudienceGender({
+          gender: typedProduct.gender,
+          physicalForm: typedProduct.physicalForm,
+          name: canonicalName,
+          rawDescription: typedProduct.rawDescription ?? null,
+          tags: typedProduct.tags ?? [],
+        });
+      const resolvedTypeCode =
+        storedTypeCode ??
+        resolveLibraryTypeCode(typedProduct.typeCode, {
+          gender: resolvedGender,
+          physicalForm: typedProduct.physicalForm,
+          name: canonicalName,
+          rawDescription: typedProduct.rawDescription ?? null,
+          tags: typedProduct.tags ?? [],
+        });
+      const resolvedSubtypeCode =
+        storedSubtypeCode ??
+        resolveLibrarySubtypeCode(typedProduct.subtypeCode, {
           typeCode: resolvedTypeCode,
           gender: resolvedGender,
           physicalForm: typedProduct.physicalForm,
           name: canonicalName,
           rawDescription: typedProduct.rawDescription ?? null,
           tags: typedProduct.tags ?? [],
-        },
-      );
+        });
       const safeDisplayName =
         typedProduct.safeDisplayName || buildSafeDisplayName(canonicalName);
       return {

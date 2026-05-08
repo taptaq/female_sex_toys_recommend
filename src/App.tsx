@@ -1048,7 +1048,11 @@ export default function App() {
     setProductsError(null);
     setLoadingStep(1); // 连接星港
     productsFetchRef.current = new Promise<Product[]>((resolve) => {
-      fetch("/api/recommender/toys")
+      const requestUrl = force
+        ? "/api/recommender/toys?refresh=1"
+        : "/api/recommender/toys";
+
+      fetch(requestUrl)
         .then(async (response) => {
           const data = await response.json();
           if (!response.ok) {
@@ -1061,16 +1065,12 @@ export default function App() {
             throw new Error("装备库接口返回格式异常");
           }
           setLoadingStep(2); // 数据解密
-          setTimeout(() => {
-            setLoadingStep(3); // 载入晶体
-            setTimeout(() => {
-              setAllProducts(data);
-              setIsLoading(false);
-              setHasFetched(true);
-              setProductsError(null);
-              resolve(data);
-            }, 1200); // 仪式感时间
-          }, 800);
+          setLoadingStep(3); // 载入晶体
+          setAllProducts(data);
+          setIsLoading(false);
+          setHasFetched(true);
+          setProductsError(null);
+          resolve(data);
         })
         .catch((error) => {
           console.error("Failed to fetch products:", error);
