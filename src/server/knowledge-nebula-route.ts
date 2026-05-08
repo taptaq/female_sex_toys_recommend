@@ -5,6 +5,9 @@ import type {
   KnowledgeNebulaStore,
 } from "./knowledge-nebula-store.js";
 
+const KNOWLEDGE_TOPIC_CACHE_CONTROL =
+  "public, max-age=0, s-maxage=60, stale-while-revalidate=300";
+
 export function createKnowledgeNebulaTopicHandler({
   store,
 }: {
@@ -18,6 +21,7 @@ export function createKnowledgeNebulaTopicHandler({
     }
 
     try {
+      res.setHeader("Cache-Control", KNOWLEDGE_TOPIC_CACHE_CONTROL);
       const topic = await store.getTopicBySlug(slug);
       if (!topic) {
         res.status(404).json({ error: "Knowledge topic not found" });

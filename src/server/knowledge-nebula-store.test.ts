@@ -5,6 +5,7 @@ import type { Pool } from "pg";
 import {
   createKnowledgeNebulaStore,
   ensureKnowledgeNebulaSchema,
+  KNOWLEDGE_NEBULA_SEED_VERSION,
 } from "./knowledge-nebula-store.ts";
 
 type QueryCall = {
@@ -97,6 +98,25 @@ test("knowledge nebula store ranks related cards by embedding similarity first",
   ]);
 });
 
+test("knowledge nebula store reuses the cached topic payload for repeated slug reads", async () => {
+  const { pool, calls } = createKnowledgePool();
+  const store = createKnowledgeNebulaStore({ pool: pool as unknown as Pick<Pool, "query"> });
+
+  const first = await store.getTopicBySlug("science");
+  const second = await store.getTopicBySlug("science");
+
+  assert.deepEqual(second, first);
+  const topicReads = calls.filter((call) =>
+    call.sql.includes("FROM public.knowledge_nebula_topics"),
+  );
+  const cardReads = calls.filter((call) =>
+    call.sql.includes("FROM public.knowledge_nebula_cards"),
+  );
+
+  assert.equal(topicReads.length, 1);
+  assert.equal(cardReads.length, 1);
+});
+
 test("knowledge nebula card rows read embedding data for semantic matching", async () => {
   const { pool, calls } = createKnowledgePool();
   const store = createKnowledgeNebulaStore({ pool: pool as unknown as Pick<Pool, "query"> });
@@ -159,4 +179,32 @@ test("knowledge nebula schema refreshes seeded topic display names", async () =>
     "参数原理",
     "理解参数、结构和体感之间的关系，避免被营销词带偏。",
   ]);
+});
+
+test("knowledge nebula schema skips reseeding when the seeded content version is already current", async () => {
+  const calls: QueryCall[] = [];
+  const pool = {
+    async query(sql: string, values?: unknown[]) {
+      calls.push({ sql, values });
+
+      if (sql.includes("FROM public.knowledge_nebula_seed_state")) {
+        return {
+          rows: [{ seed_version: KNOWLEDGE_NEBULA_SEED_VERSION }],
+        };
+      }
+
+      return { rows: [] };
+    },
+  };
+
+  await ensureKnowledgeNebulaSchema(pool as unknown as Pick<Pool, "query">);
+
+  assert.equal(
+    calls.some((call) => call.sql.includes("INSERT INTO public.knowledge_nebula_topics")),
+    false,
+  );
+  assert.equal(
+    calls.some((call) => call.sql.includes("INSERT INTO public.knowledge_nebula_cards")),
+    false,
+  );
 });

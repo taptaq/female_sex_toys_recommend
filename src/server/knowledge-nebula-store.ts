@@ -51,6 +51,7 @@ type TopicRow = {
 
 type CardRow = {
   id: string;
+  topic_slug: string;
   title: string;
   summary: string;
   body: unknown;
@@ -61,6 +62,16 @@ type CardRow = {
   view_count: number;
   embedding: unknown;
 };
+
+type SeedStateRow = {
+  seed_version: string;
+};
+
+export const KNOWLEDGE_NEBULA_SEED_VERSION = `knowledge-nebula-${crypto
+  .createHash("sha256")
+  .update(JSON.stringify(KNOWLEDGE_NEBULA_TOPICS))
+  .digest("hex")
+  .slice(0, 12)}`;
 
 export async function ensureKnowledgeNebulaSchema(
   pool: Pick<Pool, "query">,
@@ -134,6 +145,27 @@ export async function ensureKnowledgeNebulaSchema(
     ON public.knowledge_nebula_card_views(card_id, created_at)
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.knowledge_nebula_seed_state (
+      seed_key text PRIMARY KEY,
+      seed_version text NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  const seedStateResult = await pool.query<SeedStateRow>(
+    `
+      SELECT seed_version
+      FROM public.knowledge_nebula_seed_state
+      WHERE seed_key = 'default'
+      LIMIT 1
+    `,
+  );
+
+  if (seedStateResult.rows[0]?.seed_version === KNOWLEDGE_NEBULA_SEED_VERSION) {
+    return;
+  }
+
   for (const topic of KNOWLEDGE_NEBULA_TOPICS) {
     await pool.query(
       `
@@ -192,6 +224,18 @@ export async function ensureKnowledgeNebulaSchema(
       );
     }
   }
+
+  await pool.query(
+    `
+      INSERT INTO public.knowledge_nebula_seed_state (seed_key, seed_version)
+      VALUES ('default', $1)
+      ON CONFLICT (seed_key) DO UPDATE
+      SET
+        seed_version = EXCLUDED.seed_version,
+        updated_at = now()
+    `,
+    [KNOWLEDGE_NEBULA_SEED_VERSION],
+  );
 }
 
 export function createKnowledgeNebulaStore({
@@ -201,15 +245,29 @@ export function createKnowledgeNebulaStore({
   pool: Pick<Pool, "query">;
   embeddingService?: KnowledgeEmbeddingService;
 }): KnowledgeNebulaStore {
+  const topicCache = new Map<string, KnowledgeNebulaTopic>();
+
+  async function readFreshTopicBySlug(slug: string) {
+    const topicRow = await readTopicRow(pool, slug);
+    if (!topicRow) {
+      topicCache.delete(slug);
+      return null;
+    }
+
+    const cardRows = await readCardRows(pool, slug);
+    const topic = mapTopicRows(topicRow, cardRows);
+    topicCache.set(slug, topic);
+    return topic;
+  }
+
   return {
     async getTopicBySlug(slug) {
-      const topicRow = await readTopicRow(pool, slug);
-      if (!topicRow) {
-        return null;
+      const cachedTopic = topicCache.get(slug);
+      if (cachedTopic) {
+        return cachedTopic;
       }
 
-      const cardRows = await readCardRows(pool, slug);
-      return mapTopicRows(topicRow, cardRows);
+      return readFreshTopicBySlug(slug);
     },
 
     async createCard(topicSlug, input) {
@@ -251,7 +309,8 @@ export function createKnowledgeNebulaStore({
         ],
       );
 
-      return this.getTopicBySlug(topicSlug);
+      topicCache.delete(topicSlug);
+      return readFreshTopicBySlug(topicSlug);
     },
 
     async updateCard(cardId, input) {
@@ -288,13 +347,18 @@ export function createKnowledgeNebulaStore({
         return null;
       }
 
-      return this.getTopicBySlug(topicSlug);
+      topicCache.delete(topicSlug);
+      return readFreshTopicBySlug(topicSlug);
     },
 
     async recordCardView(cardId, viewerKey) {
-      const existingCard = await pool.query<{ id: string; view_count: number }>(
+      const existingCard = await pool.query<{
+        id: string;
+        topic_slug: string;
+        view_count: number;
+      }>(
         `
-          SELECT id, view_count
+          SELECT id, topic_slug, view_count
           FROM public.knowledge_nebula_cards
           WHERE id = $1
           LIMIT 1
@@ -338,6 +402,7 @@ export function createKnowledgeNebulaStore({
         [cardId],
       );
       const row = result.rows[0] ?? cardRow;
+      topicCache.delete(cardRow.topic_slug);
 
       return {
         cardId: row.id,
@@ -371,7 +436,7 @@ async function readCardRows(
 ) {
   const result = await pool.query<CardRow>(
     `
-      SELECT id, title, summary, body, is_featured, source_url, tags, sort_order
+      SELECT id, topic_slug, title, summary, body, is_featured, source_url, tags, sort_order
       , view_count, embedding
       FROM public.knowledge_nebula_cards
       WHERE topic_slug = $1

@@ -22,10 +22,15 @@ function createMockRequest({
 function createMockResponse() {
   let statusCode = 200;
   let jsonPayload: unknown;
+  const headers = new Map<string, string>();
 
   const response = {
     status(code: number) {
       statusCode = code;
+      return response;
+    },
+    setHeader(name: string, value: string) {
+      headers.set(name.toLowerCase(), value);
       return response;
     },
     json(payload: unknown) {
@@ -41,6 +46,9 @@ function createMockResponse() {
     },
     readJsonPayload() {
       return jsonPayload;
+    },
+    readHeader(name: string) {
+      return headers.get(name.toLowerCase());
     },
   };
 }
@@ -61,6 +69,10 @@ test("knowledge topic handler returns the resolved topic payload", async () => {
   );
 
   assert.equal(mockResponse.readStatusCode(), 200);
+  assert.equal(
+    mockResponse.readHeader("cache-control"),
+    "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+  );
   assert.deepEqual(mockResponse.readJsonPayload(), expectedTopic);
 });
 
