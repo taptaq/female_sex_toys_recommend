@@ -29,7 +29,6 @@ type KnowledgeCardEditorState = {
 const ACCENT_STYLES = {
   cyan: {
     badge: "border-cyan-300/16 bg-cyan-400/10 text-cyan-100/82",
-    title: "from-white via-cyan-100 to-cyan-300/78",
     summary: "text-cyan-50/78",
     glow: "from-cyan-300/18 via-cyan-200/10 to-transparent",
     dialogBorder: "border-cyan-300/16",
@@ -38,7 +37,6 @@ const ACCENT_STYLES = {
   },
   sky: {
     badge: "border-sky-300/16 bg-sky-400/10 text-sky-100/82",
-    title: "from-white via-sky-100 to-sky-300/78",
     summary: "text-sky-50/78",
     glow: "from-sky-300/18 via-sky-200/10 to-transparent",
     dialogBorder: "border-sky-300/16",
@@ -47,7 +45,6 @@ const ACCENT_STYLES = {
   },
   indigo: {
     badge: "border-indigo-300/16 bg-indigo-400/10 text-indigo-100/82",
-    title: "from-white via-indigo-100 to-indigo-300/78",
     summary: "text-indigo-50/78",
     glow: "from-indigo-300/18 via-indigo-200/10 to-transparent",
     dialogBorder: "border-indigo-300/16",
@@ -661,10 +658,7 @@ export function KnowledgeNebulaTopicSections({
                   驾驶舱中控台
                 </p>
                 <h2
-                  className={[
-                    "mt-1.5 bg-gradient-to-r bg-clip-text text-xl font-light tracking-[0.14em] text-transparent sm:text-3xl",
-                    accent.title,
-                  ].join(" ")}
+                  className="mt-1.5 text-xl font-light tracking-[0.14em] text-[rgb(103,232,249)] sm:text-3xl"
                 >
                   当前航线：{liveTopic.title}
                 </h2>

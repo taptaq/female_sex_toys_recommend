@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  APP_THEME_HOME_COSMOS_IMAGE_BY_ID,
   APP_THEME_STORAGE_KEY,
   DEFAULT_APP_THEME_ID,
   applyAppTheme,
   normalizeAppThemeId,
+  preloadAllAppThemeHomeCosmos,
+  preloadAppThemeHomeCosmos,
   readStoredAppTheme,
   writeStoredAppTheme,
 } from "./app-theme.ts";
@@ -100,6 +103,58 @@ test("applyAppTheme writes the selected theme to the document root", () => {
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       value: previousDocument,
+    });
+  }
+});
+
+test("home cosmos preload decodes every theme background image once", async () => {
+  const previousWindow = globalThis.window;
+  const previousImage = globalThis.Image;
+  const decodedSources: string[] = [];
+
+  class MockImage {
+    decoding = "auto";
+    src = "";
+
+    decode() {
+      decodedSources.push(this.src);
+      return Promise.resolve();
+    }
+  }
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {},
+  });
+  Object.defineProperty(globalThis, "Image", {
+    configurable: true,
+    value: MockImage,
+  });
+
+  try {
+    await preloadAppThemeHomeCosmos("soft-signal");
+
+    assert.deepEqual(decodedSources, [
+      APP_THEME_HOME_COSMOS_IMAGE_BY_ID["soft-signal"],
+    ]);
+
+    decodedSources.length = 0;
+
+    await preloadAllAppThemeHomeCosmos();
+
+    assert.deepEqual(decodedSources, [
+      APP_THEME_HOME_COSMOS_IMAGE_BY_ID["inner-space"],
+      APP_THEME_HOME_COSMOS_IMAGE_BY_ID["vector-pulse"],
+      APP_THEME_HOME_COSMOS_IMAGE_BY_ID["sync-field"],
+    ]);
+  } finally {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: previousWindow,
+    });
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      value: previousImage,
     });
   }
 });

@@ -16,28 +16,16 @@ type NebulaLabelLayerProps = {
 const ACCENT_STYLES: Record<
   KnowledgeNebulaTopic["accent"],
   {
-    number: string;
-    title: string;
-    summary: string;
     glow: string;
   }
 > = {
   cyan: {
-    number: "text-cyan-100/70",
-    title: "text-cyan-50",
-    summary: "text-cyan-100/66",
     glow: "drop-shadow-[0_0_18px_rgba(103,232,249,0.46)]",
   },
   sky: {
-    number: "text-sky-100/70",
-    title: "text-sky-50",
-    summary: "text-sky-100/66",
     glow: "drop-shadow-[0_0_18px_rgba(125,211,252,0.42)]",
   },
   indigo: {
-    number: "text-indigo-100/70",
-    title: "text-indigo-50",
-    summary: "text-indigo-100/66",
     glow: "drop-shadow-[0_0_18px_rgba(165,180,252,0.44)]",
   },
 };
@@ -95,16 +83,16 @@ export function NebulaLabelLayer({
             aria-label={`进入 ${topic.title}`}
           >
             <span
-              className={`text-[9px] font-mono tracking-[0.24em] sm:text-[10px] sm:tracking-[0.28em] ${accent.number}`}
+              className="text-[9px] font-mono tracking-[0.24em] text-[rgb(103,232,249)] sm:text-[10px] sm:tracking-[0.28em]"
             >
               {String(index + 1).padStart(2, "0")}
             </span>
             <h3
-              className={`mt-1.5 text-[13px] font-medium tracking-[0.12em] sm:mt-2 sm:text-base sm:tracking-[0.14em] ${accent.title}`}
+              className="mt-1.5 text-[13px] font-medium tracking-[0.12em] text-[rgb(103,232,249)] sm:mt-2 sm:text-base sm:tracking-[0.14em]"
             >
               {topic.title}
             </h3>
-            <p className={`mt-1 text-[10px] leading-[1.55] sm:text-xs ${accent.summary}`}>
+            <p className="mt-1 text-[10px] leading-[1.55] text-[rgb(103,232,249)] sm:text-xs">
               {isFocused ? "正在穿入这片星云" : "进入主题"}
             </p>
           </button>

@@ -105,6 +105,7 @@ import {
 } from "./lib/knowledge-nebula-route";
 import {
   applyAppTheme,
+  preloadAppThemeHomeCosmos,
   readStoredAppTheme,
   writeStoredAppTheme,
   type AppThemeId,
@@ -127,6 +128,13 @@ type AppHistoryState = {
   knowledgeOriginRoute?: AppRoute;
   profilesOriginRoute?: AppRoute;
 };
+
+type ShellRouteState = {
+  route: AppRoute;
+  knowledgeTopicSlug?: KnowledgeNebulaTopicSlug;
+};
+
+const ROUTE_SHELL_EXIT_STABILIZE_MS = 480;
 
 type AppAiProxyResponse<T> = {
   data: T;
@@ -246,6 +254,12 @@ export default function App() {
   const [knowledgeOriginRoute, setKnowledgeOriginRoute] = useState<
     AppRoute | undefined
   >(initialKnowledgeOriginRoute);
+  const [shellRouteState, setShellRouteState] = useState<ShellRouteState>(() => ({
+    route: detectRoute(initialPathname),
+    knowledgeTopicSlug: initialKnowledgeRouteState?.topicSlug,
+  }));
+  const shellRouteStateRef = useRef(shellRouteState);
+  const shellRouteStabilizeTimeoutRef = useRef<number | null>(null);
   const [profilesOriginRoute, setProfilesOriginRoute] = useState<
     AppRoute | undefined
   >(initialProfilesOriginRoute);
@@ -356,6 +370,8 @@ export default function App() {
   const [recommendationProfilesError, setRecommendationProfilesError] =
     useState<string | null>(null);
   const [themeId, setThemeId] = useState<AppThemeId>(() => readStoredAppTheme());
+  const themeSwitchRunRef = useRef(0);
+  const themeSwitchStabilizeTimeoutRef = useRef<number | null>(null);
 
   const activeQuestions: Question[] = getActiveQuestions(answers.gender);
 
@@ -374,6 +390,42 @@ export default function App() {
       transition: { duration: 0.4, ease: "easeInOut" },
     },
   };
+
+  useEffect(() => {
+    shellRouteStateRef.current = shellRouteState;
+  }, [shellRouteState]);
+
+  useEffect(() => {
+    if (shellRouteStabilizeTimeoutRef.current !== null) {
+      window.clearTimeout(shellRouteStabilizeTimeoutRef.current);
+      shellRouteStabilizeTimeoutRef.current = null;
+    }
+
+    const nextShellRouteState: ShellRouteState = {
+      route: currentRoute,
+      knowledgeTopicSlug:
+        currentRoute === "/knowledge" ? selectedKnowledgeTopicSlug : undefined,
+    };
+    const isReturningFromKnowledgeToHome =
+      shellRouteStateRef.current.route === "/knowledge" && currentRoute === "/";
+
+    if (!isReturningFromKnowledgeToHome) {
+      setShellRouteState(nextShellRouteState);
+      return undefined;
+    }
+
+    shellRouteStabilizeTimeoutRef.current = window.setTimeout(() => {
+      setShellRouteState(nextShellRouteState);
+      shellRouteStabilizeTimeoutRef.current = null;
+    }, ROUTE_SHELL_EXIT_STABILIZE_MS);
+
+    return () => {
+      if (shellRouteStabilizeTimeoutRef.current !== null) {
+        window.clearTimeout(shellRouteStabilizeTimeoutRef.current);
+        shellRouteStabilizeTimeoutRef.current = null;
+      }
+    };
+  }, [currentRoute, selectedKnowledgeTopicSlug]);
 
   const isInvalidKnowledgeDetailPath = (pathname: string) => {
     if (detectRoute(pathname) !== "/knowledge") {
@@ -486,6 +538,46 @@ export default function App() {
     navigateTo("/quiz");
   };
 
+  const clearThemeSwitchStabilizeTimeout = () => {
+    if (themeSwitchStabilizeTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(themeSwitchStabilizeTimeoutRef.current);
+    themeSwitchStabilizeTimeoutRef.current = null;
+  };
+
+  const releaseThemeSwitchStabilization = (runId: number) => {
+    clearThemeSwitchStabilizeTimeout();
+    themeSwitchStabilizeTimeoutRef.current = window.setTimeout(() => {
+      if (themeSwitchRunRef.current === runId) {
+        document.documentElement.classList.remove("theme-switch-stabilizing");
+      }
+      themeSwitchStabilizeTimeoutRef.current = null;
+    }, 1040);
+  };
+
+  const handleThemeChange = (nextThemeId: AppThemeId) => {
+    if (nextThemeId === themeId) {
+      return;
+    }
+
+    const runId = themeSwitchRunRef.current + 1;
+    themeSwitchRunRef.current = runId;
+    clearThemeSwitchStabilizeTimeout();
+    document.documentElement.classList.add("theme-switch-stabilizing");
+
+    void preloadAppThemeHomeCosmos(nextThemeId).then(() => {
+      if (themeSwitchRunRef.current !== runId) {
+        return;
+      }
+
+      applyAppTheme(nextThemeId);
+      setThemeId(nextThemeId);
+      releaseThemeSwitchStabilization(runId);
+    });
+  };
+
   useEffect(() => {
     if (currentRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
       navigateToKnowledgeNebula(undefined, undefined, true);
@@ -496,6 +588,17 @@ export default function App() {
     applyAppTheme(themeId);
     writeStoredAppTheme(themeId);
   }, [themeId]);
+
+  useEffect(() => {
+    return () => {
+      if (shellRouteStabilizeTimeoutRef.current !== null) {
+        window.clearTimeout(shellRouteStabilizeTimeoutRef.current);
+        shellRouteStabilizeTimeoutRef.current = null;
+      }
+      clearThemeSwitchStabilizeTimeout();
+      document.documentElement.classList.remove("theme-switch-stabilizing");
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1733,8 +1836,12 @@ ${JSON.stringify(context.backupCandidates)}
     );
   }
 
+  const shellRoute = shellRouteState.route;
+  const shellKnowledgeTopicSlug = shellRouteState.knowledgeTopicSlug;
+  const isShellKnowledgeDetailRoute =
+    shellRoute === "/knowledge" && shellKnowledgeTopicSlug != null;
   const isKnowledgeHubRoute =
-    currentRoute === "/knowledge" && selectedKnowledgeTopicSlug == null;
+    shellRoute === "/knowledge" && shellKnowledgeTopicSlug == null;
   const authPanel = {
     isConfigured: isSupabaseAuthConfigured(),
     userLabel:
@@ -1749,55 +1856,62 @@ ${JSON.stringify(context.backupCandidates)}
   const shellContainerClassName =
     isKnowledgeHubRoute
       ? "max-w-none"
-      : currentRoute === "/knowledge" && selectedKnowledgeTopicSlug != null
+      : isShellKnowledgeDetailRoute
         ? "max-w-none"
-      : currentRoute === "/profiles"
+      : shellRoute === "/profiles"
       ? "max-w-5xl"
-      : currentRoute === "/results" || currentRoute === "/knowledge"
+      : shellRoute === "/results" || shellRoute === "/knowledge"
       ? "max-w-6xl"
-      : currentRoute === "/quiz" && step === activeQuestions.length
+      : shellRoute === "/quiz" && step === activeQuestions.length
         ? "max-w-none"
         : "max-w-xl";
   const shellOverflowClassName =
     isKnowledgeHubRoute
       ? "overflow-hidden"
-      : currentRoute === "/knowledge" && selectedKnowledgeTopicSlug != null
+      : isShellKnowledgeDetailRoute
         ? "overflow-hidden"
-      : currentRoute === "/profiles"
+      : shellRoute === "/profiles"
       ? "overflow-visible"
-      : currentRoute === "/knowledge" ||
-        (currentRoute === "/quiz" && step === activeQuestions.length)
+      : shellRoute === "/knowledge" ||
+        (shellRoute === "/quiz" && step === activeQuestions.length)
       ? "overflow-visible"
       : "overflow-hidden";
   const shellViewportClassName = isKnowledgeHubRoute
     ? "h-dvh min-h-dvh p-0"
-    : currentRoute === "/knowledge" && selectedKnowledgeTopicSlug != null
+    : isShellKnowledgeDetailRoute
       ? "h-dvh min-h-dvh p-0"
-    : currentRoute === "/quiz"
+    : shellRoute === "/quiz"
       ? "h-dvh min-h-dvh p-0"
     : "min-h-screen p-4 sm:p-6 md:p-8";
   const themeCosmosVariant: ThemeCosmosVariant =
-    currentRoute === "/"
+    shellRoute === "/"
       ? "home"
-      : currentRoute === "/quiz" && step === activeQuestions.length
+      : shellRoute === "/quiz" && step === activeQuestions.length
         ? "matching"
-      : currentRoute === "/quiz"
+      : shellRoute === "/quiz"
         ? "quiz"
-      : currentRoute === "/results"
+      : shellRoute === "/results"
         ? "results"
-      : currentRoute === "/profiles"
+      : shellRoute === "/profiles"
         ? "profiles"
-      : currentRoute === "/knowledge" && selectedKnowledgeTopicSlug != null
+      : isShellKnowledgeDetailRoute
         ? "knowledge-detail"
-      : currentRoute === "/knowledge"
+      : shellRoute === "/knowledge"
         ? "knowledge-hub"
       : "home";
 
   return (
     <div
-      className={`theme-synced-page relative flex flex-col items-center justify-center ${shellViewportClassName} ${shellOverflowClassName}`}
+      className={[
+        "theme-synced-page relative flex flex-col items-center justify-center",
+        shellRoute === "/" ? "theme-home-route" : "",
+        shellViewportClassName,
+        shellOverflowClassName,
+      ].filter(Boolean).join(" ")}
     >
-      <ThemeCosmosLayer variant={themeCosmosVariant} />
+      {shellRoute !== "/" ? (
+        <ThemeCosmosLayer variant={themeCosmosVariant} />
+      ) : null}
 
       <div className={`relative z-10 w-full ${shellContainerClassName}`}>
         <AnimatePresence mode="wait">
@@ -1814,7 +1928,7 @@ ${JSON.stringify(context.backupCandidates)}
               }}
               onOpenProfiles={navigateToProfiles}
               themeId={themeId}
-              onThemeChange={setThemeId}
+              onThemeChange={handleThemeChange}
               authPanel={authPanel}
             />
           )}

@@ -25,6 +25,13 @@ export const APP_THEME_OPTIONS = [
 
 export type AppThemeId = (typeof APP_THEME_OPTIONS)[number]["id"];
 
+export const APP_THEME_HOME_COSMOS_IMAGE_BY_ID: Record<AppThemeId, string> = {
+  "inner-space": "/assets/home-cosmos/inner-space-spiral.jpg",
+  "soft-signal": "/assets/home-cosmos/soft-signal-rosette.jpg",
+  "vector-pulse": "/assets/home-cosmos/vector-pulse-cats-eye.jpg",
+  "sync-field": "/assets/home-cosmos/sync-field-arp273.jpg",
+};
+
 const APP_THEME_IDS = new Set<string>(
   APP_THEME_OPTIONS.map((option) => option.id),
 );
@@ -33,6 +40,7 @@ export const DEFAULT_APP_THEME_ID: AppThemeId = "inner-space";
 const APP_THEME_STORAGE_PROBE_KEY = `${APP_THEME_STORAGE_KEY}:probe`;
 
 let fallbackAppThemeId: AppThemeId = DEFAULT_APP_THEME_ID;
+const homeCosmosImagePreloadPromises = new Map<AppThemeId, Promise<void>>();
 
 export function isAppThemeId(value: unknown): value is AppThemeId {
   return typeof value === "string" && APP_THEME_IDS.has(value);
@@ -85,4 +93,40 @@ export function writeStoredAppTheme(themeId: AppThemeId) {
 export function applyAppTheme(themeId: AppThemeId) {
   if (typeof document === "undefined") return;
   document.documentElement.dataset.theme = themeId;
+}
+
+export function preloadAppThemeHomeCosmos(themeId: AppThemeId) {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  const cachedPreload = homeCosmosImagePreloadPromises.get(themeId);
+  if (cachedPreload) {
+    return cachedPreload;
+  }
+
+  const image = new Image();
+  image.decoding = "async";
+  image.src = APP_THEME_HOME_COSMOS_IMAGE_BY_ID[themeId];
+
+  const preloadPromise =
+    typeof image.decode === "function"
+      ? image.decode().then(() => undefined, () => undefined)
+      : new Promise<void>((resolve) => {
+          image.onload = () => resolve();
+          image.onerror = () => resolve();
+        });
+
+  homeCosmosImagePreloadPromises.set(themeId, preloadPromise);
+  return preloadPromise;
+}
+
+export function preloadAllAppThemeHomeCosmos() {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  return Promise.all(
+    APP_THEME_OPTIONS.map((option) => preloadAppThemeHomeCosmos(option.id)),
+  ).then(() => undefined);
 }

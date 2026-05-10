@@ -35,6 +35,16 @@ test("knowledge topic sections render a cockpit console with paged knowledge scr
   assert.doesNotMatch(html, /新增卡片/);
 });
 
+test("knowledge topic detail console uses the fixed cyan topic name color", () => {
+  const html = renderToStaticMarkup(
+    <KnowledgeNebulaTopicSections topic={scienceTopic} />,
+  );
+
+  assert.match(html, /text-\[rgb\(103,232,249\)\]/);
+  assert.match(html, /当前航线：/);
+  assert.doesNotMatch(html, /text-transparent[^"]*当前航线/);
+});
+
 test("knowledge topic sections can open a target section immediately when deep-linked", () => {
   const html = renderToStaticMarkup(
     <KnowledgeNebulaTopicSections

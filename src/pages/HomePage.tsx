@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type Ref,
@@ -20,6 +21,7 @@ import {
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
 import { HomeFeedbackModal } from "../components/HomeFeedbackModal.tsx";
 import {
+  APP_THEME_HOME_COSMOS_IMAGE_BY_ID,
   APP_THEME_OPTIONS,
   type AppThemeId,
 } from "../lib/app-theme.ts";
@@ -32,6 +34,7 @@ const HOME_FEEDBACK_ALLOWED_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 const HOME_FEEDBACK_MAX_SCREENSHOTS = 3;
+const HOME_SPACE_PHOTO_CROSSFADE_MS = 900;
 const HOME_AUTH_OVERLAY_FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -61,6 +64,27 @@ type HomeAuthOverlayFocusTrapInput = {
   focusableCount: number;
   currentIndex: number;
   isShiftKey: boolean;
+};
+
+type HomeSpacePhotoLayerState = "entering" | "active" | "exiting";
+
+type HomeSpacePhotoLayer = {
+  themeId: AppThemeId;
+  state: HomeSpacePhotoLayerState;
+};
+
+const HOME_SPACE_PHOTO_LAYER_OPACITY_BY_THEME: Record<AppThemeId, number> = {
+  "inner-space": 0.34,
+  "soft-signal": 0.32,
+  "vector-pulse": 0.3,
+  "sync-field": 0.3,
+};
+
+const HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME: Record<AppThemeId, string> = {
+  "inner-space": "home-space-photo-image-inner-space",
+  "soft-signal": "home-space-photo-image-soft-signal",
+  "vector-pulse": "home-space-photo-image-vector-pulse",
+  "sync-field": "home-space-photo-image-sync-field",
 };
 
 export function planHomeFeedbackScreenshotSelection({
@@ -196,6 +220,33 @@ function SecondaryEntryButton({
         {tooltip}
       </span>
     </span>
+  );
+}
+
+function HomeSpacePhotoLayer({
+  layer,
+}: {
+  layer: HomeSpacePhotoLayer;
+}) {
+  return (
+    <img
+      alt=""
+      aria-hidden="true"
+      decoding="async"
+      draggable={false}
+      src={APP_THEME_HOME_COSMOS_IMAGE_BY_ID[layer.themeId]}
+      className={[
+        "home-space-photo-image",
+        HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME[layer.themeId],
+        `home-space-photo-image-${layer.state}`,
+      ].join(" ")}
+      style={
+        {
+          "--home-space-photo-layer-opacity":
+            HOME_SPACE_PHOTO_LAYER_OPACITY_BY_THEME[layer.themeId],
+        } as CSSProperties
+      }
+    />
   );
 }
 
@@ -457,17 +508,66 @@ export function HomePage({
   const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
   const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null);
   const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState<string | null>(null);
+  const [photoLayers, setPhotoLayers] = useState<HomeSpacePhotoLayer[]>([
+    { themeId, state: "active" },
+  ]);
   const feedbackCloseTimeoutRef = useRef<number | null>(null);
   const feedbackScreenshotCountRef = useRef(0);
   const feedbackPendingScreenshotReservationsRef = useRef(0);
+  const previousPhotoThemeIdRef = useRef(themeId);
+  const photoTransitionFrameRef = useRef<number | null>(null);
+  const photoTransitionTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (feedbackCloseTimeoutRef.current !== null) {
         window.clearTimeout(feedbackCloseTimeoutRef.current);
       }
+      if (photoTransitionFrameRef.current !== null) {
+        window.cancelAnimationFrame(photoTransitionFrameRef.current);
+      }
+      if (photoTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(photoTransitionTimeoutRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    const previousThemeId = previousPhotoThemeIdRef.current;
+    if (previousThemeId === themeId) {
+      return;
+    }
+
+    previousPhotoThemeIdRef.current = themeId;
+
+    if (photoTransitionFrameRef.current !== null) {
+      window.cancelAnimationFrame(photoTransitionFrameRef.current);
+      photoTransitionFrameRef.current = null;
+    }
+    if (photoTransitionTimeoutRef.current !== null) {
+      window.clearTimeout(photoTransitionTimeoutRef.current);
+      photoTransitionTimeoutRef.current = null;
+    }
+
+    setPhotoLayers([
+      { themeId: previousThemeId, state: "exiting" },
+      { themeId, state: "entering" },
+    ]);
+
+    photoTransitionFrameRef.current = window.requestAnimationFrame(() => {
+      setPhotoLayers((currentLayers) =>
+        currentLayers.map((layer) =>
+          layer.themeId === themeId ? { ...layer, state: "active" } : layer,
+        ),
+      );
+      photoTransitionFrameRef.current = null;
+    });
+
+    photoTransitionTimeoutRef.current = window.setTimeout(() => {
+      setPhotoLayers([{ themeId, state: "active" }]);
+      photoTransitionTimeoutRef.current = null;
+    }, HOME_SPACE_PHOTO_CROSSFADE_MS + 120);
+  }, [themeId]);
 
   function clearFeedbackCloseTimeout() {
     if (feedbackCloseTimeoutRef.current !== null) {
@@ -604,118 +704,127 @@ export function HomePage({
 
   return (
     <>
-      <motion.div
-        key="welcome"
-        variants={pageVariants}
-        initial="initial"
-        animate="in"
-        exit="out"
+      <div
         className={[
           "relative w-full flex flex-col items-center px-1 py-2",
           shouldAnimate ? "" : "ambient-motion-paused",
         ].join(" ")}
       >
-        <div className="home-space-depth pointer-events-none absolute left-1/2 top-[-16%] -z-10 h-[120%] w-[100vw] -translate-x-1/2 overflow-hidden">
-          <div className="home-space-photo" />
+        <div className="home-space-depth pointer-events-none absolute left-1/2 top-[-20%] -z-10 h-[134%] w-[112vw] -translate-x-1/2 overflow-hidden">
+          <div className="home-space-photo">
+            {photoLayers.map((layer) => (
+              <HomeSpacePhotoLayer
+                key={layer.themeId}
+                layer={layer}
+              />
+            ))}
+          </div>
           <div className="home-space-photo-veil" />
+          <div className="home-space-nebula-flow home-space-nebula-flow-a absolute inset-0" />
+          <div className="home-space-nebula-flow home-space-nebula-flow-b absolute inset-0" />
+          <div className="home-space-galaxy-disk absolute inset-0" />
+          <div className="home-space-galaxy-stream absolute inset-0" />
           <div className="home-space-aurora absolute inset-0" />
           <div className="home-space-stars home-space-stars-a absolute inset-0" />
           <div className="home-space-stars home-space-stars-b absolute inset-0" />
           <div className="home-space-orbit home-space-orbit-a absolute left-[42%] top-[18%] h-[34rem] w-[64rem] -translate-x-1/2 rounded-[50%] border border-cyan-100/8" />
           <div className="home-space-orbit home-space-orbit-b home-space-orbit-offset absolute left-[38%] top-[25%] h-[27rem] w-[54rem] -translate-x-1/2 rounded-[50%] border border-indigo-100/7" />
-          <div className="home-space-comet absolute left-[72%] top-[18%] h-px w-32 rotate-[-18deg]" />
         </div>
 
-        <div className="relative mb-9 flex items-center justify-center sm:mb-12">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: shouldAnimate ? 20 : 0.2, repeat, ease: "linear" }}
-            className="absolute h-28 w-28 rounded-full border border-cyan-500/20 sm:h-32 sm:w-32"
-          />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: shouldAnimate ? 30 : 0.2, repeat, ease: "linear" }}
-            className="absolute h-36 w-36 rounded-full border border-indigo-500/20 border-dashed sm:h-40 sm:w-40"
-          />
-          <motion.span
-            className="absolute h-2 w-2 rounded-full bg-cyan-200 shadow-[0_0_16px_rgba(125,211,252,0.85)]"
-            animate={{ rotate: 360 }}
-            transition={{ duration: shouldAnimate ? 7 : 0.2, repeat, ease: "linear" }}
-            style={{ transformOrigin: "4.25rem 0.25rem" }}
-          />
-          <div className="home-orbit-core relative z-10 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full glass-panel shadow-[0_0_48px_rgba(34,211,238,0.16)] sm:h-20 sm:w-20">
-            <div className="absolute inset-2 rounded-full bg-cyan-300/6 blur-md" />
-            <Orbit className="relative w-10 h-10 text-cyan-300 opacity-90" />
-          </div>
-        </div>
-
-        <div className="glass-panel relative flex w-full flex-col items-center overflow-hidden rounded-[1.75rem] p-6 text-center shadow-[0_24px_90px_rgba(2,8,23,0.42)] sm:rounded-3xl sm:p-8">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent opacity-50"></div>
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.08),transparent_34%),linear-gradient(115deg,transparent,rgba(255,255,255,0.035),transparent_42%)]" />
-          <div className="home-panel-scan pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-transparent via-cyan-100/8 to-transparent" />
-
-          <h1 className="relative mb-2 text-2xl font-light tracking-[0.22em] text-white sm:text-3xl sm:tracking-widest">
-            内太空装备智能选品向导
-          </h1>
-          <h2 className="relative mb-7 font-mono text-[11px] tracking-[0.28em] text-cyan-500/80 sm:mb-8 sm:text-xs sm:tracking-widest">
-            SELECTION GUIDE
-          </h2>
-
-          <p className="relative mb-8 max-w-[19rem] text-sm leading-7 text-slate-300 sm:mb-10 sm:max-w-[300px]">
-            跳过复杂难懂的参数陷阱与营销词汇。只需回答几个简单的偏好问题，我们将基于过滤体系，为你精准匹配出最契合自身需求的私密设备。
-          </p>
-
-          <HomeThemeSwitcher
-            themeId={themeId}
-            onThemeChange={onThemeChange}
-          />
-
-          <button
-            onClick={onStart}
-            className="home-primary-ignition group relative w-full py-4 rounded-2xl bg-cyan-500/18 hover:bg-cyan-400/24 border border-cyan-300/40 text-cyan-50 transition-all overflow-hidden flex items-center justify-center gap-2 shadow-[0_0_36px_rgba(34,211,238,0.16)]"
-          >
+        <motion.div
+          key="welcome"
+          variants={pageVariants}
+          initial={false}
+          animate="in"
+          exit="out"
+          className="relative z-10 flex w-full flex-col items-center"
+        >
+          <div className="relative mb-9 flex items-center justify-center sm:mb-12">
             <motion.div
-              className="absolute inset-0 bg-cyan-400/5"
-              animate={{ scale: [1, 1.2, 1], opacity: [0, 0.8, 0] }}
-              transition={{ duration: shouldAnimate ? 2.5 : 0.2, repeat }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: shouldAnimate ? 20 : 0.2, repeat, ease: "linear" }}
+              className="absolute h-28 w-28 rounded-full border border-cyan-500/20 sm:h-32 sm:w-32"
             />
-            <span className="absolute inset-y-0 left-0 w-1/3 -translate-x-full bg-gradient-to-r from-transparent via-white/18 to-transparent transition-transform duration-700 group-hover:translate-x-[340%]" />
-            <span className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-100/55 to-transparent opacity-70" />
-            <span className="relative z-10 flex items-center gap-2 tracking-widest text-sm font-medium">
-              开始匹配
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </span>
-          </button>
-
-          <div className="mt-5 flex w-full flex-col items-center gap-2 border-t border-white/8 pt-5 sm:flex-row sm:justify-center sm:gap-4">
-            <SecondaryEntryButton
-              onClick={onBrowseLibrary}
-              tone="indigo"
-              tooltip="先看真实装备参数、价格区间和筛选维度，建立大概参考。"
-            >
-              先随便看看装备库
-            </SecondaryEntryButton>
-
-            <SecondaryEntryButton
-              onClick={onOpenKnowledgeNebula}
-              tone="cyan"
-              tooltip="了解常见误区、参数怎么读，以及新手选择时该避开的坑。"
-            >
-              看看知识星云
-            </SecondaryEntryButton>
-
-            <SecondaryEntryButton
-              onClick={openFeedbackModal}
-              tone="indigo"
-              tooltip="反馈首页体验问题、文案疑惑，或告诉我们你希望补上的能力。"
-            >
-              意见反馈
-            </SecondaryEntryButton>
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: shouldAnimate ? 30 : 0.2, repeat, ease: "linear" }}
+              className="absolute h-36 w-36 rounded-full border border-indigo-500/20 border-dashed sm:h-40 sm:w-40"
+            />
+            <motion.span
+              className="absolute h-2 w-2 rounded-full bg-cyan-200 shadow-[0_0_16px_rgba(125,211,252,0.85)]"
+              animate={{ rotate: 360 }}
+              transition={{ duration: shouldAnimate ? 7 : 0.2, repeat, ease: "linear" }}
+              style={{ transformOrigin: "4.25rem 0.25rem" }}
+            />
+            <div className="home-orbit-core relative z-10 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full glass-panel shadow-[0_0_48px_rgba(34,211,238,0.16)] sm:h-20 sm:w-20">
+              <div className="absolute inset-2 rounded-full bg-cyan-300/6 blur-md" />
+              <Orbit className="relative w-10 h-10 text-cyan-300 opacity-90" />
+            </div>
           </div>
 
-          <HomeAuthEntry authPanel={authPanel} onOpenProfiles={onOpenProfiles} />
-        </div>
-      </motion.div>
+          <div className="glass-panel relative flex w-full flex-col items-center overflow-hidden rounded-[1.75rem] p-6 text-center shadow-[0_24px_90px_rgba(2,8,23,0.42)] sm:rounded-3xl sm:p-8">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent opacity-50"></div>
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.08),transparent_34%),linear-gradient(115deg,transparent,rgba(255,255,255,0.035),transparent_42%)]" />
+
+            <h1 className="relative mb-2 text-2xl font-light tracking-[0.22em] text-white sm:text-3xl sm:tracking-widest">
+              内太空装备智能选品向导
+            </h1>
+            <h2 className="relative mb-7 font-mono text-[11px] tracking-[0.28em] text-cyan-500/80 sm:mb-8 sm:text-xs sm:tracking-widest">
+              SELECTION GUIDE
+            </h2>
+
+            <p className="relative mb-8 max-w-[19rem] text-sm leading-7 text-slate-300 sm:mb-10 sm:max-w-[300px]">
+              跳过复杂难懂的参数陷阱与营销词汇。只需回答几个简单的偏好问题，我们将基于过滤体系，为你精准匹配出最契合自身需求的私密设备。
+            </p>
+
+            <HomeThemeSwitcher
+              themeId={themeId}
+              onThemeChange={onThemeChange}
+            />
+
+            <button
+              onClick={onStart}
+              className="home-primary-ignition group relative w-full py-4 rounded-2xl bg-cyan-500/18 hover:bg-cyan-400/24 border border-cyan-300/40 text-cyan-50 transition-all overflow-hidden flex items-center justify-center gap-2 shadow-[0_0_36px_rgba(34,211,238,0.16)]"
+            >
+              <span className="absolute inset-0 bg-cyan-400/5" />
+              <span className="absolute inset-y-0 left-0 w-1/3 -translate-x-full bg-gradient-to-r from-transparent via-white/18 to-transparent transition-transform duration-700 group-hover:translate-x-[340%]" />
+              <span className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-100/55 to-transparent opacity-70" />
+              <span className="relative z-10 flex items-center gap-2 tracking-widest text-sm font-medium">
+                开始匹配
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </span>
+            </button>
+
+            <div className="mt-5 flex w-full flex-col items-center gap-2 border-t border-white/8 pt-5 sm:flex-row sm:justify-center sm:gap-4">
+              <SecondaryEntryButton
+                onClick={onBrowseLibrary}
+                tone="indigo"
+                tooltip="先看真实装备参数、价格区间和筛选维度，建立大概参考。"
+              >
+                先随便看看装备库
+              </SecondaryEntryButton>
+
+              <SecondaryEntryButton
+                onClick={onOpenKnowledgeNebula}
+                tone="cyan"
+                tooltip="了解常见误区、参数怎么读，以及新手选择时该避开的坑。"
+              >
+                看看知识星云
+              </SecondaryEntryButton>
+
+              <SecondaryEntryButton
+                onClick={openFeedbackModal}
+                tone="indigo"
+                tooltip="反馈首页体验问题、文案疑惑，或告诉我们你希望补上的能力。"
+              >
+                意见反馈
+              </SecondaryEntryButton>
+            </div>
+
+            <HomeAuthEntry authPanel={authPanel} onOpenProfiles={onOpenProfiles} />
+          </div>
+        </motion.div>
+      </div>
 
       <HomeFeedbackModal
         isOpen={isFeedbackModalOpen}
