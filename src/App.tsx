@@ -1838,10 +1838,13 @@ ${JSON.stringify(context.backupCandidates)}
 
   const shellRoute = shellRouteState.route;
   const shellKnowledgeTopicSlug = shellRouteState.knowledgeTopicSlug;
+  const effectiveShellRoute = currentRoute === "/" ? currentRoute : shellRoute;
+  const effectiveShellKnowledgeTopicSlug =
+    effectiveShellRoute === "/knowledge" ? shellKnowledgeTopicSlug : undefined;
   const isShellKnowledgeDetailRoute =
-    shellRoute === "/knowledge" && shellKnowledgeTopicSlug != null;
+    effectiveShellRoute === "/knowledge" && effectiveShellKnowledgeTopicSlug != null;
   const isKnowledgeHubRoute =
-    shellRoute === "/knowledge" && shellKnowledgeTopicSlug == null;
+    effectiveShellRoute === "/knowledge" && effectiveShellKnowledgeTopicSlug == null;
   const authPanel = {
     isConfigured: isSupabaseAuthConfigured(),
     userLabel:
@@ -1858,11 +1861,11 @@ ${JSON.stringify(context.backupCandidates)}
       ? "max-w-none"
       : isShellKnowledgeDetailRoute
         ? "max-w-none"
-      : shellRoute === "/profiles"
+      : effectiveShellRoute === "/profiles"
       ? "max-w-5xl"
-      : shellRoute === "/results" || shellRoute === "/knowledge"
+      : effectiveShellRoute === "/results" || effectiveShellRoute === "/knowledge"
       ? "max-w-6xl"
-      : shellRoute === "/quiz" && step === activeQuestions.length
+      : effectiveShellRoute === "/quiz" && step === activeQuestions.length
         ? "max-w-none"
         : "max-w-xl";
   const shellOverflowClassName =
@@ -1870,17 +1873,17 @@ ${JSON.stringify(context.backupCandidates)}
       ? "overflow-hidden"
       : isShellKnowledgeDetailRoute
         ? "overflow-hidden"
-      : shellRoute === "/profiles"
+      : effectiveShellRoute === "/profiles"
       ? "overflow-visible"
-      : shellRoute === "/knowledge" ||
-        (shellRoute === "/quiz" && step === activeQuestions.length)
+      : effectiveShellRoute === "/knowledge" ||
+        (effectiveShellRoute === "/quiz" && step === activeQuestions.length)
       ? "overflow-visible"
       : "overflow-hidden";
   const shellViewportClassName = isKnowledgeHubRoute
     ? "h-dvh min-h-dvh p-0"
     : isShellKnowledgeDetailRoute
       ? "h-dvh min-h-dvh p-0"
-    : shellRoute === "/quiz"
+    : effectiveShellRoute === "/quiz"
       ? "h-dvh min-h-dvh p-0"
     : "min-h-screen p-4 sm:p-6 md:p-8";
   const themeCosmosVariant: ThemeCosmosVariant =
@@ -1899,17 +1902,18 @@ ${JSON.stringify(context.backupCandidates)}
       : shellRoute === "/knowledge"
         ? "knowledge-hub"
       : "home";
+  const shouldRenderThemeCosmosLayer = currentRoute !== "/" && shellRoute !== "/";
 
   return (
     <div
       className={[
         "theme-synced-page relative flex flex-col items-center justify-center",
-        shellRoute === "/" ? "theme-home-route" : "",
+        effectiveShellRoute === "/" ? "theme-home-route" : "",
         shellViewportClassName,
         shellOverflowClassName,
       ].filter(Boolean).join(" ")}
     >
-      {shellRoute !== "/" ? (
+      {shouldRenderThemeCosmosLayer ? (
         <ThemeCosmosLayer variant={themeCosmosVariant} />
       ) : null}
 

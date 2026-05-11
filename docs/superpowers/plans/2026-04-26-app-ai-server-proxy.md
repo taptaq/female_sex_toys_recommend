@@ -194,8 +194,6 @@ In `vite.config.ts`, remove browser-side injection for:
 process.env.NVIDIA_API_KEY
 process.env.DEEPSEEK_API_KEY
 process.env.QWEN_API_KEY
-process.env.MINIMAX_API_KEY
-process.env.MINIMAX_MODEL
 ```
 
 The AI keys should only be read on the server side after this migration.

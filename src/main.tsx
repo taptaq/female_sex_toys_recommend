@@ -23,9 +23,9 @@ const scheduleHomeCosmosPreload = () => {
 };
 
 if ("requestIdleCallback" in window) {
-  window.requestIdleCallback(scheduleHomeCosmosPreload, { timeout: 2500 });
+  window.requestIdleCallback(scheduleHomeCosmosPreload, { timeout: 900 });
 } else {
-  globalThis.setTimeout(scheduleHomeCosmosPreload, 1200);
+  globalThis.setTimeout(scheduleHomeCosmosPreload, 240);
 }
 
 createRoot(document.getElementById('root')!).render(

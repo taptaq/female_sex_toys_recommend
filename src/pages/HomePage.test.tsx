@@ -276,6 +276,20 @@ test("home page keeps background mounted outside the first-load route fade", () 
   assert.match(homePageSource, /initial=\{false\}/);
 });
 
+test("home page photo crossfade prepares theme image layers in a before-paint effect to avoid one-frame mismatches", () => {
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
+
+  assert.match(homePageSource, /useLayoutEffect,/);
+  assert.match(
+    homePageSource,
+    /const useHomePhotoTransitionEffect =[\s\S]*typeof window === "undefined" \? useEffect : useLayoutEffect;/,
+  );
+  assert.match(homePageSource, /useHomePhotoTransitionEffect\(\(\) => \{/);
+});
+
 test("home page freezes ambient motion while preserving theme crossfade during asset switches", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
@@ -294,8 +308,9 @@ test("home page freezes ambient motion while preserving theme crossfade during a
   assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;[\s\S]*transition-delay: 120ms;/);
   assert.doesNotMatch(cssSource, /transition-duration: 0ms !important;/);
   assert.match(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(180deg, #040713, #070b18 48%, #050816\);/);
-  assert.match(appSource, /shellRoute === "\/" \? "theme-home-route" : ""/);
-  assert.match(appSource, /\{shellRoute !== "\/" \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
+  assert.match(appSource, /effectiveShellRoute === "\/" \? "theme-home-route" : ""/);
+  assert.match(appSource, /const shouldRenderThemeCosmosLayer = currentRoute !== "\/" && shellRoute !== "\/";/);
+  assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
   assert.match(appSource, /ROUTE_SHELL_EXIT_STABILIZE_MS = 480/);
   assert.match(appSource, /shellRouteStateRef\.current\.route === "\/knowledge" && currentRoute === "\/"/);
   assert.doesNotMatch(homeBackgroundBlock, /var\(--theme/);
@@ -303,6 +318,27 @@ test("home page freezes ambient motion while preserving theme crossfade during a
   assert.match(cssSource, /\.theme-switch-stabilizing \.home-space-nebula-flow-b,/);
   assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.theme-cosmos-motif \{[\s\S]*transition: none !important;/);
   assert.match(cssSource, /animation-play-state: paused !important;/);
+});
+
+test("returning from knowledge to home does not keep the knowledge cosmos layer mounted over the home theme switcher", () => {
+  const appSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/App.tsx"),
+    "utf8",
+  );
+
+  assert.match(appSource, /const shouldRenderThemeCosmosLayer = currentRoute !== "\/" && shellRoute !== "\/";/);
+  assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
+});
+
+test("returning from knowledge to home immediately restores the home shell classes before route stabilization finishes", () => {
+  const appSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/App.tsx"),
+    "utf8",
+  );
+
+  assert.match(appSource, /const effectiveShellRoute = currentRoute === "\/" \? currentRoute : shellRoute;/);
+  assert.match(appSource, /const shellViewportClassName = isKnowledgeHubRoute[\s\S]*: effectiveShellRoute === "\/quiz"/);
+  assert.match(appSource, /effectiveShellRoute === "\/" \? "theme-home-route" : ""/);
 });
 
 test("home page ambient animation avoids expensive filter and shadow churn on every frame", () => {
@@ -463,11 +499,14 @@ test("home page keeps secondary entry navigation and auth actions structurally d
 test("home page exposes four audience-aware theme options and marks the active one", () => {
   const html = renderHomePage();
 
-  assert.match(html, /主题风格/);
+  assert.match(html, /主题/);
+  assert.match(html, /home-theme-track/);
+  assert.match(html, /home-theme-track-list/);
   for (const option of APP_THEME_OPTIONS) {
-    assert.match(html, new RegExp(option.label));
+    assert.match(html, new RegExp(option.shortLabel));
   }
   assert.match(html, /aria-pressed="true"[^>]*>[\s\S]*深空/);
+  assert.doesNotMatch(html, /mt-0\.5 block truncate text-\[10px\] opacity-70/);
 });
 
 test("home page feedback screenshot planning respects reserved capacity and reports validation issues", () => {
@@ -505,4 +544,23 @@ test("home page keeps feedback entry rendered without mounting the modal content
   assert.match(html, /意见反馈/);
   assert.doesNotMatch(html, /反馈内容/);
   assert.doesNotMatch(html, /截图上传（可选，最多 3 张）/);
+});
+
+test("theme switch stabilization also suppresses heavy shell and panel transitions without removing photo crossfade", () => {
+  const cssSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/index.css"),
+    "utf8",
+  );
+
+  assert.match(cssSource, /\.theme-switch-stabilizing \.theme-synced-page,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.glass-panel,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.home-theme-track,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.home-theme-option,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.home-primary-ignition,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.floating-knowledge-capsule,/);
+  assert.match(cssSource, /\.theme-switch-stabilizing \.floating-knowledge-capsule::before \{/);
+  assert.match(cssSource, /transition: none !important;/);
+  assert.match(cssSource, /\.home-space-photo-image \{[\s\S]*transition: opacity 560ms linear;/);
+  assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;/);
+  assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.home-space-photo-image \{[\s\S]*transition: none !important;/);
 });

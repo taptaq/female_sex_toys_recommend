@@ -115,8 +115,6 @@ define: {
   "process.env.NVIDIA_API_KEY": JSON.stringify(env.NVIDIA_API_KEY),
   "process.env.DEEPSEEK_API_KEY": JSON.stringify(env.DEEPSEEK_API_KEY),
   "process.env.QWEN_API_KEY": JSON.stringify(env.QWEN_API_KEY),
-  "process.env.MINIMAX_API_KEY": JSON.stringify(env.MINIMAX_API_KEY),
-  "process.env.MINIMAX_MODEL": JSON.stringify(env.MINIMAX_MODEL),
 },
 ```
 

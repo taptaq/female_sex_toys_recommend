@@ -1451,15 +1451,29 @@ textarea:disabled {
   box-shadow: 0 0 12px rgb(var(--theme-accent) / 0.34);
 }
 
-.home-theme-switcher {
-  background: var(--theme-surface);
-  border-color: var(--theme-border);
+.home-theme-track {
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  padding-top: 1rem;
+}
+
+.home-theme-track-label {
+  color: var(--theme-muted);
+}
+
+.home-theme-track-list {
+  min-width: 0;
+}
+
+.home-theme-option {
+  background: rgb(255 255 255 / 0.025);
+  border-color: rgb(255 255 255 / 0.08);
 }
 
 .home-theme-option-active {
   border-color: var(--theme-border-accent);
   background: rgb(var(--theme-accent) / 0.12);
   color: rgb(var(--theme-accent-strong) / 0.98);
+  box-shadow: 0 0 18px rgb(var(--theme-accent) / 0.14);
 }
 
 .home-primary-ignition {
@@ -2371,6 +2385,23 @@ textarea:disabled {
 .theme-switch-stabilizing .home-space-aurora,
 .theme-switch-stabilizing .home-orbit-core {
   animation-play-state: paused !important;
+}
+
+.theme-switch-stabilizing .theme-synced-page,
+.theme-switch-stabilizing .glass-panel,
+.theme-switch-stabilizing .glass-button,
+.theme-switch-stabilizing .home-theme-track,
+.theme-switch-stabilizing .home-theme-option,
+.theme-switch-stabilizing .home-primary-ignition,
+.theme-switch-stabilizing .floating-knowledge-capsule,
+.theme-switch-stabilizing .floating-knowledge-capsule span,
+.theme-switch-stabilizing .home-auth-entry,
+.theme-switch-stabilizing .home-secondary-node {
+  transition: none !important;
+}
+
+.theme-switch-stabilizing .floating-knowledge-capsule::before {
+  transition: none !important;
 }
 
 .ambient-motion-paused .floating-knowledge-capsule,

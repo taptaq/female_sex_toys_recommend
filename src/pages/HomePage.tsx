@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -86,6 +87,9 @@ const HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME: Record<AppThemeId, string> = {
   "vector-pulse": "home-space-photo-image-vector-pulse",
   "sync-field": "home-space-photo-image-sync-field",
 };
+
+const useHomePhotoTransitionEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function planHomeFeedbackScreenshotSelection({
   currentCount,
@@ -441,12 +445,12 @@ function HomeThemeSwitcher({
   onThemeChange: (themeId: AppThemeId) => void;
 }) {
   return (
-    <div className="home-theme-switcher mb-5 w-full rounded-2xl border border-white/8 bg-white/[0.03] p-2.5 text-left sm:mb-6">
-      <div className="mb-2 flex items-center gap-2 px-1 text-[10px] tracking-[0.24em] text-slate-400">
+    <div className="home-theme-track mb-6 flex w-full items-center gap-3 text-left sm:mb-7">
+      <div className="home-theme-track-label flex shrink-0 items-center gap-2 text-[10px] tracking-[0.22em] text-slate-400">
         <Palette className="h-3.5 w-3.5 text-cyan-200/60" />
-        <span>主题风格</span>
+        <span>主题</span>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="home-theme-track-list flex min-w-0 flex-1 items-center gap-1.5">
         {APP_THEME_OPTIONS.map((option) => {
           const isActive = option.id === themeId;
           return (
@@ -454,18 +458,17 @@ function HomeThemeSwitcher({
               key={option.id}
               type="button"
               aria-pressed={isActive}
+              aria-label={`切换到${option.label}主题`}
+              title={option.label}
               onClick={() => onThemeChange(option.id)}
               className={[
-                "home-theme-option rounded-xl border px-2.5 py-2 text-left text-xs transition-colors",
+                "home-theme-option min-w-0 flex-1 rounded-full border px-2.5 py-2 text-center text-[11px] font-medium tracking-[0.16em] transition-colors",
                 isActive
                   ? "home-theme-option-active border-cyan-300/32 bg-cyan-300/12 text-cyan-50"
                   : "border-white/8 bg-white/[0.025] text-slate-300 hover:border-cyan-300/22 hover:bg-cyan-300/[0.07] hover:text-white",
               ].join(" ")}
             >
-              <span className="block truncate font-medium">{option.shortLabel}</span>
-              <span className="mt-0.5 block truncate text-[10px] opacity-70">
-                {option.label}
-              </span>
+              <span className="block truncate">{option.shortLabel}</span>
             </button>
           );
         })}
@@ -532,7 +535,7 @@ export function HomePage({
     };
   }, []);
 
-  useEffect(() => {
+  useHomePhotoTransitionEffect(() => {
     const previousThemeId = previousPhotoThemeIdRef.current;
     if (previousThemeId === themeId) {
       return;
