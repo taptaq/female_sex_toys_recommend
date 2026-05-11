@@ -15,6 +15,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "db:backfill:item-max-db": "tsx -r dotenv/config src/db/backfill-item-max-db.ts",
+    "db:backfill:item-gender-dedupe": "tsx -r dotenv/config src/db/backfill-item-gender-and-dedupe.ts",
     "db:backfill:item-type-code": "tsx -r dotenv/config src/db/backfill-item-type-code.ts",
     "db:backfill:null-nontoy-specs": "tsx -r dotenv/config src/db/backfill-null-nontoy-specs.ts",
     "db:purge:contaminant-toys": "tsx -r dotenv/config src/db/purge-recommender-toy-contaminants.ts",
