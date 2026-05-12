@@ -1,22 +1,40 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { BodyPersonaResult } from "./body-persona.ts";
 import { buildBodyPersonaFullReport } from "./body-persona-report.ts";
+
+const starlitPersona: BodyPersonaResult = {
+  primaryPersonaCode: "starlit_guard",
+  secondaryPersonaCode: null,
+  hiddenRouteCode: "daily_object",
+  hiddenPowerGrade: "S",
+  coLivingComfortGrade: "high",
+  freeSummary: {
+    title: "星幕型·隐秘安全感者",
+    blurb: "你更在意低压力进入。",
+    why: "你在隐私与慢热维度更高。",
+    hints: ["优先看低存在感路线"],
+  },
+};
+
+const zeroProfilePersona: BodyPersonaResult = {
+  primaryPersonaCode: "soft_glow",
+  secondaryPersonaCode: null,
+  hiddenRouteCode: "zero_profile",
+  hiddenPowerGrade: "B",
+  coLivingComfortGrade: "low",
+  freeSummary: {
+    title: "微光型·慢热探索者",
+    blurb: "你更适合先建立自己的节奏。",
+    why: "你当前更偏向低显眼、低介入。",
+    hints: ["先看更轻量的路线"],
+  },
+};
 
 test("buildBodyPersonaFullReport promotes aligned low-profile products", () => {
   const report = buildBodyPersonaFullReport({
-    persona: {
-      primaryPersonaCode: "starlit_guard",
-      hiddenRouteCode: "daily_object",
-      hiddenPowerGrade: "S",
-      coLivingComfortGrade: "high",
-      freeSummary: {
-        title: "星幕型·隐秘安全感者",
-        blurb: "你更在意低压力进入。",
-        why: "你在隐私与慢热维度更高。",
-        hints: ["优先看低存在感路线"],
-      },
-    },
+    persona: starlitPersona,
     candidatePool: [
       {
         id: "quiet-1",
@@ -87,23 +105,13 @@ test("buildBodyPersonaFullReport promotes aligned low-profile products", () => {
   assert.equal(report.productPicks[0]?.id, "quiet-1");
   assert.match(report.hiddenRouteSummary, /日常器物型/);
   assert.match(report.hiddenRouteSummary, /隐藏力 S/);
+  assert.match(report.hiddenRouteSummary, /共居安心度 高/);
   assert.equal(report.productPicks.length, 5);
 });
 
 test("buildBodyPersonaFullReport uses stable tie-breakers for equal persona scores", () => {
   const report = buildBodyPersonaFullReport({
-    persona: {
-      primaryPersonaCode: "starlit_guard",
-      hiddenRouteCode: "daily_object",
-      hiddenPowerGrade: "S",
-      coLivingComfortGrade: "high",
-      freeSummary: {
-        title: "星幕型·隐秘安全感者",
-        blurb: "你更在意低压力进入。",
-        why: "你在隐私与慢热维度更高。",
-        hints: ["优先看低存在感路线"],
-      },
-    },
+    persona: starlitPersona,
     candidatePool: [
       {
         id: "tie-c",
@@ -140,4 +148,15 @@ test("buildBodyPersonaFullReport uses stable tie-breakers for equal persona scor
     "tie-b",
     "tie-c",
   ]);
+});
+
+test("buildBodyPersonaFullReport names zero profile and low comfort explicitly", () => {
+  const report = buildBodyPersonaFullReport({
+    persona: zeroProfilePersona,
+    candidatePool: [],
+  });
+
+  assert.match(report.hiddenRouteSummary, /无隐藏路线/);
+  assert.match(report.hiddenRouteSummary, /隐藏力 B/);
+  assert.match(report.hiddenRouteSummary, /共居安心度 低/);
 });
