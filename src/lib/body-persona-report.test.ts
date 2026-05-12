@@ -89,3 +89,55 @@ test("buildBodyPersonaFullReport promotes aligned low-profile products", () => {
   assert.match(report.hiddenRouteSummary, /隐藏力 S/);
   assert.equal(report.productPicks.length, 5);
 });
+
+test("buildBodyPersonaFullReport uses stable tie-breakers for equal persona scores", () => {
+  const report = buildBodyPersonaFullReport({
+    persona: {
+      primaryPersonaCode: "starlit_guard",
+      hiddenRouteCode: "daily_object",
+      hiddenPowerGrade: "S",
+      coLivingComfortGrade: "high",
+      freeSummary: {
+        title: "星幕型·隐秘安全感者",
+        blurb: "你更在意低压力进入。",
+        why: "你在隐私与慢热维度更高。",
+        hints: ["优先看低存在感路线"],
+      },
+    },
+    candidatePool: [
+      {
+        id: "tie-c",
+        name: "Tie C",
+        score: 80,
+        tags: [],
+        typeCode: "external_vibe",
+        appearance: "high_disguise",
+        maxDb: 60,
+      },
+      {
+        id: "tie-a",
+        name: "Tie A",
+        score: 88,
+        tags: [],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 99,
+      },
+      {
+        id: "tie-b",
+        name: "Tie B",
+        score: 80,
+        tags: [],
+        typeCode: "external_vibe",
+        appearance: "high_disguise",
+        maxDb: 60,
+      },
+    ],
+  });
+
+  assert.deepEqual(report.productPicks.map((candidate) => candidate.id), [
+    "tie-a",
+    "tie-b",
+    "tie-c",
+  ]);
+});

@@ -48,7 +48,17 @@ export function buildBodyPersonaFullReport({
       ...candidate,
       personaScore: scorePersonaCandidate(persona.primaryPersonaCode, candidate),
     }))
-    .sort((a, b) => b.personaScore - a.personaScore)
+    .sort((a, b) => {
+      if (b.personaScore !== a.personaScore) {
+        return b.personaScore - a.personaScore;
+      }
+
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return a.id.localeCompare(b.id);
+    })
     .slice(0, 5);
 
   return {
