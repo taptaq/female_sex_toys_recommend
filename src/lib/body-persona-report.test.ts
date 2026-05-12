@@ -36,10 +36,56 @@ test("buildBodyPersonaFullReport promotes aligned low-profile products", () => {
         appearance: "normal",
         maxDb: 58,
       },
+      {
+        id: "mid-1",
+        name: "Mid Bloom",
+        score: 70,
+        tags: ["低调"],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 50,
+      },
+      {
+        id: "mid-2",
+        name: "Mid Glow",
+        score: 69,
+        tags: ["静音"],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 46,
+      },
+      {
+        id: "mid-3",
+        name: "Mid Ray",
+        score: 68,
+        tags: ["隐蔽"],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 52,
+      },
+      {
+        id: "mid-4",
+        name: "Mid Silk",
+        score: 67,
+        tags: ["收纳"],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 60,
+      },
+      {
+        id: "mid-5",
+        name: "Mid Drift",
+        score: 66,
+        tags: ["安静"],
+        typeCode: "external_vibe",
+        appearance: "normal",
+        maxDb: 55,
+      },
     ],
   });
 
   assert.equal(report.productPicks[0]?.id, "quiet-1");
-  assert.match(report.hiddenRouteSummary, /日常器物型|隐藏力 S/);
-  assert.equal(report.productPicks.length <= 5, true);
+  assert.match(report.hiddenRouteSummary, /日常器物型/);
+  assert.match(report.hiddenRouteSummary, /隐藏力 S/);
+  assert.equal(report.productPicks.length, 5);
 });
