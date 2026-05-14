@@ -1,3 +1,5 @@
+import type { RecommendationRerollReason } from "../lib/recommendation-reroll.js";
+
 type Queryable = {
   query: (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
 };
@@ -9,6 +11,7 @@ export type SaveRecommendationFeedbackEventInput = {
   answerPath?: unknown[];
   topProducts: unknown[];
   rerollAttempt?: number | null;
+  rerollReason?: RecommendationRerollReason | null;
   resultProvider?: string | null;
   resultModelName?: string | null;
   pageRoute: string;
@@ -31,6 +34,7 @@ export async function ensureRecommendationFeedbackSchema(pool: Queryable) {
       answer_path jsonb NOT NULL DEFAULT '[]'::jsonb,
       top_products jsonb NOT NULL DEFAULT '[]'::jsonb,
       reroll_attempt integer,
+      reroll_reason text,
       result_provider text,
       result_model_name text,
       page_route text NOT NULL DEFAULT '/',
@@ -62,6 +66,11 @@ export async function ensureRecommendationFeedbackSchema(pool: Queryable) {
   await pool.query(`
     ALTER TABLE public.recommendation_feedback_events
     ADD COLUMN IF NOT EXISTS reroll_attempt integer
+  `);
+
+  await pool.query(`
+    ALTER TABLE public.recommendation_feedback_events
+    ADD COLUMN IF NOT EXISTS reroll_reason text
   `);
 
   await pool.query(`
@@ -103,6 +112,7 @@ export function createRecommendationFeedbackStore({
       answerPath,
       topProducts,
       rerollAttempt,
+      rerollReason,
       resultProvider,
       resultModelName,
       pageRoute,
@@ -117,12 +127,13 @@ export function createRecommendationFeedbackStore({
             answer_path,
             top_products,
             reroll_attempt,
+            reroll_reason,
             result_provider,
             result_model_name,
             page_route,
             user_agent
           )
-          VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10)
+          VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10, $11)
           RETURNING id
         `,
         [
@@ -132,6 +143,7 @@ export function createRecommendationFeedbackStore({
           JSON.stringify(answerPath ?? []),
           JSON.stringify(topProducts),
           rerollAttempt ?? null,
+          rerollReason ?? null,
           resultProvider ?? null,
           resultModelName ?? null,
           pageRoute,

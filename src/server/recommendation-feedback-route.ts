@@ -1,3 +1,6 @@
+import {
+  isRecommendationRerollReason,
+} from "../lib/recommendation-reroll.js";
 import type { Request, Response } from "express";
 
 import type {
@@ -25,6 +28,10 @@ function normalizeRerollAttempt(value: unknown) {
   return typeof value === "number" && Number.isFinite(value)
     ? Math.max(1, Math.round(value))
     : null;
+}
+
+function normalizeRerollReason(value: unknown) {
+  return isRecommendationRerollReason(value) ? value : null;
 }
 
 function normalizeJsonObject(value: unknown) {
@@ -72,6 +79,7 @@ export function createSaveRecommendationFeedbackEventHandler({
       answerPath: normalizeAnswerPath(requestBody.answerPath),
       topProducts: normalizeTopProducts(requestBody.topProducts),
       rerollAttempt: normalizeRerollAttempt(requestBody.rerollAttempt),
+      rerollReason: normalizeRerollReason(requestBody.rerollReason),
       resultProvider: normalizeOptionalText(requestBody.resultProvider),
       resultModelName: normalizeOptionalText(requestBody.resultModelName),
       pageRoute: normalizePageRoute(requestBody.pageRoute),

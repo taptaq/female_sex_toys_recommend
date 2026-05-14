@@ -1,3 +1,5 @@
+import type { RecommendationRerollReason } from "./recommendation-reroll.ts";
+
 type ApiErrorPayload = {
   error?: string;
   details?: string;
@@ -12,6 +14,7 @@ export type SubmitRecommendationFeedbackEventInput = {
   answerPath?: unknown[];
   topProducts: unknown[];
   rerollAttempt?: number | null;
+  rerollReason?: RecommendationRerollReason | null;
   resultProvider?: string | null;
   resultModelName?: string | null;
   pageRoute: string;
@@ -48,6 +51,7 @@ export async function submitRecommendationFeedbackEvent({
   answerPath,
   topProducts,
   rerollAttempt,
+  rerollReason,
   resultProvider,
   resultModelName,
   pageRoute,
@@ -65,6 +69,7 @@ export async function submitRecommendationFeedbackEvent({
       answerPath,
       topProducts,
       rerollAttempt,
+      rerollReason,
       resultProvider,
       resultModelName,
       pageRoute,

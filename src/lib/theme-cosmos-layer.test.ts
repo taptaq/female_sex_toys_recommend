@@ -45,7 +45,6 @@ test("global css maps each theme to a distinct astronomy motif", () => {
 
   assert.match(cssSource, /data-theme="inner-space"[\s\S]*theme-cosmos-spiral/);
   assert.match(cssSource, /data-theme="soft-signal"[\s\S]*theme-cosmos-nebula/);
-  assert.match(cssSource, /data-theme="vector-pulse"[\s\S]*theme-cosmos-pulsar/);
   assert.match(cssSource, /data-theme="sync-field"[\s\S]*theme-cosmos-binary/);
   assert.match(cssSource, /theme-cosmos-layer-home/);
   assert.match(cssSource, /theme-cosmos-layer-quiz/);

@@ -77,14 +77,12 @@ type HomeSpacePhotoLayer = {
 const HOME_SPACE_PHOTO_LAYER_OPACITY_BY_THEME: Record<AppThemeId, number> = {
   "inner-space": 0.34,
   "soft-signal": 0.32,
-  "vector-pulse": 0.3,
   "sync-field": 0.3,
 };
 
 const HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME: Record<AppThemeId, string> = {
   "inner-space": "home-space-photo-image-inner-space",
   "soft-signal": "home-space-photo-image-soft-signal",
-  "vector-pulse": "home-space-photo-image-vector-pulse",
   "sync-field": "home-space-photo-image-sync-field",
 };
 
@@ -190,39 +188,56 @@ function readFileAsDataUrl(file: File) {
 
 function SecondaryEntryButton({
   children,
-  tooltip,
+  hint,
+  description,
   tone,
   onClick,
 }: {
   children: string;
-  tooltip: string;
+  hint: string;
+  description: string;
   tone: "indigo" | "cyan";
   onClick: () => void;
 }) {
   const Icon = tone === "cyan" ? Sparkles : Boxes;
   const toneClass =
     tone === "cyan"
-      ? "hover:border-cyan-300/30 hover:bg-cyan-400/10 hover:text-cyan-100"
-      : "hover:border-indigo-300/30 hover:bg-indigo-400/10 hover:text-indigo-100";
+      ? "hover:border-cyan-300/24 hover:bg-cyan-400/[0.07] hover:text-cyan-100"
+      : "hover:border-indigo-300/22 hover:bg-indigo-400/[0.06] hover:text-indigo-100";
+  const hintClass =
+    tone === "cyan"
+      ? "border-cyan-300/12 bg-cyan-400/[0.05] text-cyan-100/62"
+      : "border-white/7 bg-white/[0.032] text-slate-400/90";
 
   return (
-    <span className="home-secondary-node group relative inline-flex w-full sm:w-auto">
+    <span className="home-secondary-node group inline-flex w-full">
       <button
         type="button"
         onClick={onClick}
-        aria-label={`${children}：${tooltip}`}
+        aria-label={`${children}：${description}`}
         className={[
-          "relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-full border border-white/8 bg-white/[0.035] px-4 py-2 text-xs tracking-wider text-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 group-hover:-translate-y-0.5 sm:w-auto",
+          "inline-flex w-full items-center justify-between gap-2 rounded-full border border-white/7 bg-white/[0.022] px-3 py-1.5 text-left text-slate-300 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/55 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950",
           toneClass,
         ].join(" ")}
       >
-        <span className="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/8 to-transparent transition-transform duration-500 group-hover:translate-x-[120%]" />
-        <Icon className="relative h-3.5 w-3.5 opacity-70 transition-opacity group-hover:opacity-100" />
-        <span className="relative">{children}</span>
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/8 bg-white/[0.03]">
+            <Icon className="h-3 w-3 opacity-70 transition-opacity group-hover:opacity-100" />
+          </span>
+          <span className="whitespace-nowrap text-[11.5px] font-medium leading-4 tracking-[0.04em] text-slate-100 sm:text-[12px] md:text-[12.5px]">
+            {children}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={[
+            "shrink-0 rounded-full border px-1.5 py-0 text-[8.5px] leading-4 tracking-[0.04em] sm:px-1.5",
+            hintClass,
+          ].join(" ")}
+        >
+          {hint}
+        </span>
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-3 w-[13.5rem] -translate-x-1/2 rounded-2xl border border-white/10 bg-slate-950/92 px-3 py-2 text-center text-[11px] leading-5 text-slate-300 opacity-0 shadow-[0_0_34px_rgba(14,165,233,0.14)] backdrop-blur-xl transition-all duration-150 group-focus-within:-translate-y-1 group-focus-within:opacity-100 group-hover:-translate-y-1 group-hover:opacity-100">
-        {tooltip}
-      </span>
     </span>
   );
 }
@@ -798,27 +813,36 @@ export function HomePage({
               </span>
             </button>
 
-            <div className="mt-5 flex w-full flex-col items-center gap-2 border-t border-white/8 pt-5 sm:flex-row sm:justify-center sm:gap-4">
+            <div className="mt-5 w-full border-t border-white/8 pt-5">
+              <p className="text-[10px] tracking-[0.16em] text-slate-500">
+                还没准备开始，也可以先快速看看
+              </p>
+            </div>
+
+            <div className="mt-2.5 grid w-full gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
               <SecondaryEntryButton
                 onClick={onBrowseLibrary}
+                hint="同类比较"
                 tone="indigo"
-                tooltip="先看真实装备参数、价格区间和筛选维度，建立大概参考。"
+                description="拿到推荐方向后，再回来横向比较同类和价位。"
               >
-                先随便看看装备库
+                装备库
               </SecondaryEntryButton>
 
               <SecondaryEntryButton
                 onClick={onOpenKnowledgeNebula}
+                hint="参数避坑"
                 tone="cyan"
-                tooltip="了解常见误区、参数怎么读，以及新手选择时该避开的坑。"
+                description="先补参数解读、常见误区和新手避坑。"
               >
-                看看知识星云
+                知识星云
               </SecondaryEntryButton>
 
               <SecondaryEntryButton
                 onClick={openFeedbackModal}
+                hint="体验反馈"
                 tone="indigo"
-                tooltip="反馈首页体验问题、文案疑惑，或告诉我们你希望补上的能力。"
+                description="反馈体验问题、文案疑惑或你想补上的能力。"
               >
                 意见反馈
               </SecondaryEntryButton>

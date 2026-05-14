@@ -59,14 +59,17 @@ test("home page prioritizes matching and demotes library and knowledge nebula en
   const html = renderHomePage();
 
   assert.match(html, /开始匹配/);
-  assert.match(html, /先随便看看装备库/);
-  assert.match(html, /看看知识星云/);
+  assert.match(html, /还没准备开始，也可以先快速看看/);
+  assert.match(html, /装备库/);
+  assert.match(html, /知识星云/);
   assert.match(html, /意见反馈/);
-  assert.match(html, /先看真实装备参数、价格区间和筛选维度/);
-  assert.match(html, /了解常见误区、参数怎么读/);
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("先随便看看装备库"));
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("看看知识星云"));
+  assert.match(html, /拿到推荐方向后，再回来横向比较同类和价位/);
+  assert.ok(html.indexOf("开始匹配") < html.indexOf("还没准备开始，也可以先快速看看"));
+  assert.ok(html.indexOf("开始匹配") < html.indexOf("装备库"));
+  assert.ok(html.indexOf("开始匹配") < html.indexOf("知识星云"));
   assert.ok(html.indexOf("开始匹配") < html.indexOf("意见反馈"));
+  assert.doesNotMatch(html, /先随便看看装备库/);
+  assert.doesNotMatch(html, /看看知识星云/);
   assert.doesNotMatch(html, /浏览全息装备库/);
   assert.doesNotMatch(html, /进入知识星云/);
 });
@@ -216,7 +219,6 @@ test("home page background now uses a real-space photo layer instead of only syn
   assert.match(cssSource, /\.home-space-photo/);
   assert.match(themeSource, /\/assets\/home-cosmos\/inner-space-spiral\.jpg/);
   assert.match(themeSource, /\/assets\/home-cosmos\/soft-signal-rosette\.jpg/);
-  assert.match(themeSource, /\/assets\/home-cosmos\/vector-pulse-cats-eye\.jpg/);
   assert.match(themeSource, /\/assets\/home-cosmos\/sync-field-arp273\.jpg/);
 });
 
@@ -383,11 +385,9 @@ test("home page theme atmospheres use the selected image as a full-page backgrou
 
   assert.match(cssSource, /:root\[data-theme="inner-space"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.34;/);
   assert.match(cssSource, /:root\[data-theme="soft-signal"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.32;/);
-  assert.match(cssSource, /:root\[data-theme="vector-pulse"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.3;[\s\S]*--home-space-photo-size: cover;/);
   assert.match(cssSource, /:root\[data-theme="sync-field"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.3;[\s\S]*--home-space-photo-size: cover;/);
   assert.match(cssSource, /:root\[data-theme="inner-space"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 24s;[\s\S]*--home-space-veil-duration: 19s;/);
   assert.match(cssSource, /:root\[data-theme="soft-signal"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 29s;[\s\S]*--home-space-veil-duration: 23s;/);
-  assert.match(cssSource, /:root\[data-theme="vector-pulse"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 18s;[\s\S]*--home-space-veil-duration: 15\.5s;/);
   assert.match(cssSource, /:root\[data-theme="sync-field"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 21s;[\s\S]*--home-space-veil-duration: 17\.5s;/);
   assert.doesNotMatch(cssSource, /--home-space-star-pulse-duration/);
   assert.match(cssSource, /\.home-space-depth \{[\s\S]*rgba\(2, 6, 23, 0\.48\)\);/);
@@ -397,7 +397,7 @@ test("home page theme atmospheres use the selected image as a full-page backgrou
   assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;[\s\S]*transition-delay: 120ms;/);
   assert.match(cssSource, /\.home-space-photo-image-active \{[\s\S]*opacity: calc\(var\(--home-space-photo-layer-opacity\) \+ var\(--home-space-photo-opacity-boost, 0\)\);/);
   assert.match(cssSource, /\.home-space-photo-image-inner-space,\s*\.home-space-photo-image-soft-signal \{[\s\S]*object-position: center 42%;/);
-  assert.match(cssSource, /\.home-space-photo-image-vector-pulse,\s*\.home-space-photo-image-sync-field \{[\s\S]*object-position: center 46%;/);
+  assert.match(cssSource, /\.home-space-photo-image-sync-field \{[\s\S]*object-position: center 46%;/);
   assert.match(cssSource, /\.home-space-depth \{[\s\S]*contain: paint;/);
   assert.doesNotMatch(cssSource, /\.home-space-photo \{[^}]*mask-image:/);
   assert.doesNotMatch(cssSource, /\.home-space-photo \{[^}]*filter:/);
@@ -443,7 +443,6 @@ test("home page keeps ambient layers grouped behind stable semantic anchor nodes
   assert.equal(countMatches(html, /class="home-space-photo-image /g), 1);
   assert.equal(countMatches(html, /home-space-photo-image-inner-space/g), 1);
   assert.equal(countMatches(html, /home-space-photo-image-soft-signal/g), 0);
-  assert.equal(countMatches(html, /home-space-photo-image-vector-pulse/g), 0);
   assert.equal(countMatches(html, /home-space-photo-image-sync-field/g), 0);
   assert.equal(countMatches(html, /home-space-nebula-flow-a/g), 1);
   assert.equal(countMatches(html, /home-space-nebula-flow-b/g), 1);
@@ -496,7 +495,7 @@ test("home page keeps secondary entry navigation and auth actions structurally d
   assert.match(signedInHtml, /taptaq/);
 });
 
-test("home page exposes four audience-aware theme options and marks the active one", () => {
+test("home page exposes three audience-aware theme options and marks the active one", () => {
   const html = renderHomePage();
 
   assert.match(html, /主题/);

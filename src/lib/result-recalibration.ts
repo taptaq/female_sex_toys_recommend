@@ -8,6 +8,7 @@ import {
   buildBackupCandidates,
   buildLocalBackupReason,
 } from "./recommendation-results.js";
+import type { RecommendationRerollReason } from "./recommendation-reroll.ts";
 import { getResultModelOption } from "./result-models.js";
 
 export type ResultRecalibrationCandidate = Pick<
@@ -37,6 +38,7 @@ export type RecalibratedResultTopProduct = ResultRecalibrationCandidate & {
 
 export type ResultRecalibrationContext = {
   attemptCount: number;
+  rerollReason?: RecommendationRerollReason;
   currentResultProvider?: AppAiProvider;
   currentResultModelName?: string;
   previousTopProducts: Array<Pick<RecalibratedResultTopProduct, "id" | "reason">>;
@@ -152,6 +154,7 @@ export function buildResultRecalibrationPayload(
     recalibrationContext: request.recalibrationContext
       ? {
           attemptCount: Math.max(1, request.recalibrationContext.attemptCount || 1),
+          rerollReason: request.recalibrationContext.rerollReason,
           currentResultProvider: request.recalibrationContext.currentResultProvider,
           currentResultModelName: normalizeModelName(
             request.recalibrationContext.currentResultModelName,

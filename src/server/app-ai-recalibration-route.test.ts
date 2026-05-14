@@ -63,6 +63,7 @@ test("createRecalibrateResultsHandler routes the request through automatic model
       recommendationTips: ["tip-1"],
       recalibrationContext: {
         attemptCount: 2,
+        rerollReason: "did_not_understand",
         currentResultProvider: "dmxapi-mimo",
         currentResultModelName: "mimo-v2.5-pro",
         previousTopProducts: [{ id: "p-1", reason: "更安静，也更适合日常使用" }],
@@ -82,6 +83,7 @@ test("createRecalibrateResultsHandler routes the request through automatic model
     recommendationTips: ["tip-1"],
     recalibrationContext: {
       attemptCount: 2,
+      rerollReason: "did_not_understand",
       currentResultProvider: "dmxapi-mimo",
       currentResultModelName: "mimo-v2.5-pro",
       previousTopProducts: [{ id: "p-1", reason: "更安静，也更适合日常使用" }],

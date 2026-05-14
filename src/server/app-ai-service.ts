@@ -20,6 +20,10 @@ import type {
   ResultRecalibrationResponse,
   ResultRecalibrationContext,
 } from "../lib/result-recalibration.js";
+import {
+  getRecommendationRerollReasonLabel,
+  getRecommendationRerollReasonPromptHint,
+} from "../lib/recommendation-reroll.js";
 import { buildProductDescriptionSignalsSummary } from "../lib/product-description-signals.js";
 import { buildProductDisguiseSignalsSummary } from "../lib/product-disguise-signals.js";
 import { getProductDisplayName } from "../lib/product-display-name.js";
@@ -278,6 +282,7 @@ function finalizeBackupProducts(
 function buildRerankPrompt(
   answers: RecommendationAnswers,
   rankedProducts: RecommendationRankedProduct[],
+  rerollContext?: Pick<ResultRecalibrationContext, "rerollReason">,
 ) {
   const context = {
     userPreferences: answers.tags,
@@ -308,6 +313,10 @@ function buildRerankPrompt(
 
 用户偏好标签: [${context.userPreferences.join(", ")}]
 用户结构化偏好信号: ${JSON.stringify({ preferenceSignals: context.preferenceSignals })}
+用户这次希望重看推荐的原因: ${getRecommendationRerollReasonLabel(
+    rerollContext?.rerollReason ?? "want_more_accurate",
+  )}
+重看意图提示: ${getRecommendationRerollReasonPromptHint(rerollContext?.rerollReason)}
 
 候选商品列表（已按结构化分数从高到低排序，仅可从中选择）:
 ${JSON.stringify(context.rankedProducts)}
@@ -332,6 +341,7 @@ function buildResultEnhancementPrompt(
   finalTopProducts: RankedProductWithReason[],
   backupCandidates: BackupCandidate[],
   filteredCount: number,
+  rerollContext?: Pick<ResultRecalibrationContext, "rerollReason">,
 ) {
   const context = {
     userPreferences: answers.tags,
@@ -369,6 +379,10 @@ Top 3 主推荐已经确定，请只补充两个结果区域：
 
 用户偏好标签: [${context.userPreferences.join(", ")}]
 候选池数量: ${context.filteredCount}
+用户这次希望重看推荐的原因: ${getRecommendationRerollReasonLabel(
+    rerollContext?.rerollReason ?? "want_more_accurate",
+  )}
+重看意图提示: ${getRecommendationRerollReasonPromptHint(rerollContext?.rerollReason)}
 
 已确定 Top 3（仅供参考，不需要重排）:
 ${JSON.stringify(context.topProducts)}
@@ -643,7 +657,7 @@ export function createAppAiService({
       ...recalibrationPlan.fallbackOrder,
     ]);
     const rerankResult = await runServerAiProxy<BackupReasonResult[]>({
-      prompt: buildRerankPrompt(answers, rerankPool),
+      prompt: buildRerankPrompt(answers, rerankPool, recalibrationContext),
       temperature: 0.1,
       emptyJson: "[]",
       logContext: "结果重校准 Top3 重排",
@@ -691,6 +705,7 @@ export function createAppAiService({
         topProducts,
         backupCandidates,
         filteredCount,
+        recalibrationContext,
       ),
       temperature: 0.3,
       emptyJson: "{}",

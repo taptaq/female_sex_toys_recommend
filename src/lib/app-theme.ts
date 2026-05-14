@@ -12,11 +12,6 @@ export const APP_THEME_OPTIONS = [
     shortLabel: "柔光",
   },
   {
-    id: "vector-pulse",
-    label: "锋面理性",
-    shortLabel: "锋面",
-  },
-  {
     id: "sync-field",
     label: "同步共振",
     shortLabel: "同步",
@@ -28,7 +23,6 @@ export type AppThemeId = (typeof APP_THEME_OPTIONS)[number]["id"];
 export const APP_THEME_HOME_COSMOS_IMAGE_BY_ID: Record<AppThemeId, string> = {
   "inner-space": "/assets/home-cosmos/inner-space-spiral.jpg",
   "soft-signal": "/assets/home-cosmos/soft-signal-rosette.jpg",
-  "vector-pulse": "/assets/home-cosmos/vector-pulse-cats-eye.jpg",
   "sync-field": "/assets/home-cosmos/sync-field-arp273.jpg",
 };
 

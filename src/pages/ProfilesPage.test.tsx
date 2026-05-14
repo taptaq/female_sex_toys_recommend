@@ -72,7 +72,9 @@ test("profiles page renders saved equipment matching profiles", () => {
   assert.match(html, /EQUIPMENT MATCHING ARCHIVE/);
   assert.match(html, /Nebula Pick 等 2 个推荐/);
   assert.match(html, /已加密同步/);
-  assert.match(html, /查看详情/);
+  assert.match(html, /回看这次判断/);
+  assert.match(html, /当时更在意/);
+  assert.match(html, /先看路线/);
 });
 
 test("profiles page renders an empty state", () => {
@@ -104,7 +106,7 @@ test("profiles detail dedupes saved preference tags and localizes answer values"
     />,
   );
 
-  assert.match(html, /当时的条件/);
+  assert.match(html, /那次决策的硬约束/);
   assert.match(html, /女性向/);
   assert.match(html, /纯入体/);
   assert.match(html, /温柔慢热/);
@@ -113,7 +115,7 @@ test("profiles detail dedupes saved preference tags and localizes answer values"
   assert.doesNotMatch(html, /gentle/);
   assert.match(
     html,
-    /当时的偏好[\s\S]*女性向[\s\S]*纯入体[\s\S]*≥ IPX7 防水/,
+    /那次留下的偏好线索[\s\S]*女性向[\s\S]*纯入体[\s\S]*≥ IPX7 防水/,
   );
   assert.equal(
     (
@@ -218,10 +220,30 @@ test("profiles detail keeps dense secondary sections in a separate right rail on
     />,
   );
 
-  assert.match(html, /当时的条件/);
-  assert.match(html, /当时的偏好/);
-  assert.match(html, /推荐快照/);
+  assert.match(html, /那次决策的硬约束/);
+  assert.match(html, /那次留下的偏好线索/);
+  assert.match(html, /那次先看这几条路线/);
   assert.match(html, /space-y-4 xl:space-y-3/);
+});
+
+test("profiles detail presents saved recommendations as decision routes instead of raw score rows", () => {
+  const html = renderToStaticMarkup(
+    <ProfilesPage
+      profiles={[detailedProfile]}
+      isLoading={false}
+      error={null}
+      userLabel="taptaq"
+      initialSelectedProfile={detailedProfile}
+      onBack={() => {}}
+      onReload={() => {}}
+    />,
+  );
+
+  assert.match(html, /那次先看这几条路线/);
+  assert.match(html, /主推荐/);
+  assert.match(html, /备选 1/);
+  assert.match(html, /当时系统先把它放在最前面/);
+  assert.doesNotMatch(html, /<span class="text-xs text-cyan-100\/65">/);
 });
 
 test("ProfilesPage shows saved body persona summary when present", () => {

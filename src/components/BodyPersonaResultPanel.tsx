@@ -245,7 +245,7 @@ export function BodyPersonaResultPanel({
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
             <div className="mb-2 flex items-center gap-2 text-cyan-100/84">
               <Sparkles className="h-3.5 w-3.5" />
-              <p className="text-[11px] tracking-wide">当前方向提示</p>
+              <p className="text-[11px] tracking-wide">对这次结果的补充提示</p>
             </div>
             <ul className="space-y-1.5">
               {freeSummary.hints.map((hint, index) => (
@@ -268,7 +268,7 @@ export function BodyPersonaResultPanel({
                 {fullReport.bestRouteSummary}
               </p>
               <p className="mt-2 text-[12px] leading-5 text-cyan-100/70">
-                可随时回看你的主人格画像、隐藏路线、副人格倾向与长期路线建议。
+                可随时回看你的主人格画像、隐藏路线、副人格倾向与长期路线建议，作为当前主推荐之外的长期补充。
               </p>
               <button
                 type="button"
@@ -290,7 +290,7 @@ export function BodyPersonaResultPanel({
                   : "0.5 元解锁完整星系人格档案，查看主人格画像、隐藏路线、副人格倾向，以及长期更适合的体验路线与产品方向。"}
               </p>
               <p className="mt-2 text-[12px] leading-5 text-cyan-100/70">
-                0.5 元一次解锁，可随时回看。
+                0.5 元一次解锁，可随时回看；它补充的是长期适配方向，不会替代这次主推荐。
               </p>
               <button
                 type="button"

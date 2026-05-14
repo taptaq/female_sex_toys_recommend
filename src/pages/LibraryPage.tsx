@@ -281,7 +281,7 @@ export function LibraryPage({
             全息装备库
           </h1>
           <p className="text-slate-400 text-sm">
-            收录当前系统链接的所有真实物理装备
+            用来横向比较同类路线、参数和价位的装备工具层
           </p>
           <button
             onClick={onReload}

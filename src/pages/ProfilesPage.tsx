@@ -188,6 +188,31 @@ function buildProfileDecisionSnapshot(profile: SavedRecommendationProfile) {
   ];
 }
 
+function buildProfileListPreview(profile: SavedRecommendationProfile) {
+  const snapshot = buildProfileDecisionSnapshot(profile);
+
+  return {
+    focus:
+      snapshot.find((item) => item.label === "当时更在意")?.value ||
+      "当时更像是一次整体探索，没有留下特别强的单一约束。",
+    route:
+      snapshot.find((item) => item.label === "主推荐路线")?.value ||
+      "先从系统筛出的主推荐方向继续看。",
+  };
+}
+
+function buildProfileRecommendedRouteItems(profile: SavedRecommendationProfile) {
+  return profile.payload.topProducts.slice(0, 3).map((product, index) => ({
+    id: product.id,
+    label: index === 0 ? "主推荐" : `备选 ${index}`,
+    name: getProductDisplayName(product),
+    reason:
+      index === 0
+        ? "当时系统先把它放在最前面，适合作为那次决策的起点。"
+        : "它更适合拿来横向比较价位、刺激路径或静音边界。",
+  }));
+}
+
 export function ProfilesPage({
   profiles,
   isLoading,
@@ -212,6 +237,9 @@ export function ProfilesPage({
     : [];
   const selectedProfileSnapshot = selectedProfile
     ? buildProfileDecisionSnapshot(selectedProfile)
+    : [];
+  const selectedProfileRecommendedRouteItems = selectedProfile
+    ? buildProfileRecommendedRouteItems(selectedProfile)
     : [];
   const selectedAnswerEntries = selectedProfile
     ? ([
@@ -247,7 +275,7 @@ export function ProfilesPage({
             匹配档案
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            回看已加密保存的问卷偏好和推荐快照，方便换设备时继续比较。
+            回看当时怎么选、为什么先看这类，以及现在重看该先比较什么。
           </p>
         </div>
 
@@ -285,7 +313,10 @@ export function ProfilesPage({
         </div>
       ) : (
         <div className="grid gap-3">
-          {profiles.map((profile) => (
+          {profiles.map((profile) => {
+            const preview = buildProfileListPreview(profile);
+
+            return (
             <button
               key={profile.id}
               type="button"
@@ -309,13 +340,32 @@ export function ProfilesPage({
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
                     {profile.summary || "已保存的装备匹配快照"}
                   </p>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2">
+                      <p className="text-[10px] tracking-[0.18em] text-cyan-200/45">
+                        当时更在意
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-200">
+                        {preview.focus}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2">
+                      <p className="text-[10px] tracking-[0.18em] text-cyan-200/45">
+                        先看路线
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-200">
+                        {preview.route}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-300/18 bg-cyan-300/8 px-3 py-1.5 text-xs text-cyan-100/80 transition-colors group-hover:bg-cyan-300/12">
-                  查看详情
+                  回看这次判断
                 </span>
               </div>
             </button>
-          ))}
+          );
+        })}
         </div>
       )}
 
@@ -332,6 +382,9 @@ export function ProfilesPage({
                 </h2>
                 <p className="mt-2 text-xs text-slate-500">
                   {formatSavedAt(selectedProfile.savedAt)}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  这里保留的是那次做决定时的语境，不只是字段记录。
                 </p>
               </div>
               <button
@@ -387,7 +440,7 @@ export function ProfilesPage({
                 <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
                     <LockKeyhole className="h-4 w-4 text-cyan-200/70" />
-                    当时的条件
+                    那次决策的硬约束
                   </h3>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {selectedAnswerEntries.map(([label, value]) => (
@@ -411,7 +464,7 @@ export function ProfilesPage({
                 <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
                   <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
                     <FileText className="h-4 w-4 text-cyan-200/70" />
-                    当时的偏好
+                    那次留下的偏好线索
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {dedupeDisplayTags(selectedProfile.payload.answers.tags || []).map((tag) => (
@@ -426,21 +479,26 @@ export function ProfilesPage({
                 </section>
 
                 <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <h3 className="mb-3 text-sm font-medium text-white">推荐快照</h3>
+                  <h3 className="mb-3 text-sm font-medium text-white">
+                    那次先看这几条路线
+                  </h3>
                   <div className="space-y-2">
-                    {selectedProfile.payload.topProducts.map((product, index) => (
+                    {selectedProfileRecommendedRouteItems.map((item) => (
                       <div
-                        key={product.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2"
+                        key={item.id}
+                        className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-3"
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm text-slate-100">
-                            {index + 1}. {getProductDisplayName(product)}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-cyan-300/16 bg-cyan-300/8 px-2 py-0.5 text-[10px] text-cyan-100/75">
+                            {item.label}
+                          </span>
+                          <p className="text-sm text-slate-100">
+                            {item.name}
                           </p>
                         </div>
-                        <span className="text-xs text-cyan-100/65">
-                          {Math.round(product.score)}
-                        </span>
+                        <p className="mt-1.5 text-xs leading-5 text-slate-400">
+                          {item.reason}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -463,7 +521,7 @@ export function ProfilesPage({
                 {selectedProfile.payload.shoppingGuidance.length > 0 && (
                   <section className="rounded-2xl border border-amber-300/16 bg-amber-400/8 p-4">
                     <h3 className="mb-2 text-sm font-medium text-amber-100">
-                      当时的选购提示
+                      那次下单前提醒
                     </h3>
                     <ul className="space-y-2">
                       {selectedProfile.payload.shoppingGuidance.map((item, index) => (

@@ -29,7 +29,6 @@ function createMemoryStorage() {
 
 test("normalizeAppThemeId only accepts known theme ids", () => {
   assert.equal(normalizeAppThemeId("soft-signal"), "soft-signal");
-  assert.equal(normalizeAppThemeId("vector-pulse"), "vector-pulse");
   assert.equal(normalizeAppThemeId("missing-theme"), DEFAULT_APP_THEME_ID);
   assert.equal(normalizeAppThemeId(null), DEFAULT_APP_THEME_ID);
 });
@@ -76,9 +75,9 @@ test("app theme preference falls back to memory when localStorage is blocked", (
   });
 
   try {
-    writeStoredAppTheme("vector-pulse");
+    writeStoredAppTheme("sync-field");
 
-    assert.equal(readStoredAppTheme(), "vector-pulse");
+    assert.equal(readStoredAppTheme(), "sync-field");
   } finally {
     Object.defineProperty(globalThis, "window", {
       configurable: true,
@@ -144,7 +143,6 @@ test("home cosmos preload decodes every theme background image once", async () =
 
     assert.deepEqual(decodedSources, [
       APP_THEME_HOME_COSMOS_IMAGE_BY_ID["inner-space"],
-      APP_THEME_HOME_COSMOS_IMAGE_BY_ID["vector-pulse"],
       APP_THEME_HOME_COSMOS_IMAGE_BY_ID["sync-field"],
     ]);
   } finally {

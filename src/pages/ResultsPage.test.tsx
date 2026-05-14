@@ -570,6 +570,42 @@ test("results page groups comparison, alternatives, tuning, and regeneration int
   );
 });
 
+test("results page adds a same-category library bridge for horizontal comparison after recommendation", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"], gender: "female" }}
+      topProducts={[
+        makeProduct({ id: "p1", name: "Primary Pick", typeCode: "external_vibe" }),
+        makeProduct({ id: "p2", name: "Second Pick", score: 88 }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onBrowseLibrary={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /想自己再横向比一比？/);
+  assert.match(html, /去装备库继续看同类路线、价位区间和不同品牌差异/);
+  assert.match(html, /查看同类装备/);
+  assert.ok(
+    html.indexOf("还想换个角度？") < html.indexOf("查看同类装备"),
+    "library bridge should live inside the assistive comparison area",
+  );
+});
+
 test("results page keeps comparison and backup headings in the same Chinese tone", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
@@ -655,6 +691,14 @@ test("results page groups formal candidates together before adjustment actions a
   assert.ok(
     html.indexOf("下一步建议") < html.indexOf("购买前最终自检"),
     "final self-check should close the page after the action-oriented next steps",
+  );
+  assert.ok(
+    html.indexOf("下一步建议") < html.indexOf("参数速览"),
+    "parameter deep dives should come after the primary next-step guidance",
+  );
+  assert.ok(
+    html.indexOf("下一步建议") < html.indexOf("身体人格测试"),
+    "body persona should not interrupt the first decision flow before next actions",
   );
 });
 
@@ -1183,8 +1227,11 @@ test("results page hides model selection details and only exposes a regenerate r
   );
 
   assert.match(html, /对当前结果不满意？/);
-  assert.match(html, /这组不太对，换一组更适合的推荐/);
+  assert.match(html, /再给我一版更贴合现在需求的推荐/);
   assert.match(html, /一次轻量反馈/);
+  assert.match(html, /想更准一点/);
+  assert.match(html, /想换个风格/);
+  assert.match(html, /这版没看懂/);
   assert.doesNotMatch(html, /换个模型再试/);
   assert.doesNotMatch(html, /当前模型/);
   assert.doesNotMatch(html, /Mimo（DMX）/);

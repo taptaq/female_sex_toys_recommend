@@ -28,6 +28,7 @@ test("ensureRecommendationFeedbackSchema creates recommendation feedback event s
   assert.match(combinedSql, /answer_path jsonb NOT NULL DEFAULT '\[\]'::jsonb/);
   assert.match(combinedSql, /top_products jsonb NOT NULL DEFAULT '\[\]'::jsonb/);
   assert.match(combinedSql, /reroll_attempt integer/);
+  assert.match(combinedSql, /reroll_reason text/);
   assert.match(combinedSql, /result_provider text/);
   assert.match(combinedSql, /result_model_name text/);
   assert.match(combinedSql, /page_route text NOT NULL DEFAULT '\//);
@@ -54,6 +55,7 @@ test("createRecommendationFeedbackStore persists reroll feedback events", async 
     answerPath: [{ questionId: "q0", tag: "男性向" }],
     topProducts: [{ id: "p1", typeCode: "masturbator", score: 96 }],
     rerollAttempt: 2,
+    rerollReason: "want_more_accurate",
     resultProvider: "dmxapi-qwen",
     resultModelName: "qwen3.5-27b",
     pageRoute: "/results",
@@ -69,6 +71,7 @@ test("createRecommendationFeedbackStore persists reroll feedback events", async 
     JSON.stringify([{ questionId: "q0", tag: "男性向" }]),
     JSON.stringify([{ id: "p1", typeCode: "masturbator", score: 96 }]),
     2,
+    "want_more_accurate",
     "dmxapi-qwen",
     "qwen3.5-27b",
     "/results",

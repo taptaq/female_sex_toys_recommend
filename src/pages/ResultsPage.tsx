@@ -1,7 +1,6 @@
 import { motion } from "motion/react";
 import { useState } from "react";
 import {
-  AlertCircle,
   ArrowUpRight,
   ChevronDown,
   LoaderCircle,
@@ -19,7 +18,11 @@ import {
 } from "../components/BodyPersonaResultPanel.tsx";
 import { BodyPersonaFullReportDialog } from "../components/BodyPersonaFullReportDialog.tsx";
 import { BodyPersonaUnlockCard } from "../components/BodyPersonaUnlockCard.tsx";
-import { ResultParameterGuide } from "../components/ResultParameterGuide.tsx";
+import { ResultsAlternativeProductsSection } from "../components/results/ResultsAlternativeProductsSection.tsx";
+import { ResultsNextStepsPanel } from "../components/results/ResultsNextStepsPanel.tsx";
+import { ResultsParameterEducationSection } from "../components/results/ResultsParameterEducationSection.tsx";
+import { ResultsPrimaryRecommendationPanel } from "../components/results/ResultsPrimaryRecommendationPanel.tsx";
+import { ResultsRecalibrationPanel } from "../components/results/ResultsRecalibrationPanel.tsx";
 import { AnswerState } from "../data/mock.ts";
 import { RankedProduct } from "../lib/app-shell.ts";
 import type { BodyPersonaFullReport } from "../lib/body-persona-report.ts";
@@ -40,7 +43,6 @@ import {
   buildResultComparisonTeaser,
 } from "../lib/result-comparison.ts";
 import {
-  buildBackupDirectionTeaser,
   buildResultAvoidanceTips,
   buildResultConfidenceSummary,
   buildResultNextStepGroups,
@@ -49,6 +51,10 @@ import {
 import { getProductDisplayName } from "../lib/product-display-name.ts";
 import type { BackupCandidate } from "../lib/recommendation-results.ts";
 import { getResultLeadCopy } from "../lib/quiz-branching.ts";
+import {
+  DEFAULT_RECOMMENDATION_REROLL_REASON,
+  type RecommendationRerollReason,
+} from "../lib/recommendation-reroll.ts";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
 import { buildKnowledgeNebulaPath } from "../lib/knowledge-nebula-route.ts";
 
@@ -210,16 +216,6 @@ function getMetricChips(product: Pick<RankedProduct, "maxDb" | "waterproof" | "m
   ];
 }
 
-function getConfidenceToneClassName(tone: "high" | "conditional" | "backup") {
-  if (tone === "high") {
-    return "border-emerald-300/25 bg-emerald-400/10 text-emerald-100";
-  }
-  if (tone === "conditional") {
-    return "border-amber-300/25 bg-amber-400/10 text-amber-100";
-  }
-  return "border-slate-300/20 bg-slate-400/10 text-slate-100";
-}
-
 function getTuningProgressLabel(mode: ResultTuningMode) {
   if (mode === "quieter") return "正在按更安静方向重新计算推荐...";
   if (mode === "cheaper") return "正在按更低预算方向重新计算推荐...";
@@ -271,62 +267,6 @@ function buildPrePurchaseChecklist(
   ];
 }
 
-function renderConfidenceSummary(
-  summary: ReturnType<typeof buildResultConfidenceSummary>,
-) {
-  return (
-    <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span
-          className={[
-            "rounded-full border px-2.5 py-1 text-[11px]",
-            getConfidenceToneClassName(summary.tone),
-          ].join(" ")}
-        >
-          {summary.levelLabel}
-        </span>
-        <span className="text-[11px] text-slate-500">
-          推荐信心与注意点
-        </span>
-      </div>
-
-      {summary.reasons.length > 0 && (
-        <div className="mb-3">
-          <p className="mb-1 text-[10px] font-mono tracking-wider text-cyan-300/70">
-            为什么适合
-          </p>
-          <ul className="space-y-1">
-            {summary.reasons.map((reason, index) => (
-              <li
-                key={`reason-${index}`}
-                className="text-[11px] leading-5 text-slate-200"
-              >
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div>
-        <p className="mb-1 text-[10px] font-mono tracking-wider text-amber-300/70">
-          需要留意
-        </p>
-        <ul className="space-y-1">
-          {summary.caveats.map((caveat, index) => (
-            <li
-              key={`caveat-${index}`}
-              className="text-[11px] leading-5 text-slate-300"
-            >
-              {caveat}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 type ResultsPageProps = {
   pageVariants: any;
   answers: AnswerState;
@@ -357,9 +297,10 @@ type ResultsPageProps = {
   onUnlockBodyPersona?: () => void | Promise<void>;
   onOpenBodyPersonaFullReport?: () => void;
   onCloseBodyPersonaFullReport?: () => void;
-  onRecalibrateResults: () => void;
+  onRecalibrateResults: (reason: RecommendationRerollReason) => void;
   onTuneResults: (mode: ResultTuningMode) => void;
   onEditQuizCondition?: (condition: ResultEditableCondition) => void;
+  onBrowseLibrary?: (product?: RankedProduct) => void;
   onSaveRecommendationProfile: () => Promise<void>;
   onOpenRecommendationProfiles: () => void;
   onOpenKnowledgeNebula?: (path?: string) => void;
@@ -407,6 +348,7 @@ export function ResultsPage({
   onRecalibrateResults,
   onTuneResults,
   onEditQuizCondition,
+  onBrowseLibrary,
   onSaveRecommendationProfile,
   onOpenRecommendationProfiles,
   onOpenKnowledgeNebula,
@@ -421,6 +363,9 @@ export function ResultsPage({
   const [isComparisonPanelOpen, setIsComparisonPanelOpen] = useState(false);
   const [isSavePanelOpen, setIsSavePanelOpen] = useState(false);
   const [isParameterGuideOpen, setIsParameterGuideOpen] = useState(false);
+  const [selectedRerollReason, setSelectedRerollReason] = useState<RecommendationRerollReason>(
+    DEFAULT_RECOMMENDATION_REROLL_REASON,
+  );
   const bodyPersonaUnlockNeedsLogin =
     isBodyPersonaUnlockLoginRequired ?? authPanel.userLabel == null;
   const normalizedBodyPersonaFullReport = normalizeBodyPersonaFullReport(
@@ -442,7 +387,16 @@ export function ResultsPage({
     );
   const hasGuidance =
     relaxationTips.length > 0 || shoppingGuidanceItems.length > 0;
-  const recalibrationButtonLabel = "这组不太对，换一组更适合的推荐";
+  const recalibrationButtonLabel = (() => {
+    switch (selectedRerollReason) {
+      case "want_more_accurate":
+        return "再给我一版更贴合现在需求的推荐";
+      case "want_different_style":
+        return "换一组不同侧重点的推荐";
+      case "did_not_understand":
+        return "换一版更好理解的推荐";
+    }
+  })();
   const canShowRecalibrationModule = topProducts.length > 0;
   const resultTags = dedupeDisplayTags(answers.tags);
   const resultLeadCopy = getResultLeadCopy(answers);
@@ -458,7 +412,9 @@ export function ResultsPage({
   const primaryProductDisplayName = topProducts[0]
     ? getProductDisplayName(topProducts[0])
     : "";
-  const backupDirectionTeaser = buildBackupDirectionTeaser(backupProducts);
+  const primaryProductBrandLabel = topProducts[0]
+    ? getProductBrandLabel(topProducts[0])
+    : "";
   const primaryConfidenceSummary = topProducts[0]
     ? buildResultConfidenceSummary(topProducts[0], answers)
     : null;
@@ -479,6 +435,9 @@ export function ResultsPage({
     relaxationTips,
     shoppingGuidanceItems,
   });
+  const primaryNextStepGroup = nextStepGroups[0] ?? null;
+  const primaryNextStep = primaryNextStepGroup?.items[0] ?? null;
+  const canBrowseSimilarLibraryProducts = Boolean(onBrowseLibrary && topProducts[0]);
   const handleOpenKnowledgeTopic = (
     topicSlug: "science" | "people" | "care",
     sectionId?: string,
@@ -492,6 +451,8 @@ export function ResultsPage({
       setActiveTuningMode((currentMode) => (currentMode === mode ? null : currentMode));
     }, 650);
   };
+  const resultsPrimaryPanelClassName =
+    "results-report-panel relative z-10 overflow-hidden rounded-[1.75rem] border border-cyan-200/14 bg-slate-950/56 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.2)] sm:p-6";
 
   return (
     <motion.div
@@ -545,212 +506,22 @@ export function ResultsPage({
         ) : null}
       </div>
 
-      {topProducts[0] && (
-        <section className="results-report-panel relative z-10 overflow-hidden rounded-[1.75rem] border border-cyan-200/14 bg-slate-950/56 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.2)] sm:p-6">
-          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent" />
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-stretch">
-            <div className="relative min-h-56 overflow-hidden rounded-3xl border border-white/8 bg-black/20">
-              {primaryProductHref ? (
-                <>
-                  <a
-                    href={primaryProductHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`查看 ${primaryProductDisplayName} 详情`}
-                    className="group absolute inset-0 block overflow-hidden rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  >
-                    {renderProductImage(topProducts[0], "h-8 w-8 text-white/50")}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent transition-opacity group-hover:opacity-90" />
-                    <div className="absolute bottom-4 left-4 right-24">
-                      <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                        主推荐方案
-                      </span>
-                      <p className="mb-1 text-[11px] text-cyan-200/72">
-                        {getProductBrandLabel(topProducts[0])}
-                      </p>
-                      <h3 className="break-words text-xl font-medium leading-snug text-white transition-colors group-hover:text-cyan-50">
-                        {primaryProductDisplayName}
-                      </h3>
-                    </div>
-                  </a>
-                  <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex shrink-0 flex-col items-end gap-2">
-                    <span className="text-xl font-semibold text-cyan-300">
-                      ¥{topProducts[0].price}
-                    </span>
-                    <a
-                      href={primaryProductHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="pointer-events-auto group inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                    >
-                      {renderClickableHint()}
-                    </a>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {renderProductImage(topProducts[0], "h-8 w-8 text-white/50")}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                    <div>
-                      <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                        主推荐方案
-                      </span>
-                      <p className="mb-1 text-[11px] text-cyan-200/72">
-                        {getProductBrandLabel(topProducts[0])}
-                      </p>
-                      <h3 className="break-words text-xl font-medium leading-snug text-white">
-                        {primaryProductDisplayName}
-                      </h3>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <span className="text-xl font-semibold text-cyan-300">
-                        ¥{topProducts[0].price}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex flex-col justify-between gap-4">
-              <div>
-                {topProducts[0].reason && (
-                  <div className="rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-3">
-                    <p className="text-sm leading-6 text-cyan-50/82">
-                      <Sparkles className="mr-1 inline-block h-3.5 w-3.5 text-cyan-200" />
-                      {topProducts[0].reason}
-                    </p>
-                  </div>
-                )}
-
-                {primaryConfidenceSummary &&
-                  renderConfidenceSummary(primaryConfidenceSummary)}
-
-                {primaryRouteSummary && (
-                  <div className="mt-3 rounded-2xl border border-cyan-300/12 bg-cyan-400/[0.05] p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-cyan-200/80" />
-                      <p className="text-[11px] font-medium tracking-wide text-cyan-100/86">
-                        为什么这条路线更适合你
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
-                      <p className="text-[11px] font-medium text-cyan-100/84">
-                        这次更适合先走 {primaryRouteSummary.routeLabel}
-                      </p>
-                      <p className="mt-1.5 text-[11px] leading-5 text-slate-200">
-                        {primaryRouteSummary.summary}
-                      </p>
-                      <p className="mt-2 text-[11px] leading-5 text-slate-400">
-                        {primaryRouteSummary.nextPriority}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {avoidanceTips.length > 0 && (
-                  <div className="mt-3 rounded-2xl border border-rose-300/12 bg-rose-400/[0.05] p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <AlertCircle className="h-3.5 w-3.5 text-rose-200/80" />
-                      <p className="text-[11px] font-medium tracking-wide text-rose-100/88">
-                        暂时不建议优先看
-                      </p>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {avoidanceTips.map((tip, index) => (
-                        <li
-                          key={`avoidance-${index}`}
-                          className="text-[11px] leading-5 text-rose-50/78"
-                        >
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <ResultParameterGuide
-                  isOpen={isParameterGuideOpen}
-                  onToggle={() => setIsParameterGuideOpen((isOpen) => !isOpen)}
-                  onOpenTopic={handleOpenKnowledgeTopic}
-                />
-
-                <div className="rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.05] p-3">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-medium text-cyan-100/82">
-                        参数速览
-                      </p>
-                      <p className="mt-1 text-[11px] leading-5 text-slate-400">
-                        先看一眼核心判断，再决定要不要进知识星云深读。
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenKnowledgeTopic("science", "science-body")}
-                      className="inline-flex shrink-0 items-center rounded-full border border-cyan-400/18 bg-cyan-400/10 px-2.5 py-1 text-[11px] text-cyan-100/82 transition-colors hover:border-cyan-300/32 hover:bg-cyan-300/14"
-                    >
-                      去知识星云深读
-                    </button>
-                  </div>
-
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {sortedParameterPreviewItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleOpenKnowledgeTopic(item.topicSlug, item.sectionId)}
-                        className="rounded-2xl border border-white/8 bg-white/[0.035] px-3 py-3 text-left transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
-                      >
-                        <p className="text-[11px] font-medium text-cyan-100/84">
-                          {item.title}
-                        </p>
-                        <p className="mt-1.5 text-[11px] leading-5 text-slate-300">
-                          {item.preview}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                {getMetricChips(topProducts[0]).map((chip) => {
-                  const Icon = chip.icon;
-                  return (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
-                      className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
-                      title="了解这个参数"
-                    >
-                      <Icon className="mt-0.5 h-3 w-3 shrink-0" />
-                      <span className="break-words">{chip.label}</span>
-                    </button>
-                  );
-                })}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      <BodyPersonaUnlockCard
-        onStart={onStartBodyPersona ?? (() => undefined)}
-        isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
-        freeSummary={
-          bodyPersonaState?.freeSummary
-            ? {
-                title: bodyPersonaState.freeSummary.title,
-                blurb: bodyPersonaState.freeSummary.blurb,
-              }
-            : null
-        }
-      />
+      {topProducts[0] ? (
+        <ResultsPrimaryRecommendationPanel
+          className={resultsPrimaryPanelClassName}
+          topProduct={topProducts[0]}
+          primaryProductHref={primaryProductHref}
+          primaryProductDisplayName={primaryProductDisplayName}
+          primaryProductBrandLabel={primaryProductBrandLabel}
+          primaryConfidenceSummary={primaryConfidenceSummary}
+          primaryRouteSummary={primaryRouteSummary}
+          avoidanceTips={avoidanceTips}
+          primaryNextStepGroupTitle={primaryNextStepGroup?.title}
+          primaryNextStep={primaryNextStep}
+          renderProductImage={renderProductImage}
+          renderClickableHint={renderClickableHint}
+        />
+      ) : null}
 
       {isBodyPersonaQuizOpen ? (
         <BodyPersonaQuizDialog
@@ -765,304 +536,27 @@ export function ResultsPage({
         />
       ) : null}
 
-      {bodyPersonaState ? (
-        <BodyPersonaResultPanel
-          status={bodyPersonaState.status}
-          freeSummary={bodyPersonaState.freeSummary}
-          fullReport={normalizedBodyPersonaFullReport}
-          onUnlock={onUnlockBodyPersona ?? (() => undefined)}
-          onOpenFullReport={onOpenBodyPersonaFullReport}
-          isUnlocking={isUnlockingBodyPersona}
-          requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
-        />
-      ) : null}
-
       <BodyPersonaFullReportDialog
         isOpen={isBodyPersonaFullReportOpen}
         report={normalizedBodyPersonaFullReport}
         onClose={onCloseBodyPersonaFullReport ?? (() => undefined)}
       />
 
+      <ResultsNextStepsPanel nextStepGroups={nextStepGroups} />
+
       {topProducts.length > 0 ? (
-        <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.025] p-4 sm:p-5">
-          <div className="mb-4 flex flex-col gap-1.5 border-b border-white/8 pb-4">
-            <h3 className="text-sm font-medium text-white">还想换个角度？</h3>
-            <p className="text-xs leading-5 text-slate-400">
-              备选、对比和微调都放在这里；主推荐已经可以先作为默认结论。
-            </p>
-          </div>
-
-          <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {topProducts.slice(1, 3).map((product, index) => (
-              getProductHref(product) ? (
-                <a
-                  key={product.id}
-                  href={getProductHref(product)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="glass-panel group flex flex-col rounded-2xl p-3 transition-transform duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:p-4"
-                >
-                  <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-black/20">
-                    {renderProductImage(product, "h-5 w-5 text-white/30")}
-                  </div>
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className="inline-block px-1.5 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">
-                      {index === 0 ? "最具性价比" : "探索备选"}
-                    </span>
-                    <span className="text-[10px] text-cyan-500/70">
-                      {product.brand}
-                    </span>
-                  </div>
-                  <h3 className="mb-1 break-words text-sm font-medium leading-relaxed text-white">
-                    {getProductDisplayName(product)}
-                  </h3>
-                  {product.tags && product.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {product.tags.slice(0, 2).map((tag, tagIndex) => (
-                        <span
-                          key={tagIndex}
-                          className="rounded border border-indigo-500/20 bg-indigo-500/10 px-1 py-0.5 text-[8px] text-indigo-300/80 break-words"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {product.reason && (
-                    <p className="mb-2 text-[11px] italic leading-relaxed text-slate-400">
-                      “{product.reason}”
-                    </p>
-                  )}
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-                    <>
-                      <span className="text-sm text-cyan-400">
-                        ¥{product.price}
-                      </span>
-                      {renderClickableHint("点击查看")}
-                    </>
-                  </div>
-                </a>
-              ) : (
-                <div
-                  key={product.id}
-                  className="glass-panel flex flex-col rounded-2xl p-3 sm:p-4"
-                >
-                  <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-black/20">
-                    {renderProductImage(product, "h-5 w-5 text-white/30")}
-                  </div>
-                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                    <span className="inline-block px-1.5 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">
-                      {index === 0 ? "最具性价比" : "探索备选"}
-                    </span>
-                    <span className="text-[10px] text-cyan-500/70">
-                      {product.brand}
-                    </span>
-                  </div>
-                  <h3 className="mb-1 break-words text-sm font-medium leading-relaxed text-white">
-                    {getProductDisplayName(product)}
-                  </h3>
-                  {product.tags && product.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {product.tags.slice(0, 2).map((tag, tagIndex) => (
-                        <span
-                          key={tagIndex}
-                          className="rounded border border-indigo-500/20 bg-indigo-500/10 px-1 py-0.5 text-[8px] text-indigo-300/80 break-words"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {product.reason && (
-                    <p className="mb-2 text-[11px] italic leading-relaxed text-slate-400">
-                      “{product.reason}”
-                    </p>
-                  )}
-                  <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-                    <span className="text-sm text-cyan-400">
-                      ¥{product.price}
-                    </span>
-                  </div>
-                </div>
-              )
-            ))}
-          </div>
-
-          {backupProducts.length > 0 && (
-            <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
-              <button
-                type="button"
-                onClick={() => setIsBackupPanelOpen((isOpen) => !isOpen)}
-                aria-expanded={isBackupPanelOpen}
-                className="flex w-full items-center justify-between gap-3 text-left"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-sm font-medium text-white">
-                      换个侧重点看看
-                    </h3>
-                    <span className="rounded-full border border-cyan-400/18 bg-cyan-400/8 px-2.5 py-1 text-[11px] text-cyan-100/80">
-                      {backupDirectionTeaser.countText}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs leading-5 text-slate-400">
-                    {backupDirectionTeaser.directionText}，不影响当前主推荐排序。
-                  </p>
-                </div>
-                <ChevronDown
-                  className={[
-                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-                    isBackupPanelOpen ? "rotate-180" : "",
-                  ].join(" ")}
-                />
-              </button>
-
-              <div
-                className={[
-                  "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-                  isBackupPanelOpen
-                    ? "grid-rows-[1fr] opacity-100"
-                    : "grid-rows-[0fr] opacity-0",
-                ].join(" ")}
-              >
-                <div className="overflow-hidden">
-                  <div className="space-y-4 border-t border-white/8 pt-4">
-                    <p className="max-w-3xl text-sm leading-6 text-slate-400">
-                      这些备选不会改动主推荐排序，只是在你想更静音、更省预算或更偏特定体验时，提供几个可快速切换的方向。
-                    </p>
-
-                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                      {backupProducts.map((product) => (
-                        getProductHref(product) ? (
-                          <a
-                            key={product.id}
-                            href={getProductHref(product)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="glass-panel group block overflow-hidden rounded-2xl transition-transform duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                          >
-                            <div className="flex h-full flex-col md:flex-row">
-                              <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-black/20 md:w-44">
-                                {renderProductImage(product, "h-6 w-6 text-white/40")}
-                              </div>
-
-                              <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                  <div className="min-w-0 space-y-2">
-                                    <span className="inline-flex max-w-full items-center rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-200">
-                                      <span className="break-words">
-                                        {product.backupLabel}
-                                      </span>
-                                    </span>
-                                    <h4 className="break-words text-base font-medium leading-6 text-white">
-                                      {getProductDisplayName(product)}
-                                    </h4>
-                                  </div>
-
-                                  <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
-                                    <span className="text-base font-semibold text-cyan-400">
-                                      ¥{product.price}
-                                    </span>
-                                    <span className="text-[11px] text-slate-500">
-                                      {product.brand}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <p className="text-sm leading-6 text-slate-300">
-                                  {product.backupReason}
-                                </p>
-
-                                <div className="flex flex-wrap gap-2">
-                                  {getMetricChips(product).map((chip) => {
-                                    const Icon = chip.icon;
-                                    return (
-                                      <button
-                                        key={chip.id}
-                                        type="button"
-                                        onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
-                                        className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
-                                        title="了解这个参数"
-                                      >
-                                        <Icon className="mt-0.5 h-3 w-3 shrink-0" />
-                                        <span className="break-words">{chip.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-
-                                <div className="pt-1">{renderClickableHint()}</div>
-                              </div>
-                            </div>
-                          </a>
-                        ) : (
-                          <article
-                            key={product.id}
-                            className="glass-panel overflow-hidden rounded-2xl"
-                          >
-                            <div className="flex h-full flex-col md:flex-row">
-                              <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-black/20 md:w-44">
-                                {renderProductImage(product, "h-6 w-6 text-white/40")}
-                              </div>
-
-                              <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
-                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                  <div className="min-w-0 space-y-2">
-                                    <span className="inline-flex max-w-full items-center rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-[11px] text-cyan-200">
-                                      <span className="break-words">
-                                        {product.backupLabel}
-                                      </span>
-                                    </span>
-                                    <h4 className="break-words text-base font-medium leading-6 text-white">
-                                      {getProductDisplayName(product)}
-                                    </h4>
-                                  </div>
-
-                                  <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
-                                    <span className="text-base font-semibold text-cyan-400">
-                                      ¥{product.price}
-                                    </span>
-                                    <span className="text-[11px] text-slate-500">
-                                      {product.brand}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <p className="text-sm leading-6 text-slate-300">
-                                  {product.backupReason}
-                                </p>
-
-                                <div className="flex flex-wrap gap-2">
-                                  {getMetricChips(product).map((chip) => {
-                                    const Icon = chip.icon;
-                                    return (
-                                      <button
-                                        key={chip.id}
-                                        type="button"
-                                        onClick={() => handleOpenKnowledgeTopic(chip.topicSlug, chip.sectionId)}
-                                        className="flex max-w-full cursor-pointer items-start gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-slate-300 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]"
-                                        title="了解这个参数"
-                                      >
-                                        <Icon className="mt-0.5 h-3 w-3 shrink-0" />
-                                        <span className="break-words">{chip.label}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          </article>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-          </div>
-        </section>
+        <ResultsAlternativeProductsSection
+          topProducts={topProducts}
+          canBrowseSimilarLibraryProducts={canBrowseSimilarLibraryProducts}
+          onBrowseLibrary={onBrowseLibrary}
+          backupProducts={backupProducts}
+          isBackupPanelOpen={isBackupPanelOpen}
+          onToggleBackupPanel={() => setIsBackupPanelOpen((isOpen) => !isOpen)}
+          onOpenKnowledgeTopic={handleOpenKnowledgeTopic}
+          renderProductImage={renderProductImage}
+          renderClickableHint={renderClickableHint}
+          getMetricChips={getMetricChips}
+        />
       ) : (
         <div className="glass-panel rounded-3xl p-8 text-center">
           <p className="text-slate-300">未找到完全匹配的装备，请尝试放宽条件。</p>
@@ -1286,124 +780,52 @@ export function ResultsPage({
       )}
 
       {canShowRecalibrationModule && (
-        <motion.section
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-[1.75rem] border border-cyan-300/18 bg-cyan-400/[0.055] p-4 shadow-[0_18px_70px_rgba(8,145,178,0.12)] sm:p-5"
-        >
-          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/35 to-transparent" />
-          <div className="relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
-              aria-expanded={isRecalibrationPanelOpen}
-              className="flex w-full items-center justify-between gap-3 text-left"
-            >
-              <div className="min-w-0">
-                <h3 className="text-sm font-medium text-white">
-                  对当前结果不满意？可以直接换一组
-                </h3>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  这会被记录成一次轻量反馈，帮助后续校准“哪些结果不够贴合”。
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full border border-cyan-300/28 bg-cyan-300/14 px-2.5 py-1 text-[11px] text-cyan-50">
-                  {recalibrationButtonLabel}
-                </span>
-                <ChevronDown
-                  className={[
-                    "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-                    isRecalibrationPanelOpen ? "rotate-180" : "",
-                  ].join(" ")}
-                />
-              </div>
-            </button>
-
-            {isRecalibrationPanelOpen ? (
-              <div className="space-y-4 border-t border-white/8 pt-4">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left">
-                  <p className="text-sm text-slate-200">
-                    重新生成时会保留当前问卷和候选范围，只重新整理推荐顺序、说明理由和选购建议。
-                  </p>
-                  <p className="mt-2 text-[11px] leading-5 text-slate-500">
-                    如果你觉得当前结果不够贴合，这里更适合先试一次重新生成，而不是重新答题；这次点击也会帮助我们识别当前结果可能不够满意。
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <button
-                    type="button"
-                    onClick={onRecalibrateResults}
-                    disabled={isRecalibratingResults}
-                    className={[
-                      "inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all sm:w-auto sm:self-start",
-                      isRecalibratingResults
-                        ? "cursor-wait border border-cyan-300/20 bg-cyan-300/10 text-cyan-100/80"
-                        : "border border-cyan-300/35 bg-cyan-300/18 text-cyan-50 hover:border-cyan-200/45 hover:bg-cyan-300/24",
-                    ].join(" ")}
-                  >
-                    {isRecalibratingResults ? (
-                      <>
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        <span>正在重新生成推荐，请稍候</span>
-                      </>
-                    ) : (
-                      <span>{recalibrationButtonLabel}</span>
-                    )}
-                  </button>
-
-                  {resultRecalibrationError && (
-                    <div className="flex items-start gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100/90">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-300" />
-                      <div>
-                        <p>重新生成失败，当前结果已保留。</p>
-                        <p className="mt-1 text-rose-100/75">{resultRecalibrationError}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </motion.section>
+        <ResultsRecalibrationPanel
+          isOpen={isRecalibrationPanelOpen}
+          onToggle={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
+          selectedReason={selectedRerollReason}
+          onSelectReason={setSelectedRerollReason}
+          buttonLabel={recalibrationButtonLabel}
+          isRecalibrating={isRecalibratingResults}
+          errorMessage={resultRecalibrationError}
+          onRecalibrate={onRecalibrateResults}
+        />
       )}
 
-      {nextStepGroups.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mx-auto max-w-3xl rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 sm:p-5"
-        >
-          <div className="flex items-center gap-2 mb-2 text-amber-400">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium tracking-wide">下一步建议</span>
-          </div>
-          <div className="space-y-4">
-            {nextStepGroups.map((group) => (
-              <div
-                key={group.id}
-                className="rounded-2xl border border-white/8 bg-black/10 p-3"
-              >
-                <h3 className="mb-2 text-sm font-medium text-amber-200">
-                  {group.title}
-                </h3>
-                <ul className="space-y-2">
-                  {group.items.map((tip, index) => (
-                    <li
-                      key={`${group.id}-${index}`}
-                      className="flex items-start gap-2 text-sm leading-6 text-amber-100/85"
-                    >
-                      <span className="mt-1 shrink-0 text-amber-300">•</span>
-                      <span className="break-words">{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+      {topProducts[0] && (
+        <ResultsParameterEducationSection
+          isGuideOpen={isParameterGuideOpen}
+          onToggleGuide={() => setIsParameterGuideOpen((isOpen) => !isOpen)}
+          onOpenTopic={handleOpenKnowledgeTopic}
+          previewItems={sortedParameterPreviewItems}
+          metricChips={getMetricChips(topProducts[0])}
+        />
       )}
+
+      <BodyPersonaUnlockCard
+        onStart={onStartBodyPersona ?? (() => undefined)}
+        isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
+        freeSummary={
+          bodyPersonaState?.freeSummary
+            ? {
+                title: bodyPersonaState.freeSummary.title,
+                blurb: bodyPersonaState.freeSummary.blurb,
+              }
+            : null
+        }
+      />
+
+      {bodyPersonaState ? (
+        <BodyPersonaResultPanel
+          status={bodyPersonaState.status}
+          freeSummary={bodyPersonaState.freeSummary}
+          fullReport={normalizedBodyPersonaFullReport}
+          onUnlock={onUnlockBodyPersona ?? (() => undefined)}
+          onOpenFullReport={onOpenBodyPersonaFullReport}
+          isUnlocking={isUnlockingBodyPersona}
+          requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
+        />
+      ) : null}
 
       {topProducts[0] && (
         <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">

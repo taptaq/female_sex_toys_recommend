@@ -23,6 +23,8 @@ test("BodyPersonaResultPanel shows free summary before unlock", () => {
   assert.match(html, /星幕型·隐秘安全感者/);
   assert.match(html, /优先低存在感路线/);
   assert.match(html, /完整星系人格档案已锁定/);
+  assert.match(html, /对这次结果的补充提示/);
+  assert.match(html, /不会替代这次主推荐/);
   assert.match(html, /登录并解锁完整档案|0.5 元解锁完整档案/);
 });
 
@@ -90,6 +92,7 @@ test("BodyPersonaResultPanel shows unlocked report details", () => {
 
   assert.match(html, /完整星系人格档案已解锁/);
   assert.match(html, /长期更适合低存在感路线/);
+  assert.match(html, /当前主推荐之外的长期补充/);
   assert.match(html, /再次查看完整档案/);
   assert.doesNotMatch(html, /登录并解锁完整档案/);
 });

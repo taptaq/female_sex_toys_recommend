@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { AnimatePresence } from "motion/react";
 import type { Session } from "@supabase/supabase-js";
 import { getActiveQuestions, AnswerState, Product, Question } from "./data/mock.ts";
 import {
@@ -22,7 +21,6 @@ import {
 import {
   buildBackupCandidates,
   buildLocalBackupReason,
-  buildLocalPrimaryReason,
   buildLocalShoppingGuidance,
   type BackupCandidate,
 } from "./lib/recommendation-results";
@@ -71,10 +69,17 @@ import {
   sanitizeLibraryTypeSelection,
   type LibraryAudienceGender,
 } from "./lib/library-product-types.ts";
+import { type StructuredRankedProduct } from "./lib/recommendation-local-ranking.ts";
 import {
-  buildLocalRecommendationRanking,
-  type StructuredRankedProduct,
-} from "./lib/recommendation-local-ranking.ts";
+  BACKUP_SELECTION_COUNT,
+  FINAL_SELECTION_COUNT,
+  MAX_SHOPPING_GUIDANCE_COUNT,
+  buildLocalResultComputation,
+  finalizeBackupProducts,
+  finalizeRankedProducts,
+  serializeRecommendationTopProducts,
+  type LocalResultComputation,
+} from "./lib/app-result-flow.ts";
 import {
   getCurrentSupabaseSession,
   isSupabaseAuthConfigured,
@@ -93,6 +98,7 @@ import {
 } from "./lib/product-disguise-signals";
 import { buildRecommendationPreferenceSignals } from "./lib/recommendation-preference-signals";
 import { submitRecommendationFeedbackEvent } from "./lib/recommendation-feedback";
+import type { RecommendationRerollReason } from "./lib/recommendation-reroll";
 import {
   appendQuizAnswerPathEntry,
   createRecommendationSessionId,
@@ -100,24 +106,30 @@ import {
   trimQuizAnswerPathFromStep,
   type QuizAnswerPathEntry,
 } from "./lib/recommendation-session";
-import { HomePage } from "./pages/HomePage";
-import { QuizPage } from "./pages/QuizPage";
 import { MatchingPage } from "./pages/MatchingPage";
 import {
-  ResultsPage,
   type ResultEditableCondition,
 } from "./pages/ResultsPage";
 import {
   DEFAULT_LIBRARY_FILTER_MAX_DB,
   LibraryPage,
 } from "./pages/LibraryPage";
-import { KnowledgeNebulaPage } from "./pages/KnowledgeNebulaPage";
-import { ProfilesPage } from "./pages/ProfilesPage";
 import {
   buildKnowledgeNebulaPath,
   parseKnowledgeNebulaPath,
   resolveKnowledgeBackNavigation,
 } from "./lib/knowledge-nebula-route";
+import {
+  buildShellRouteState,
+  isInvalidKnowledgeDetailPath,
+  pushAppRoute,
+  pushKnowledgeRoute,
+  pushProfilesRoute,
+  readAppLocationSnapshot,
+  type AppHistoryState,
+  type ShellRouteState,
+} from "./lib/app-route-state";
+import { AppRouteRenderer } from "./components/AppRouteRenderer";
 import {
   applyAppTheme,
   preloadAppThemeHomeCosmos,
@@ -137,16 +149,6 @@ type BackupProduct = BackupCandidate;
 type AiResultEnhancement = {
   backupProducts?: AiReasonResult[];
   shoppingGuidance?: string[];
-};
-
-type AppHistoryState = {
-  knowledgeOriginRoute?: AppRoute;
-  profilesOriginRoute?: AppRoute;
-};
-
-type ShellRouteState = {
-  route: AppRoute;
-  knowledgeTopicSlug?: KnowledgeNebulaTopicSlug;
 };
 
 const ROUTE_SHELL_EXIT_STABILIZE_MS = 480;
@@ -195,68 +197,12 @@ function normalizeLibraryAudienceGender(value: string): LibraryAudienceGender {
   return "all";
 }
 
-const AI_RERANK_POOL_SIZE = 10;
-const FINAL_SELECTION_COUNT = 3;
-const BACKUP_SELECTION_COUNT = 3;
-const MAX_SHOPPING_GUIDANCE_COUNT = 5;
-
-function finalizeRankedProducts(
-  products: StructuredRankedProduct[],
-  reasonMap: Map<string, string>,
-  answers: AnswerState,
-): RankedProduct[] {
-  return products.map(
-    ({ matchSummary, hardMisses, budgetGap, noiseGap, ...product }) => ({
-      ...product,
-      matchSummary,
-      hardMisses,
-      budgetGap,
-      noiseGap,
-      reason:
-        reasonMap.get(product.id) ||
-        buildLocalPrimaryReason(
-          { ...product, matchSummary, hardMisses, budgetGap, noiseGap },
-          answers,
-        ),
-    }),
-  );
-}
-
-function finalizeBackupProducts(
-  products: BackupCandidate[],
-  reasonMap: Map<string, string>,
-  answers?: AnswerState,
-): BackupProduct[] {
-  return products.map((product) => ({
-    ...product,
-    backupReason:
-      reasonMap.get(product.id) ||
-      buildLocalBackupReason(product, product.backupLabel, answers),
-  }));
-}
-
-type LocalResultComputation = {
-  filteredCount: number;
-  recommendationTips: string[];
-  rankedCandidates: StructuredRankedProduct[];
-  rerankPool: StructuredRankedProduct[];
-  fallbackTopProducts: StructuredRankedProduct[];
-};
-
 export default function App() {
   const initialPathname = window.location.pathname;
-  const initialKnowledgeRouteState =
-    detectRoute(initialPathname) === "/knowledge"
-      ? parseKnowledgeNebulaPath(initialPathname)
-      : undefined;
-  const initialKnowledgeOriginRoute =
-    detectRoute(initialPathname) === "/knowledge"
-      ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
-      : undefined;
-  const initialProfilesOriginRoute =
-    detectRoute(initialPathname) === "/profiles"
-      ? (window.history.state as AppHistoryState | null)?.profilesOriginRoute
-      : undefined;
+  const initialLocationSnapshot = readAppLocationSnapshot(
+    initialPathname,
+    window.history.state as AppHistoryState | null,
+  );
   const persistedState = readSessionJsonStorage<PersistedAppState>(
     APP_STATE_STORAGE_KEY,
     {},
@@ -265,26 +211,28 @@ export default function App() {
   const cachedProducts = readProductsCache();
 
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
-    detectRoute(initialPathname),
+    initialLocationSnapshot.route,
   );
   const [selectedKnowledgeTopicSlug, setSelectedKnowledgeTopicSlug] = useState<
     KnowledgeNebulaTopicSlug | undefined
-  >(initialKnowledgeRouteState?.topicSlug);
+  >(initialLocationSnapshot.knowledgeTopicSlug);
   const [selectedKnowledgeSectionId, setSelectedKnowledgeSectionId] = useState<
     string | undefined
-  >(initialKnowledgeRouteState?.sectionId);
+  >(initialLocationSnapshot.knowledgeSectionId);
   const [knowledgeOriginRoute, setKnowledgeOriginRoute] = useState<
     AppRoute | undefined
-  >(initialKnowledgeOriginRoute);
-  const [shellRouteState, setShellRouteState] = useState<ShellRouteState>(() => ({
-    route: detectRoute(initialPathname),
-    knowledgeTopicSlug: initialKnowledgeRouteState?.topicSlug,
-  }));
+  >(initialLocationSnapshot.knowledgeOriginRoute);
+  const [shellRouteState, setShellRouteState] = useState<ShellRouteState>(() =>
+    buildShellRouteState(
+      initialLocationSnapshot.route,
+      initialLocationSnapshot.knowledgeTopicSlug,
+    ),
+  );
   const shellRouteStateRef = useRef(shellRouteState);
   const shellRouteStabilizeTimeoutRef = useRef<number | null>(null);
   const [profilesOriginRoute, setProfilesOriginRoute] = useState<
     AppRoute | undefined
-  >(initialProfilesOriginRoute);
+  >(initialLocationSnapshot.profilesOriginRoute);
   const [step, setStep] = useState<number>(persistedState.step ?? -1);
   const [answers, setAnswers] = useState<AnswerState>(
     persistedState.answers ?? { tags: [] },
@@ -443,11 +391,10 @@ export default function App() {
       shellRouteStabilizeTimeoutRef.current = null;
     }
 
-    const nextShellRouteState: ShellRouteState = {
-      route: currentRoute,
-      knowledgeTopicSlug:
-        currentRoute === "/knowledge" ? selectedKnowledgeTopicSlug : undefined,
-    };
+    const nextShellRouteState = buildShellRouteState(
+      currentRoute,
+      selectedKnowledgeTopicSlug,
+    );
     const isReturningFromKnowledgeToHome =
       shellRouteStateRef.current.route === "/knowledge" && currentRoute === "/";
 
@@ -469,24 +416,8 @@ export default function App() {
     };
   }, [currentRoute, selectedKnowledgeTopicSlug]);
 
-  const isInvalidKnowledgeDetailPath = (pathname: string) => {
-    if (detectRoute(pathname) !== "/knowledge") {
-      return false;
-    }
-
-    const normalizedPathname =
-      pathname === "/" ? pathname : pathname.replace(/\/+$/, "");
-    if (normalizedPathname === "/knowledge") {
-      return false;
-    }
-
-    return parseKnowledgeNebulaPath(pathname).topicSlug === undefined;
-  };
-
   const navigateTo = (route: AppRoute, replace = false) => {
-    if (window.location.pathname !== route) {
-      window.history[replace ? "replaceState" : "pushState"]({}, "", route);
-    }
+    pushAppRoute(route, replace);
     setCurrentRoute(route);
     if (route !== "/knowledge") {
       setSelectedKnowledgeTopicSlug(undefined);
@@ -504,44 +435,28 @@ export default function App() {
     sectionId?: string,
     replace = false,
   ) => {
-    const knowledgePath = buildKnowledgeNebulaPath(topicSlug, sectionId);
-    const nextKnowledgeOriginRoute =
-      currentRoute === "/knowledge" ? knowledgeOriginRoute : currentRoute;
-    if (window.location.pathname !== knowledgePath) {
-      window.history[replace ? "replaceState" : "pushState"](
-        { knowledgeOriginRoute: nextKnowledgeOriginRoute } satisfies AppHistoryState,
-        "",
-        knowledgePath,
-      );
-    } else if (replace) {
-      window.history.replaceState(
-        { knowledgeOriginRoute: nextKnowledgeOriginRoute } satisfies AppHistoryState,
-        "",
-        knowledgePath,
-      );
-    }
+    const nextKnowledgeOriginRoute = pushKnowledgeRoute({
+      topicSlug,
+      sectionId,
+      replace,
+      currentRoute,
+      knowledgeOriginRoute,
+    });
     setCurrentRoute("/knowledge");
     setSelectedKnowledgeTopicSlug(topicSlug);
     setSelectedKnowledgeSectionId(sectionId);
     setKnowledgeOriginRoute(nextKnowledgeOriginRoute);
-    window.scrollTo({ top: 0, behavior: "auto" });
   };
 
   const navigateToProfiles = () => {
-    const nextProfilesOriginRoute =
-      currentRoute === "/profiles" ? profilesOriginRoute : currentRoute;
-    if (window.location.pathname !== "/profiles") {
-      window.history.pushState(
-        { profilesOriginRoute: nextProfilesOriginRoute } satisfies AppHistoryState,
-        "",
-        "/profiles",
-      );
-    }
+    const nextProfilesOriginRoute = pushProfilesRoute({
+      currentRoute,
+      profilesOriginRoute,
+    });
     setCurrentRoute("/profiles");
     setSelectedKnowledgeTopicSlug(undefined);
     setKnowledgeOriginRoute(undefined);
     setProfilesOriginRoute(nextProfilesOriginRoute);
-    window.scrollTo({ top: 0, behavior: "auto" });
   };
 
   const getReturnRoute = (): AppRoute => {
@@ -550,6 +465,26 @@ export default function App() {
     }
     if (step >= 0) return "/quiz";
     return "/";
+  };
+
+  const handleBrowseLibraryFromResults = (product?: RankedProduct) => {
+    const nextFilterGender = normalizeLibraryAudienceGender(
+      product?.gender ?? answers.gender ?? "all",
+    );
+    const nextFilterType = sanitizeLibraryTypeSelection(
+      String(product?.typeCode ?? "all"),
+      nextFilterGender,
+    );
+
+    setFilterGender(nextFilterGender);
+    setFilterType(nextFilterType);
+    setFilterSubtype("all");
+    setFilterBrand("all");
+    setFilterOrigin("all");
+    setFilterMaterial("all");
+    setFilterPriceRange("all");
+    setFilterMaxDb(DEFAULT_LIBRARY_FILTER_MAX_DB);
+    navigateTo("/library");
   };
 
   const clearResultTuningTracking = () => {
@@ -721,35 +656,24 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const nextRoute = detectRoute(window.location.pathname);
-      if (nextRoute === "/knowledge" && isInvalidKnowledgeDetailPath(window.location.pathname)) {
+      const nextPathname = window.location.pathname;
+      const nextRoute = detectRoute(nextPathname);
+      if (nextRoute === "/knowledge" && isInvalidKnowledgeDetailPath(nextPathname)) {
         window.history.replaceState(
           window.history.state,
           "",
           buildKnowledgeNebulaPath(),
         );
       }
-      setCurrentRoute(nextRoute);
-      setSelectedKnowledgeTopicSlug(
-        nextRoute === "/knowledge"
-          ? parseKnowledgeNebulaPath(window.location.pathname).topicSlug
-          : undefined,
+      const snapshot = readAppLocationSnapshot(
+        window.location.pathname,
+        window.history.state as AppHistoryState | null,
       );
-      setSelectedKnowledgeSectionId(
-        nextRoute === "/knowledge"
-          ? parseKnowledgeNebulaPath(window.location.pathname).sectionId
-          : undefined,
-      );
-      setKnowledgeOriginRoute(
-        nextRoute === "/knowledge"
-          ? (window.history.state as AppHistoryState | null)?.knowledgeOriginRoute
-          : undefined,
-      );
-      setProfilesOriginRoute(
-        nextRoute === "/profiles"
-          ? (window.history.state as AppHistoryState | null)?.profilesOriginRoute
-          : undefined,
-      );
+      setCurrentRoute(snapshot.route);
+      setSelectedKnowledgeTopicSlug(snapshot.knowledgeTopicSlug);
+      setSelectedKnowledgeSectionId(snapshot.knowledgeSectionId);
+      setKnowledgeOriginRoute(snapshot.knowledgeOriginRoute);
+      setProfilesOriginRoute(snapshot.profilesOriginRoute);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -1042,92 +966,6 @@ export default function App() {
     setCurrentResultModelName(nextState.currentResultModelName);
   }
 
-  function buildLocalResultComputation(
-    currentAnswers: AnswerState,
-    productsData: Product[],
-  ): LocalResultComputation {
-    const localRanking = buildLocalRecommendationRanking(
-      currentAnswers,
-      productsData,
-      {
-        rerankPoolSize: AI_RERANK_POOL_SIZE,
-        finalSelectionCount: FINAL_SELECTION_COUNT,
-      },
-    );
-    const filtered = localRanking.filteredProducts;
-    const relaxedProducts = localRanking.relaxedProducts;
-
-    const recommendationTips: string[] = [];
-
-    if (filtered.length < 3) {
-      if (currentAnswers.budget) {
-        const potentialByBudget = relaxedProducts.filter((p) => {
-          const matchOther =
-            (!currentAnswers.maxDb ||
-              p.maxDb == null ||
-              p.maxDb <= currentAnswers.maxDb) &&
-            (currentAnswers.appearance !== "high_disguise" ||
-              p.appearance === "high_disguise");
-          return (
-            matchOther &&
-            (p.price < currentAnswers.budget[0] ||
-              p.price > currentAnswers.budget[1])
-          );
-        });
-        if (potentialByBudget.length > 0) {
-          recommendationTips.push(
-            `适当调高预算（如增至 ¥${Math.round(currentAnswers.budget[1] * 1.5)} 左右）可大幅增加匹配成功率。`,
-          );
-        }
-      }
-
-      if (currentAnswers.appearance === "high_disguise") {
-        const potentialByAppearance = relaxedProducts.filter((p) => {
-          const matchOther =
-            (!currentAnswers.maxDb ||
-              p.maxDb == null ||
-              p.maxDb <= currentAnswers.maxDb) &&
-            (!currentAnswers.budget ||
-              (p.price >= currentAnswers.budget[0] &&
-                p.price <= currentAnswers.budget[1]));
-          return matchOther && p.appearance !== "high_disguise";
-        });
-        if (potentialByAppearance.length > 0) {
-          recommendationTips.push(
-            "若能接受常规或科技感造型（不拘泥于高伪装），可选性能范围将显著扩大。",
-          );
-        }
-      }
-
-      if (currentAnswers.maxDb && currentAnswers.maxDb < 60) {
-        const potentialByNoise = relaxedProducts.filter((p) => {
-          const matchOther =
-            (currentAnswers.appearance !== "high_disguise" ||
-              p.appearance === "high_disguise") &&
-            (!currentAnswers.budget ||
-              (p.price >= currentAnswers.budget[0] &&
-                p.price <= currentAnswers.budget[1]));
-          return (
-            matchOther && p.maxDb != null && p.maxDb > currentAnswers.maxDb
-          );
-        });
-        if (potentialByNoise.length > 0) {
-          recommendationTips.push(
-            "对噪音阈值的微调（如调至 55dB 左右）可能会带给您更细腻的震动体验。",
-          );
-        }
-      }
-    }
-
-    return {
-      filteredCount: filtered.length,
-      recommendationTips,
-      rankedCandidates: localRanking.rankedCandidates,
-      rerankPool: localRanking.rerankPool,
-      fallbackTopProducts: localRanking.fallbackTopProducts,
-    };
-  }
-
   async function postAppAiProxy<T>(
     path: string,
     prompt: string,
@@ -1324,7 +1162,9 @@ ${JSON.stringify(context.backupCandidates)}
     return response;
   }
 
-  async function recalibrateCurrentResults() {
+  async function recalibrateCurrentResults(
+    rerollReason: RecommendationRerollReason,
+  ) {
     resultEnhancementRunRef.current += 1;
     setIsEnhancingResults(false);
     const localResult = buildLocalResultComputation(answers, allProducts);
@@ -1344,6 +1184,7 @@ ${JSON.stringify(context.backupCandidates)}
       answerPath,
       topProducts: serializeRecommendationTopProducts(topProducts),
       rerollAttempt: nextAttemptCount,
+      rerollReason,
       resultProvider: currentResultProvider,
       resultModelName: currentResultModelName,
       pageRoute: window.location.pathname || "/results",
@@ -1363,6 +1204,7 @@ ${JSON.stringify(context.backupCandidates)}
           recommendationTips: localResult.recommendationTips,
           recalibrationContext: {
             attemptCount: nextAttemptCount,
+            rerollReason,
             currentResultProvider,
             currentResultModelName,
             previousTopProducts: topProducts.map((product) => ({
@@ -1394,18 +1236,6 @@ ${JSON.stringify(context.backupCandidates)}
     } finally {
       setIsRecalibratingResults(false);
     }
-  }
-
-  function serializeRecommendationTopProducts(products: RankedProduct[]) {
-    return products.slice(0, FINAL_SELECTION_COUNT).map((product) => ({
-      id: product.id,
-      name: getProductDisplayName(product),
-      gender: product.gender,
-      typeCode: product.typeCode ?? null,
-      subtypeCode: product.subtypeCode ?? null,
-      score: product.score,
-      reason: String(product.reason || "").trim(),
-    }));
   }
 
   function saveCompletedRecommendationSession({
@@ -2012,6 +1842,24 @@ ${JSON.stringify(context.backupCandidates)}
     navigateTo("/");
   };
 
+  const handleBackFromProfiles = () => {
+    navigateTo(resolveProfilesReturnRoute(profilesOriginRoute));
+  };
+
+  const handleBackFromKnowledge = () => {
+    const backNavigation = resolveKnowledgeBackNavigation(
+      knowledgeOriginRoute,
+      selectedKnowledgeTopicSlug,
+    );
+
+    if (backNavigation.kind === "knowledge-hub") {
+      navigateToKnowledgeNebula(undefined, undefined, true);
+      return;
+    }
+
+    navigateTo(backNavigation.route);
+  };
+
   if (isLoading && currentRoute !== "/library") {
     return (
       <div className="theme-synced-page relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 sm:p-6 md:p-8">
@@ -2174,132 +2022,76 @@ ${JSON.stringify(context.backupCandidates)}
       ) : null}
 
       <div className={`relative z-10 w-full ${shellContainerClassName}`}>
-        <AnimatePresence mode="wait">
-          {/* Welcome Screen */}
-          {currentRoute === "/" && (
-            <HomePage
-              pageVariants={pageVariants}
-              onStart={startFreshQuizSession}
-              onBrowseLibrary={() => {
-                navigateTo("/library");
-              }}
-              onOpenKnowledgeNebula={() => {
-                navigateToKnowledgeNebula();
-              }}
-              onOpenProfiles={navigateToProfiles}
-              themeId={themeId}
-              onThemeChange={handleThemeChange}
-              authPanel={authPanel}
-            />
-          )}
-
-          {/* Question Cards */}
-          {currentRoute === "/quiz" &&
-            step >= 0 &&
-            step < activeQuestions.length && (
-            <QuizPage
-              pageVariants={pageVariants}
-              step={step}
-              activeQuestions={activeQuestions}
-              onSelectOption={handleOptionSelect}
-              onBackQuestion={handleBackQuestion}
-              onBackHome={handleBackHomeFromQuiz}
-              onJumpToQuestion={handleJumpToQuizQuestion}
-            />
-          )}
-
-          {/* Loading State */}
-          {currentRoute === "/quiz" && step === activeQuestions.length && (
-            <MatchingPage
-              pageVariants={pageVariants}
-              isAiMatching={isAiMatching}
-              tags={answers.tags}
-            />
-          )}
-
-          {/* Results Screen */}
-          {currentRoute === "/results" && (
-            <ResultsPage
-              pageVariants={pageVariants}
-              answers={answers}
-              appliedResultTuningModes={appliedResultTuningModes}
-              topProducts={topProducts}
-              backupProducts={backupProducts}
-              shoppingGuidance={shoppingGuidance}
-              recommendationTips={recommendationTips}
-              bodyPersonaState={bodyPersonaState}
-              isStartingBodyPersona={false}
-              isBodyPersonaQuizOpen={isBodyPersonaQuizOpen}
-              bodyPersonaQuestions={BODY_PERSONA_QUESTIONS}
-              bodyPersonaDraftAnswers={bodyPersonaDraftAnswers}
-              isSubmittingBodyPersonaQuiz={isSubmittingBodyPersonaQuiz}
-              isUnlockingBodyPersona={isUnlockingBodyPersona}
-              isEnhancingResults={isEnhancingResults}
-              isRecalibratingResults={isRecalibratingResults}
-              resultRecalibrationError={resultRecalibrationError}
-              onStartBodyPersona={handleStartBodyPersona}
-              onCloseBodyPersonaQuiz={handleCloseBodyPersonaQuiz}
-              onChangeBodyPersonaAnswer={handleChangeBodyPersonaAnswer}
-              onSubmitBodyPersonaQuiz={handleSubmitBodyPersonaQuiz}
-              onUnlockBodyPersona={handleUnlockBodyPersona}
-              onOpenBodyPersonaFullReport={handleOpenBodyPersonaFullReport}
-              onCloseBodyPersonaFullReport={handleCloseBodyPersonaFullReport}
-              onRecalibrateResults={recalibrateCurrentResults}
-              onTuneResults={handleTuneResults}
-              onEditQuizCondition={handleEditQuizCondition}
-              onSaveRecommendationProfile={handleSaveRecommendationProfile}
-              onOpenRecommendationProfiles={navigateToProfiles}
-              onOpenKnowledgeNebula={(path) => {
-                navigateToKnowledgeNebula(
-                  parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).topicSlug,
-                  parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).sectionId,
-                );
-              }}
-              isSavingRecommendationProfile={isSavingRecommendationProfile}
-              saveRecommendationProfileMessage={saveRecommendationProfileMessage}
-              authPanel={authPanel}
-              onBackHome={handleBackHomeFromQuiz}
-              onReset={resetQuiz}
-              isBodyPersonaUnlockLoginRequired={!supabaseSession?.user?.id}
-              isBodyPersonaFullReportOpen={isBodyPersonaFullReportOpen}
-            />
-          )}
-
-          {currentRoute === "/profiles" && (
-            <ProfilesPage
-              profiles={recommendationProfiles}
-              isLoading={isLoadingRecommendationProfiles}
-              error={recommendationProfilesError}
-              userLabel={authPanel.userLabel}
-              onBack={() => navigateTo(resolveProfilesReturnRoute(profilesOriginRoute))}
-              onReload={() => void fetchRecommendationProfiles()}
-            />
-          )}
-
-          {currentRoute === "/knowledge" && (
-            <KnowledgeNebulaPage
-              pageVariants={pageVariants}
-              topicSlug={selectedKnowledgeTopicSlug}
-              sectionId={selectedKnowledgeSectionId}
-              onBack={() => {
-                const backNavigation = resolveKnowledgeBackNavigation(
-                  knowledgeOriginRoute,
-                  selectedKnowledgeTopicSlug,
-                );
-
-                if (backNavigation.kind === "knowledge-hub") {
-                  navigateToKnowledgeNebula(undefined, undefined, true);
-                  return;
-                }
-
-                navigateTo(backNavigation.route);
-              }}
-              onSelectTopic={(topicSlug) => {
-                navigateToKnowledgeNebula(topicSlug, undefined);
-              }}
-            />
-          )}
-        </AnimatePresence>
+        <AppRouteRenderer
+          currentRoute={currentRoute}
+          pageVariants={pageVariants}
+          step={step}
+          activeQuestions={activeQuestions}
+          isAiMatching={isAiMatching}
+          answers={answers}
+          appliedResultTuningModes={appliedResultTuningModes}
+          topProducts={topProducts}
+          backupProducts={backupProducts}
+          shoppingGuidance={shoppingGuidance}
+          recommendationTips={recommendationTips}
+          bodyPersonaState={bodyPersonaState}
+          isStartingBodyPersona={false}
+          isBodyPersonaQuizOpen={isBodyPersonaQuizOpen}
+          bodyPersonaQuestions={BODY_PERSONA_QUESTIONS}
+          bodyPersonaDraftAnswers={bodyPersonaDraftAnswers}
+          isSubmittingBodyPersonaQuiz={isSubmittingBodyPersonaQuiz}
+          isUnlockingBodyPersona={isUnlockingBodyPersona}
+          isEnhancingResults={isEnhancingResults}
+          isRecalibratingResults={isRecalibratingResults}
+          resultRecalibrationError={resultRecalibrationError}
+          onStart={startFreshQuizSession}
+          onStartBodyPersona={handleStartBodyPersona}
+          onBrowseLibraryHome={() => {
+            navigateTo("/library");
+          }}
+          onBrowseLibraryResults={handleBrowseLibraryFromResults}
+          onOpenKnowledgeNebula={(path) => {
+            navigateToKnowledgeNebula(
+              parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).topicSlug,
+              parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).sectionId,
+            );
+          }}
+          onOpenProfiles={navigateToProfiles}
+          onBackProfiles={handleBackFromProfiles}
+          onSelectOption={handleOptionSelect}
+          onBackQuestion={handleBackQuestion}
+          onBackHome={handleBackHomeFromQuiz}
+          onJumpToQuestion={handleJumpToQuizQuestion}
+          onCloseBodyPersonaQuiz={handleCloseBodyPersonaQuiz}
+          onChangeBodyPersonaAnswer={handleChangeBodyPersonaAnswer}
+          onSubmitBodyPersonaQuiz={handleSubmitBodyPersonaQuiz}
+          onUnlockBodyPersona={handleUnlockBodyPersona}
+          onOpenBodyPersonaFullReport={handleOpenBodyPersonaFullReport}
+          onCloseBodyPersonaFullReport={handleCloseBodyPersonaFullReport}
+          onRecalibrateResults={recalibrateCurrentResults}
+          onTuneResults={handleTuneResults}
+          onEditQuizCondition={handleEditQuizCondition}
+          onSaveRecommendationProfile={handleSaveRecommendationProfile}
+          onOpenRecommendationProfiles={navigateToProfiles}
+          onReloadRecommendationProfiles={() => void fetchRecommendationProfiles()}
+          isSavingRecommendationProfile={isSavingRecommendationProfile}
+          saveRecommendationProfileMessage={saveRecommendationProfileMessage}
+          authPanel={authPanel}
+          isBodyPersonaUnlockLoginRequired={!supabaseSession?.user?.id}
+          isBodyPersonaFullReportOpen={isBodyPersonaFullReportOpen}
+          recommendationProfiles={recommendationProfiles}
+          isLoadingRecommendationProfiles={isLoadingRecommendationProfiles}
+          recommendationProfilesError={recommendationProfilesError}
+          selectedKnowledgeTopicSlug={selectedKnowledgeTopicSlug}
+          selectedKnowledgeSectionId={selectedKnowledgeSectionId}
+          onBackKnowledge={handleBackFromKnowledge}
+          onSelectKnowledgeTopic={(topicSlug) => {
+            navigateToKnowledgeNebula(topicSlug, undefined);
+          }}
+          themeId={themeId}
+          onThemeChange={handleThemeChange}
+          onReset={resetQuiz}
+        />
       </div>
     </div>
   );

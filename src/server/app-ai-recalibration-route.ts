@@ -1,3 +1,6 @@
+import {
+  isRecommendationRerollReason,
+} from "../lib/recommendation-reroll.js";
 import type { Request, Response } from "express";
 import type {
   ResultRecalibrationRequest,
@@ -59,6 +62,11 @@ export function createRecalibrateResultsHandler({
                 attemptCount: isFiniteNumber(body.recalibrationContext.attemptCount)
                   ? body.recalibrationContext.attemptCount
                   : 1,
+                rerollReason: isRecommendationRerollReason(
+                  body.recalibrationContext.rerollReason,
+                )
+                  ? body.recalibrationContext.rerollReason
+                  : undefined,
                 currentResultProvider:
                   typeof body.recalibrationContext.currentResultProvider === "string"
                     ? body.recalibrationContext.currentResultProvider
