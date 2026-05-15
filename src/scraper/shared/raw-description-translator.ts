@@ -11,6 +11,8 @@ type TranslationCacheEntry = {
 
 type TranslationCache = Record<string, TranslationCacheEntry>;
 
+const URL_PATTERN = /https?:\/\/[^\s]+/g;
+
 let primaryClient: OpenAI | null = null;
 let fallbackClient: OpenAI | null = null;
 
@@ -77,6 +79,37 @@ function sanitizeModelOutput(value: string): string {
     .trim();
 }
 
+export function replaceUrlsWithPlaceholders(input: string): {
+  text: string;
+  placeholders: Array<{ placeholder: string; url: string }>;
+} {
+  const source = String(input || '');
+  const urls = source.match(URL_PATTERN) ?? [];
+  if (urls.length === 0) {
+    return { text: source, placeholders: [] };
+  }
+
+  let nextText = source;
+  const placeholders = urls.map((url, index) => {
+    const placeholder = `【链接${index + 1}】`;
+    nextText = nextText.replace(url, placeholder);
+    return { placeholder, url };
+  });
+
+  return { text: nextText, placeholders };
+}
+
+export function restoreUrlPlaceholders(
+  input: string,
+  placeholders: Array<{ placeholder: string; url: string }>,
+): string {
+  let restored = String(input || '');
+  for (const entry of placeholders) {
+    restored = restored.replaceAll(entry.placeholder, entry.url);
+  }
+  return restored;
+}
+
 function chunkByLines(input: string, maxChars = 14000): string[] {
   const text = String(input || '').replace(/\r/g, '\n');
   if (text.length <= maxChars) return [text];
@@ -118,8 +151,9 @@ async function translateChunkToZh(chunk: string): Promise<string> {
 2. 仅翻译英文，已有中文保持不变。
 3. 不要总结，不要删减，不要补充解释。
 4. 所有英文短语都要翻译（包括副标题、页面标题、分类提示、卖点摘要、正文句子）。
-5. 输出中禁止出现任何英文字母（A-Z/a-z），包括分类名、标题、卖点、正文。
-6. 只输出翻译结果本身。
+5. 像【链接1】这类占位符必须原样保留，不要改写，不要解释。
+6. 输出中禁止出现任何英文字母（A-Z/a-z），但原始链接占位符除外。
+7. 只输出翻译结果本身。
 
 待处理文本：
 """
@@ -168,7 +202,8 @@ export async function translateRawDescriptionToZh(
   if (!options?.force && cache[hash]?.translated) return cache[hash].translated;
 
   const label = options?.logLabel ? ` ${options.logLabel}` : '';
-  const chunks = chunkByLines(source, 14000);
+  const { text: protectedSource, placeholders } = replaceUrlsWithPlaceholders(source);
+  const chunks = chunkByLines(protectedSource, 14000);
   const translatedChunks: string[] = [];
   for (let index = 0; index < chunks.length; index += 1) {
     console.log(`[翻译]${label} 分块 ${index + 1}/${chunks.length}`);
@@ -176,7 +211,8 @@ export async function translateRawDescriptionToZh(
     translatedChunks.push(translated);
   }
 
-  const translated = translatedChunks.join('\n').trim() || source;
+  const translated =
+    restoreUrlPlaceholders(translatedChunks.join('\n').trim() || source, placeholders);
   if (cachePath) {
     cache[hash] = {
       source,

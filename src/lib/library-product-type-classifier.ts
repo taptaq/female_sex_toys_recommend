@@ -292,6 +292,10 @@ const LUBE_STRONG_PATTERNS = [
   /玻尿酸/u,
   /\blube\b/iu,
   /\blubricant\b/iu,
+  /\bwipes?\b/iu,
+  /\btoy\s*cleaner\b/iu,
+  /\bintimate\s*cleaner\b/iu,
+  /\bcleaner\b/iu,
   /water[-\s]*based/iu,
 ];
 
@@ -834,6 +838,14 @@ function classifyUnisexTypeFromContext(
 
   if (femaleTypeCode !== "unknown" && maleTypeCode !== "unknown") {
     return "couples";
+  }
+
+  if (femaleTypeCode !== "unknown") {
+    return femaleTypeCode;
+  }
+
+  if (maleTypeCode !== "unknown") {
+    return maleTypeCode;
   }
 
   return "unknown";
