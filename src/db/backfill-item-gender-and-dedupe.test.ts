@@ -43,7 +43,7 @@ test("resolveRecommenderToyGender upgrades obvious female-target rows that were 
       makeRow({
         id: "toy-f-1",
         name: "kisstoy tina三代秒潮神器 玩具 用品女性 器入体",
-        brand: "KISTOY",
+        brand: "KISSTOY",
         gender: "male",
         physical_form: "internal",
         type_code: "suction",

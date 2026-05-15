@@ -393,3 +393,29 @@ npm run scrape:satisfyer-official
 - 图片展示允许真实远程图、`data:image/...`、`blob:` 等图片源；如果没有可用图，会退回默认渐变占位图，而不是空白黑块。
 - “重新生成推荐”现在会轮换 Top3 重排首发模型，但保留自动兜底；结果页对外仍应表现为统一的产品动作，而不是让用户手动理解 provider 细节。
 - README 前半部分偏产品介绍，适合用于对外宣传；后半部分保留开发运行信息，方便继续维护。
+
+
+type_code 映射：
+suction → 吮吸类
+external_vibe → 外部震动
+insertable → 入体探索
+dual_stimulation → 双刺激
+masturbator → 飞机杯
+prostate → 前列腺探索
+cock_ring → 环类/穿戴
+couples → 双人互动
+wearable_remote → 远控穿戴
+care_accessory → 护理与周边
+unknown → 其他
+
+subtype_code 映射：
+suction: suction_pure → 纯吮吸
+dual_stimulation: suction_dual → 吮吸双刺激，rabbit_dual → 兔耳双刺激，multi_head_dual → 双头多点
+external_vibe: bullet_vibe → 跳蛋/子弹，wand_massager → 魔杖按摩
+insertable: gspot_insertable → G点探索，insertable_vibe → 入体震动
+masturbator: manual_masturbator → 手动杯，vibrating_masturbator → 震动杯，interactive_masturbator → 互动杯
+prostate: prostate_vibe → 震动前列腺，prostate_plug → 前列腺塞
+cock_ring: classic_cock_ring → 基础环，vibrating_cock_ring → 震动环
+couples: insertable_couples → 双人入体，external_couples → 双人外用
+wearable_remote: panty_wearable → 隐形穿戴，insertable_remote → 入体远控，dual_wearable_remote → 双人远控
+care_accessory: lube_care → 润滑护理，condom → 避孕套，lingerie → 内衣服饰

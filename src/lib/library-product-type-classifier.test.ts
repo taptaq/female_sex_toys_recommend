@@ -893,6 +893,40 @@ test("isLibraryContaminantInput flags sex-machine rows from description even whe
   );
 });
 
+test("isLibraryContaminantInput flags prop-style card game rows", () => {
+  const classifierModule =
+    libraryProductTypeClassifierModule as typeof libraryProductTypeClassifierModule & {
+      isLibraryContaminantInput?: (
+        input: Parameters<typeof classifyLibraryTypeCode>[0],
+      ) => boolean;
+    };
+
+  assert.equal(typeof classifierModule.isLibraryContaminantInput, "function");
+  assert.equal(
+    classifierModule.isLibraryContaminantInput?.({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "互动调情扑克牌",
+      rawDescription: "情侣破冰互动道具，聚会热场用扑克牌玩法。",
+      tags: ["互动", "破冰", "聚会"],
+    }),
+    true,
+  );
+});
+
+test("classifyLibraryTypeCode treats cleaning wipes as care accessories", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "玩具清洁湿巾",
+      rawDescription: "独立包装清洁湿巾，房事前后清洁护理使用。",
+      tags: ["清洁湿巾", "护理"],
+    }),
+    "care_accessory",
+  );
+});
+
 test("resolveLibrarySubtypeCode falls back to subtype classifier when stored subtype is blank", () => {
   assert.equal(
     resolveLibrarySubtypeCode(null, {

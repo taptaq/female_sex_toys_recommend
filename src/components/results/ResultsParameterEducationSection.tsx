@@ -38,9 +38,9 @@ export function ResultsParameterEducationSection({
     <section className="rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-sm font-medium text-white">继续了解参数</h3>
+          <h3 className="text-sm font-medium text-white">这 3 个参数，和你这次更相关</h3>
           <p className="mt-1 text-xs leading-5 text-slate-400">
-            主推荐已经能先做决定；需要时再回来补参数原理和场景判断。
+            主推荐已经能先做决定；需要时再回来补参数原理和场景判断，不用一开始全看完。
           </p>
         </div>
         <button
@@ -62,7 +62,7 @@ export function ResultsParameterEducationSection({
         <div className="space-y-3">
           <div className="rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.05] p-3">
             <p className="text-[11px] font-medium text-cyan-100/82">
-              参数速览
+              看懂这次推荐，不用把参数全背下来
             </p>
             <p className="mt-1 text-[11px] leading-5 text-slate-400">
               先看一眼核心判断，再决定要不要进知识星云深读。

@@ -423,7 +423,7 @@ export function ResultsPage({
     : null;
   const prePurchaseChecklist = buildPrePurchaseChecklist(answers, topProducts[0]);
   const avoidanceTips = buildResultAvoidanceTips(answers);
-  const visibleResultTags = resultTags.slice(0, 4);
+  const visibleResultTags = resultTags.slice(0, 3);
   const hiddenResultTagCount = Math.max(resultTags.length - visibleResultTags.length, 0);
   const appliedTuningOptions = RESULT_TUNING_OPTIONS.filter((option) =>
     appliedResultTuningModes.includes(option.mode),
@@ -471,7 +471,7 @@ export function ResultsPage({
           匹配结果
         </p>
         <h2 className="mb-2 text-2xl font-light text-white">
-          已锁定 {Math.min(topProducts.length, 3)} 个高匹配方案
+          这次更贴近你的，是这条路线
         </h2>
         <div className="mx-auto mb-4 flex max-w-xl flex-wrap justify-center gap-1.5">
           {visibleResultTags.map((tag, index) => (
@@ -490,6 +490,9 @@ export function ResultsPage({
         </div>
         <p className="text-sm text-slate-400">
           {resultLeadCopy}
+        </p>
+        <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-slate-500">
+          先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。
         </p>
         {isEnhancingResults ? (
           <div className="mx-auto mt-4 flex max-w-xl items-start gap-3 rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.055] px-4 py-3 text-left shadow-[0_14px_40px_rgba(8,47,73,0.12)]">
@@ -542,7 +545,126 @@ export function ResultsPage({
         onClose={onCloseBodyPersonaFullReport ?? (() => undefined)}
       />
 
-      <ResultsNextStepsPanel nextStepGroups={nextStepGroups} />
+      {topProducts.length > 0 && (
+        <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-medium text-white">快速微调结果</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  保留当前问卷，只轻微调整一个侧重点。
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {RESULT_TUNING_OPTIONS.map((option) => {
+                  const isApplied = appliedResultTuningModes.includes(option.mode);
+                  const isActive = activeTuningMode === option.mode;
+
+                  return (
+                    <button
+                      key={option.mode}
+                      type="button"
+                      onClick={() => handleTuneResultClick(option.mode)}
+                      disabled={isRecalibratingResults || isApplied || activeTuningMode != null}
+                      className={[
+                        "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors",
+                        isApplied
+                          ? "border-emerald-300/18 bg-emerald-400/8 text-emerald-100/70"
+                          : "border-cyan-400/18 bg-cyan-400/8 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/14",
+                        isRecalibratingResults || isApplied || activeTuningMode != null
+                          ? "cursor-not-allowed opacity-65"
+                          : "",
+                      ].join(" ")}
+                    >
+                      {isActive && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{isApplied ? `已应用${option.label}` : option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="min-h-5 text-xs leading-5 text-cyan-100/62">
+              {activeTuningMode
+                ? getTuningProgressLabel(activeTuningMode)
+                : appliedTuningOptions.length > 0
+                  ? `已应用：${appliedTuningOptions.map((option) => option.label).join("、")}`
+                  : "正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。"}
+            </div>
+
+            {onEditQuizCondition && (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      想改一个条件？
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">
+                      不用重做整套问卷，直接回到关键题重新选择。
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      ["budget", "改预算"],
+                      ["quietness", "改静音"],
+                      ["scene", "改场景"],
+                    ].map(([condition, label]) => (
+                      <button
+                        key={condition}
+                        type="button"
+                        onClick={() =>
+                          onEditQuizCondition(condition as ResultEditableCondition)
+                        }
+                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {canShowRecalibrationModule && (
+        <ResultsRecalibrationPanel
+          isOpen={isRecalibrationPanelOpen}
+          onToggle={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
+          selectedReason={selectedRerollReason}
+          onSelectReason={setSelectedRerollReason}
+          buttonLabel={recalibrationButtonLabel}
+          isRecalibrating={isRecalibratingResults}
+          errorMessage={resultRecalibrationError}
+          onRecalibrate={onRecalibrateResults}
+        />
+      )}
+
+      <BodyPersonaUnlockCard
+        onStart={onStartBodyPersona ?? (() => undefined)}
+        isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
+        freeSummary={
+          bodyPersonaState?.freeSummary
+            ? {
+                title: bodyPersonaState.freeSummary.title,
+                blurb: bodyPersonaState.freeSummary.blurb,
+              }
+            : null
+        }
+      />
+
+      {bodyPersonaState ? (
+        <BodyPersonaResultPanel
+          status={bodyPersonaState.status}
+          freeSummary={bodyPersonaState.freeSummary}
+          fullReport={normalizedBodyPersonaFullReport}
+          onUnlock={onUnlockBodyPersona ?? (() => undefined)}
+          onOpenFullReport={onOpenBodyPersonaFullReport}
+          isUnlocking={isUnlockingBodyPersona}
+          requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
+        />
+      ) : null}
 
       {topProducts.length > 0 ? (
         <ResultsAlternativeProductsSection
@@ -696,102 +818,6 @@ export function ResultsPage({
         </section>
       )}
 
-      {topProducts.length > 0 && (
-        <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-sm font-medium text-white">快速微调结果</h3>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  保留当前问卷，只轻微调整一个侧重点。
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                {RESULT_TUNING_OPTIONS.map((option) => {
-                  const isApplied = appliedResultTuningModes.includes(option.mode);
-                  const isActive = activeTuningMode === option.mode;
-
-                  return (
-                    <button
-                      key={option.mode}
-                      type="button"
-                      onClick={() => handleTuneResultClick(option.mode)}
-                      disabled={isRecalibratingResults || isApplied || activeTuningMode != null}
-                      className={[
-                        "inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors",
-                        isApplied
-                          ? "border-emerald-300/18 bg-emerald-400/8 text-emerald-100/70"
-                          : "border-cyan-400/18 bg-cyan-400/8 text-cyan-100 hover:border-cyan-300/35 hover:bg-cyan-400/14",
-                        isRecalibratingResults || isApplied || activeTuningMode != null
-                          ? "cursor-not-allowed opacity-65"
-                          : "",
-                      ].join(" ")}
-                    >
-                      {isActive && <LoaderCircle className="h-3.5 w-3.5 animate-spin" />}
-                      <span>{isApplied ? `已应用${option.label}` : option.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="min-h-5 text-xs leading-5 text-cyan-100/62">
-              {activeTuningMode
-                ? getTuningProgressLabel(activeTuningMode)
-                : appliedTuningOptions.length > 0
-                  ? `已应用：${appliedTuningOptions.map((option) => option.label).join("、")}`
-                  : "正在按所选方向重新计算推荐时，会保留当前问卷并更新结果。"}
-            </div>
-
-            {onEditQuizCondition && (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      想改一个条件？
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-400">
-                      不用重做整套问卷，直接回到关键题重新选择。
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      ["budget", "改预算"],
-                      ["quietness", "改静音"],
-                      ["scene", "改场景"],
-                    ].map(([condition, label]) => (
-                      <button
-                        key={condition}
-                        type="button"
-                        onClick={() =>
-                          onEditQuizCondition(condition as ResultEditableCondition)
-                        }
-                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {canShowRecalibrationModule && (
-        <ResultsRecalibrationPanel
-          isOpen={isRecalibrationPanelOpen}
-          onToggle={() => setIsRecalibrationPanelOpen((isOpen) => !isOpen)}
-          selectedReason={selectedRerollReason}
-          onSelectReason={setSelectedRerollReason}
-          buttonLabel={recalibrationButtonLabel}
-          isRecalibrating={isRecalibratingResults}
-          errorMessage={resultRecalibrationError}
-          onRecalibrate={onRecalibrateResults}
-        />
-      )}
-
       {topProducts[0] && (
         <ResultsParameterEducationSection
           isGuideOpen={isParameterGuideOpen}
@@ -802,33 +828,11 @@ export function ResultsPage({
         />
       )}
 
-      <BodyPersonaUnlockCard
-        onStart={onStartBodyPersona ?? (() => undefined)}
-        isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
-        freeSummary={
-          bodyPersonaState?.freeSummary
-            ? {
-                title: bodyPersonaState.freeSummary.title,
-                blurb: bodyPersonaState.freeSummary.blurb,
-              }
-            : null
-        }
-      />
-
-      {bodyPersonaState ? (
-        <BodyPersonaResultPanel
-          status={bodyPersonaState.status}
-          freeSummary={bodyPersonaState.freeSummary}
-          fullReport={normalizedBodyPersonaFullReport}
-          onUnlock={onUnlockBodyPersona ?? (() => undefined)}
-          onOpenFullReport={onOpenBodyPersonaFullReport}
-          isUnlocking={isUnlockingBodyPersona}
-          requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
-        />
-      ) : null}
+      <ResultsNextStepsPanel nextStepGroups={nextStepGroups} />
 
       {topProducts[0] && (
         <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">
+          <div id="result-final-check" />
           <div className="pointer-events-none absolute inset-y-4 left-0 w-px bg-gradient-to-b from-transparent via-emerald-200/35 to-transparent" />
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>

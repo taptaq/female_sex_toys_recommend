@@ -189,6 +189,27 @@ type PersistedAppState = {
   currentResultModelName?: string;
 };
 
+type QuizReturnToResultsState = {
+  step: number;
+  answers: AnswerState;
+  answerPath: QuizAnswerPathEntry[];
+  resultBaseAnswers: AnswerState | null;
+  appliedResultTuningModes: ResultTuningMode[];
+  topProducts: RankedProduct[];
+  backupProducts: BackupProduct[];
+  recommendationTips: string[];
+  shoppingGuidance: string[];
+  bodyPersonaState: {
+    sessionId: string;
+    status: "idle" | "completed_free" | "unlocking" | "unlocked";
+    freeSummary: BodyPersonaResult["freeSummary"] | null;
+    fullReport: BodyPersonaFullReport | null;
+  } | null;
+  bodyPersonaDraftAnswers: BodyPersonaAnswers;
+  currentResultProvider?: AppAiProvider;
+  currentResultModelName?: string;
+};
+
 function normalizeLibraryAudienceGender(value: string): LibraryAudienceGender {
   if (value === "female" || value === "male" || value === "unisex") {
     return value;
@@ -336,6 +357,8 @@ export default function App() {
   const [currentResultModelName, setCurrentResultModelName] = useState<
     string | undefined
   >(persistedResultSourceState.currentResultModelName);
+  const [quizReturnToResultsState, setQuizReturnToResultsState] =
+    useState<QuizReturnToResultsState | null>(null);
   const [isRecalibratingResults, setIsRecalibratingResults] = useState(false);
   const [isEnhancingResults, setIsEnhancingResults] = useState(false);
   const [resultRecalibrationError, setResultRecalibrationError] = useState<
@@ -492,6 +515,10 @@ export default function App() {
     setAppliedResultTuningModes([]);
   };
 
+  const clearQuizReturnToResultsState = () => {
+    setQuizReturnToResultsState(null);
+  };
+
   const resetResultViewState = () => {
     resultEnhancementRunRef.current += 1;
     setTopProducts([]);
@@ -516,6 +543,7 @@ export default function App() {
   };
 
   const startFreshQuizSession = () => {
+    clearQuizReturnToResultsState();
     clearResultTuningTracking();
     resetResultViewState();
     clearBodyPersonaFlow();
@@ -922,6 +950,21 @@ export default function App() {
     );
 
     const editableAnswers = resultBaseAnswers ?? answers;
+    setQuizReturnToResultsState({
+      step,
+      answers,
+      answerPath,
+      resultBaseAnswers,
+      appliedResultTuningModes,
+      topProducts,
+      backupProducts,
+      recommendationTips,
+      shoppingGuidance,
+      bodyPersonaState,
+      bodyPersonaDraftAnswers,
+      currentResultProvider,
+      currentResultModelName,
+    });
 
     clearResultTuningTracking();
     clearBodyPersonaFlow();
@@ -932,6 +975,41 @@ export default function App() {
     resetResultViewState();
     setStep(questionIndex);
     navigateTo("/quiz");
+  };
+
+  const handleBackToResultsFromQuiz = () => {
+    if (!quizReturnToResultsState) {
+      return;
+    }
+
+    resultEnhancementRunRef.current += 1;
+    setIsEnhancingResults(false);
+    setStep(quizReturnToResultsState.step);
+    setAnswers(quizReturnToResultsState.answers);
+    setAnswerPath(quizReturnToResultsState.answerPath);
+    setResultBaseAnswers(quizReturnToResultsState.resultBaseAnswers);
+    setAppliedResultTuningModes(
+      quizReturnToResultsState.appliedResultTuningModes,
+    );
+    setTopProducts(quizReturnToResultsState.topProducts);
+    setBackupProducts(quizReturnToResultsState.backupProducts);
+    setRecommendationTips(quizReturnToResultsState.recommendationTips);
+    setShoppingGuidance(quizReturnToResultsState.shoppingGuidance);
+    setBodyPersonaState(quizReturnToResultsState.bodyPersonaState);
+    setBodyPersonaDraftAnswers(quizReturnToResultsState.bodyPersonaDraftAnswers);
+    setResultRecalibrationError(null);
+    setIsRecalibratingResults(false);
+    setIsBodyPersonaQuizOpen(false);
+    setIsSubmittingBodyPersonaQuiz(false);
+    setIsUnlockingBodyPersona(false);
+    setIsBodyPersonaFullReportOpen(false);
+    setShouldContinueBodyPersonaUnlockAfterAuth(false);
+    applyResultSourceState({
+      currentResultProvider: quizReturnToResultsState.currentResultProvider,
+      currentResultModelName: quizReturnToResultsState.currentResultModelName,
+    });
+    clearQuizReturnToResultsState();
+    navigateTo("/results");
   };
 
   const handleJumpToQuizQuestion = (questionIndex: number) => {
@@ -1459,6 +1537,7 @@ ${JSON.stringify(context.backupCandidates)}
   ) => {
     const enhancementRunId = resultEnhancementRunRef.current + 1;
     resultEnhancementRunRef.current = enhancementRunId;
+    clearQuizReturnToResultsState();
     setResultBaseAnswers(currentAnswers);
     setAppliedResultTuningModes([]);
     const localResult = buildLocalResultComputation(currentAnswers, productsData);
@@ -1806,6 +1885,7 @@ ${JSON.stringify(context.backupCandidates)}
   const resetQuiz = () => {
     resultEnhancementRunRef.current += 1;
     setIsEnhancingResults(false);
+    clearQuizReturnToResultsState();
     clearResultTuningTracking();
     clearBodyPersonaFlow();
     applyResultSourceState(clearResultSourceState());
@@ -1825,6 +1905,7 @@ ${JSON.stringify(context.backupCandidates)}
   const handleBackHomeFromQuiz = () => {
     resultEnhancementRunRef.current += 1;
     setIsEnhancingResults(false);
+    clearQuizReturnToResultsState();
     const clearedState = createClearedQuizSessionState();
     clearResultTuningTracking();
     clearBodyPersonaFlow();
@@ -2061,6 +2142,7 @@ ${JSON.stringify(context.backupCandidates)}
           onSelectOption={handleOptionSelect}
           onBackQuestion={handleBackQuestion}
           onBackHome={handleBackHomeFromQuiz}
+          onBackResults={handleBackToResultsFromQuiz}
           onJumpToQuestion={handleJumpToQuizQuestion}
           onCloseBodyPersonaQuiz={handleCloseBodyPersonaQuiz}
           onChangeBodyPersonaAnswer={handleChangeBodyPersonaAnswer}

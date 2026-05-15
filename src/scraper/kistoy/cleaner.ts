@@ -60,8 +60,8 @@ const mapGender = (raw: string, format: 'lowercase' | 'capitalized' = 'lowercase
   const val = (raw || '').toLowerCase();
   let result = 'unisex';
   if (val.includes('unisex') || val.includes('通用') || val.includes('双方') || val.includes('情侣') || val.includes('双人')) result = 'unisex';
-  else if (val.includes('male') || val.includes('男性') || val.includes('男用') || val.includes('男士')) result = 'male';
   else if (val.includes('female') || val.includes('女性') || val.includes('女用') || val.includes('她') || val.includes('妇')) result = 'female';
+  else if (val.includes('male') || val.includes('男性') || val.includes('男用') || val.includes('男士')) result = 'male';
   return format === 'capitalized' ? result.charAt(0).toUpperCase() + result.slice(1) : result;
 };
 
@@ -477,7 +477,7 @@ const mergeSpecsWithDefaults = (defaults: any, parsed: any) => ({
 
 export async function runCleaner() {
   console.log('\n======================================================');
-  console.log('--- 启动 KISTOY (Kistoy) AI 清洗与入库模块 ---');
+  console.log('--- 启动 KISSTOY (Kisstoy) AI 清洗与入库模块 ---');
   console.log('======================================================');
 
   // --- 数据库健康检查 ---
@@ -503,27 +503,42 @@ export async function runCleaner() {
     return;
   }
 
-  // --- 预搜索 KISTOY 在 competitors 表中的 ID ---
+  // --- 预搜索 KISSTOY 在 competitors 表中的 ID ---
   let brandId: string | null = null;
   try {
     const competitor = await prisma.competitors.findFirst({
-      where: { name: { contains: 'KISTOY', mode: 'insensitive' } }
+      where: {
+        OR: [
+          { name: { contains: 'KISSTOY', mode: 'insensitive' } },
+          { name: { contains: 'KISTOY', mode: 'insensitive' } },
+        ],
+      },
     });
     if (competitor) {
+      if (competitor.name !== 'KISSTOY') {
+        await prisma.competitors.update({
+          where: { id: competitor.id },
+          data: {
+            name: 'KISSTOY',
+            description:
+              'KISSTOY（Kisstoy）是中国原创情趣品牌，致力于为女性提供高品质、审美感强的成人玩具。',
+          },
+        });
+      }
       brandId = competitor.id;
-      console.log(`[关联] 已定位 KISTOY 竞品 ID: ${brandId}`);
+      console.log(`[关联] 已定位 KISSTOY 竞品 ID: ${brandId}`);
     } else {
         // 如果不存在，尝试创建一个基础记录
-        console.log('[创建] 数据库中未发现「KISTOY」，正在初始化记录...');
+        console.log('[创建] 数据库中未发现「KISSTOY」，正在初始化记录...');
         const newBrand = await prisma.competitors.create({
             data: {
-                name: 'KISTOY',
-                description: 'KISTOY（Kistoy）是中国原创\u60c5\u8da3品牌，致力于为女性提供高品质、审美感强的\u6210\u4eba\u73a9\u5177。',
+                name: 'KISSTOY',
+                description: 'KISSTOY（Kisstoy）是中国原创\u60c5\u8da3品牌，致力于为女性提供高品质、审美感强的\u6210\u4eba\u73a9\u5177。',
                 is_domestic: true
             }
         });
         brandId = newBrand.id;
-        console.log(`[创建] 已创建 KISTOY 竞品记录 (ID: ${brandId})`);
+        console.log(`[创建] 已创建 KISSTOY 竞品记录 (ID: ${brandId})`);
     }
   } catch (err) {
     console.warn('[警告] Competitors 关联失败，将继续非关联抓取。');
@@ -554,7 +569,7 @@ export async function runCleaner() {
     
     const prompt = productKind === 'care'
       ? `
-你是一个个人护理耗材商品目录数据清洗助手。现有抓取至「KISTOY (Kistoy)」天猫店的安全套/润滑液/护理用品类商品描述：
+你是一个个人护理耗材商品目录数据清洗助手。现有抓取至「KISSTOY (Kisstoy)」天猫店的安全套/润滑液/护理用品类商品描述：
 
 【商品名称】: ${canonicalName}
 【原始价格抓取】: ${item.price ?? ''}
@@ -579,7 +594,7 @@ ${item.rawDescription}
 `
       : productKind === 'pad'
       ? `
-你是一个家居床品防护垫商品目录数据清洗助手。现有抓取至「KISTOY (Kistoy)」天猫店的床事垫/防水垫/护理垫类商品描述：
+你是一个家居床品防护垫商品目录数据清洗助手。现有抓取至「KISSTOY (Kisstoy)」天猫店的床事垫/防水垫/护理垫类商品描述：
 
 【商品名称】: ${canonicalName}
 【原始价格抓取】: ${item.price ?? ''}
@@ -604,7 +619,7 @@ ${item.rawDescription}
 `
       : productKind === 'apparel'
       ? `
-你是一个服装商品目录数据清洗助手。现有抓取至「KISTOY (Kistoy)」天猫店的服饰类商品描述：
+你是一个服装商品目录数据清洗助手。现有抓取至「KISSTOY (Kisstoy)」天猫店的服饰类商品描述：
 
 【商品名称】: ${canonicalName}
 【原始价格抓取】: ${item.price ?? ''}
@@ -628,7 +643,7 @@ ${item.rawDescription}
 }
 `
       : `
-你是一个专注处理个人护理器具参数的数据拆解机器人。现有抓取至「KISTOY (Kistoy)」天猫店的纯文本描述：
+你是一个专注处理个人护理器具参数的数据拆解机器人。现有抓取至「KISSTOY (Kisstoy)」天猫店的纯文本描述：
 
 【商品名称】: ${canonicalName}
 【原始价格抓取】: ${item.price ?? ''}
@@ -638,7 +653,7 @@ ${item.rawDescription}
 """
 
 请提取相关特征。结果必须是一个绝对合法的 JSON 对象。严禁返回任何 markdown 标记。
-注意：KISTOY产品多为女性向。
+注意：KISSTOY 产品多为女性向。
 字段要求：
 {
   "max_db": 50,
@@ -734,7 +749,7 @@ ${item.rawDescription}
          original_id:   originalId,
          name:          canonicalName,
          safe_display_name: buildSafeDisplayName(canonicalName),
-         brand:         'KISTOY',                                          
+         brand:         'KISSTOY',
          price:         numericPrice,
          max_db:        productKind === 'device' ? (parsedSpecs.max_db ?? 50) : null,
          waterproof:    parsedSpecs.waterproof || null,
@@ -763,7 +778,7 @@ ${item.rawDescription}
   fs.writeFileSync(CLEANED_PATH, JSON.stringify(cleanedData, null, 2));
   
   await prisma.$disconnect();
-  console.log(`\n--- KISTOY 数据流水线任务结束 ---`);
+  console.log(`\n--- KISSTOY 数据流水线任务结束 ---`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -119,7 +119,7 @@ export function ResultsPrimaryRecommendationPanel({
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent transition-opacity group-hover:opacity-90" />
                 <div className="absolute bottom-4 left-4 right-24">
                   <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                    主推荐方案
+                    本轮最贴合
                   </span>
                   <p className="mb-1 text-[11px] text-cyan-200/72">
                     {primaryProductBrandLabel}
@@ -150,7 +150,7 @@ export function ResultsPrimaryRecommendationPanel({
               <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
                 <div>
                   <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                    主推荐方案
+                    本轮最贴合
                   </span>
                   <p className="mb-1 text-[11px] text-cyan-200/72">
                     {primaryProductBrandLabel}

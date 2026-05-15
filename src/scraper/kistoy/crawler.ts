@@ -30,7 +30,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const TARGET_URL = 'https://kistoymcza.tmall.com/?ali_refid=a3_420434_1006:1678346645:H:bL%2B27NllkKafytJVcGaGdg%3D%3D:c0c3f3b80c2af2600c8c6706a30b8540&ali_trackid=282_c0c3f3b80c2af2600c8c6706a30b8540&spm=a21n57.1.2.1&pisk=ggcEhcq297ms8OKmuqVyQZ7gSEVLm7-XTbZ7r40uRkq3A44uacmWJkgkv0lzj4HBJ8tdzwhZ0_1Bvp3la7NkcnOXG2pLw7xbSjiWOMUu8_A7rubg9zwpfFs6G23L2wSklAAXaJ7ne_Xuq0VgjrUzZyX3xGYazrruZk2ljO40juVoqu2Gjz4AtgVuENYaylquZ7moSFz7juVuZ00Mr22bUnz7KeSWEq5ewkwUm2qNiVGa-oWK8lWNIfu_Lofbb_fo_y0oiZzltIridYcQsXxGD50xCD4agQ7z7xugtyoJM6FnoVDuLbJ5kuHZSxwZBwTL7XuqaryFjer-ODlzpjxf6kDZ6bPICH5b28Ds9-hBj6PmH2NIEcYlZukgrgJG2PxB7bHFqTy3WPrX7FkjV1gnIjXJATB8pMzaceDleTe3LPrX7FWReJdT7oTnE&mm_sceneid=1_0_2216650157_0';
+const TARGET_URL = 'https://kisstoy.tmall.com/?ali_refid=a3_430582_1006:1720630894:H:dUCd7dZ4UPbXfbi8ruHtbQ%3D%3D:1079f7fa8accb5295f3e79a76ab40500&ali_trackid=282_1079f7fa8accb5295f3e79a76ab40500&spm=a21n57.1.1.1&pisk=gJoKKuv-6dBdqYt6MMYirGp7davGAFDetXkfq7VhPfhtF5jkLkYz2bFtaW43AWj82YhrZbHyL8NSNbFo-FxmLvrzVIDJmnDeS9e7_XUQNO97H82WIy1KdkWQVIAD2NX_8BqSE2HxOP__35wCA7aWBNwb3uw7du9T18eVP6G7VdpTF-XQFJs75lwU17Z7VbM6B8P_duZSNA9TUUc1b787ig3ZOHV-rMlNVgiTpPTiB59EcDyLGSHIvgs5UJULGvN69MI7GzhLJcxdgJ3sHfyKanSUAz3IlkiJMHEs3VcQBbOAy5gxY0UmvIQ4ODPrMkg91ME7X-H8oVv5k50SQcUtvEXzQDDSYrqX06NoSxn8e0RyXjHI9qajA6IPMmmxdA10M8bBBdQPzyww_lMDILvxnm2TidcCzazOuRFDBe7PzywaBSvgja7zWZ5..&mm_sceneid=1_0_6464466318_0';
 const MAX_ITEMS = Number(process.env.KISTOY_MAX_ITEMS || 200);
 const DELAY_BETWEEN_PAGES = 3000;
 const BUFFER_PATH = path.resolve(__dirname, '../../data/kistoy-review-buffer.json');
@@ -886,7 +886,7 @@ async function openDetailByClickingListItem(page: any, context: any, item: any):
 }
 
 async function runCrawler() {
-  console.log('--- 启动 Playwright 无头抓取引擎 [Target: KISTOY Tmall] ---');
+  console.log('--- 启动 Playwright 无头抓取引擎 [Target: KISSTOY Tmall] ---');
   const listPriceCache = loadListPriceCache();
   const existingBufferEntries = loadReviewBufferEntries(BUFFER_PATH);
   const reviewBufferLookup = buildReviewBufferLookup(existingBufferEntries, extractTmallItemId);
@@ -1587,8 +1587,8 @@ async function runCrawler() {
 
           if (!detailParamsText && ocrText) {
             const ocrParamPairs = extractParamPairsFromOcrText(ocrText);
-            if (item.title.includes('KISTOY')) {
-              ocrParamPairs.push(['品牌', 'KISTOY']);
+            if (/kiss?toy/i.test(item.title)) {
+              ocrParamPairs.push(['品牌', 'KISSTOY']);
             }
             rawParamPairTotal += ocrParamPairs.length;
             if (ocrParamPairs.length > 0) paramSectionHitCount++;

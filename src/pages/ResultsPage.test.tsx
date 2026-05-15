@@ -129,6 +129,7 @@ test("results page mounts the body persona entry and free summary block", () => 
   );
 
   assert.match(html, /身体人格测试/);
+  assert.match(html, /解锁你的身体人格画像/);
   assert.match(html, /星幕型·隐秘安全感者/);
   assert.match(html, /完整星系人格档案已锁定/);
   assert.match(html, /登录后可解锁完整星系人格档案/);
@@ -334,10 +335,10 @@ test("results page shows the primary recommendation brand above the product name
     />,
   );
 
-  assert.match(html, /主推荐方案/);
+  assert.match(html, /本轮最贴合/);
   assert.match(
     html,
-    /主推荐方案<\/span><p[^>]*>We-Vibe<\/p><h3[^>]*>Primary Pick<\/h3>/,
+    /本轮最贴合<\/span><p[^>]*>We-Vibe<\/p><h3[^>]*>Primary Pick<\/h3>/,
   );
   assert.match(
     html,
@@ -499,17 +500,17 @@ test("results page prioritizes the primary recommendation before secondary contr
 
   assert.match(html, /results-report-shell/);
   assert.match(html, /匹配结果/);
-  assert.match(html, /已锁定/);
-  assert.match(html, /主推荐方案/);
+  assert.match(html, /这次更贴近你的，是这条路线/);
+  assert.match(html, /本轮最贴合/);
   assert.match(html, /登录后可加密保存/);
   assert.doesNotMatch(html, /用户名/);
   assert.ok(
-    html.indexOf("主推荐方案") < html.indexOf("登录后可加密保存"),
+    html.indexOf("本轮最贴合") < html.indexOf("登录后可加密保存"),
     "primary recommendation should be rendered before save/login controls",
   );
   assert.ok(
-    html.indexOf("还想换个角度？") < html.indexOf("快速微调结果"),
-    "assistive decision tools should be grouped after the primary recommendation",
+    html.indexOf("快速微调结果") < html.indexOf("身体人格测试"),
+    "quick tuning should stay in the decision layer before body persona upsell",
   );
   assert.doesNotMatch(html, /算法最匹配（第 1 推荐）/);
 });
@@ -547,18 +548,22 @@ test("results page groups comparison, alternatives, tuning, and regeneration int
     />,
   );
 
-  assert.match(html, /还想换个角度？/);
+  assert.match(html, /如果你想换个方向，也可以看看这些/);
   assert.ok(
-    html.indexOf("还想换个角度？") < html.indexOf("换个侧重点看看"),
-    "backup alternatives should live inside the assistive decision area",
+    html.indexOf("身体人格测试") < html.indexOf("如果你想换个方向，也可以看看这些"),
+    "body persona should appear before assistive alternative exploration",
+  );
+  assert.ok(
+    html.indexOf("如果你想换个方向，也可以看看这些") < html.indexOf("换个侧重点看看"),
+    "top-level alternative heading should lead the rational supplement area",
   );
   assert.ok(
     html.indexOf("换个侧重点看看") < html.indexOf("主推荐横向对比"),
     "alternatives should appear before detailed comparison",
   );
   assert.ok(
-    html.indexOf("主推荐横向对比") < html.indexOf("快速微调结果"),
-    "comparison should appear before tuning controls",
+    html.indexOf("快速微调结果") < html.indexOf("主推荐横向对比"),
+    "quick tuning should stay in the first decision layer before deeper comparison",
   );
   assert.ok(
     html.indexOf("快速微调结果") < html.indexOf("对当前结果不满意？"),
@@ -601,7 +606,7 @@ test("results page adds a same-category library bridge for horizontal comparison
   assert.match(html, /去装备库继续看同类路线、价位区间和不同品牌差异/);
   assert.match(html, /查看同类装备/);
   assert.ok(
-    html.indexOf("还想换个角度？") < html.indexOf("查看同类装备"),
+    html.indexOf("如果你想换个方向，也可以看看这些") < html.indexOf("查看同类装备"),
     "library bridge should live inside the assistive comparison area",
   );
 });
@@ -685,20 +690,20 @@ test("results page groups formal candidates together before adjustment actions a
     "secondary formal candidates should appear before the comparison section",
   );
   assert.ok(
-    html.indexOf("换个侧重点看看") < html.indexOf("快速微调结果"),
-    "backup directions should stay with candidate exploration before adjustment controls",
+    html.indexOf("快速微调结果") < html.indexOf("身体人格测试"),
+    "quick tuning should stay above the body persona upgrade layer",
   );
   assert.ok(
-    html.indexOf("下一步建议") < html.indexOf("购买前最终自检"),
+    html.indexOf("购买前再确认这几件事") < html.indexOf("购买前最终自检"),
     "final self-check should close the page after the action-oriented next steps",
   );
   assert.ok(
-    html.indexOf("下一步建议") < html.indexOf("参数速览"),
-    "parameter deep dives should come after the primary next-step guidance",
+    html.indexOf("这 3 个参数，和你这次更相关") < html.indexOf("购买前再确认这几件事"),
+    "parameter interpretation should stay ahead of the final purchase guidance block",
   );
   assert.ok(
-    html.indexOf("下一步建议") < html.indexOf("身体人格测试"),
-    "body persona should not interrupt the first decision flow before next actions",
+    html.indexOf("身体人格测试") < html.indexOf("如果你想换个方向，也可以看看这些"),
+    "body persona should sit between the decision layer and rational supplement layer",
   );
 });
 
@@ -923,7 +928,7 @@ test("results page frames shopping guidance as next-step purchase guidance", () 
     />,
   );
 
-  assert.match(html, /下一步建议/);
+  assert.match(html, /购买前再确认这几件事/);
   assert.match(html, /购买前优先确认是否有明确售后和材质说明/);
   assert.match(html, /收到后先完成基础清洁/);
   assert.doesNotMatch(html, /结果提示/);
@@ -1128,7 +1133,7 @@ test("results page includes an inline parameter preview layer for chip explanati
     />,
   );
 
-  assert.match(html, /参数速览/);
+  assert.match(html, /看懂这次推荐，不用把参数全背下来/);
   assert.match(html, /先看一眼核心判断/);
   assert.match(html, /去知识星云深读/);
 });

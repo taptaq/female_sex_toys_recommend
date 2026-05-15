@@ -23,7 +23,7 @@ export function ResultsNextStepsPanel({
     >
       <div className="mb-2 flex items-center gap-2 text-amber-400">
         <Sparkles className="h-4 w-4" />
-        <span className="text-sm font-medium tracking-wide">下一步建议</span>
+        <span className="text-sm font-medium tracking-wide">购买前再确认这几件事</span>
       </div>
       <div className="space-y-4">
         {nextStepGroups.map((group) => (

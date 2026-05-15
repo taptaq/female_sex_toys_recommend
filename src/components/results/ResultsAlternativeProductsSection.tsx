@@ -49,9 +49,9 @@ export function ResultsAlternativeProductsSection({
   return (
     <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.025] p-4 sm:p-5">
       <div className="mb-4 flex flex-col gap-1.5 border-b border-white/8 pb-4">
-        <h3 className="text-sm font-medium text-white">还想换个角度？</h3>
+        <h3 className="text-sm font-medium text-white">如果你想换个方向，也可以看看这些</h3>
         <p className="text-xs leading-5 text-slate-400">
-          备选、对比和微调都放在这里；主推荐已经可以先作为默认结论。
+          主推荐已经能先做决定；这些是你想再比较时再展开看的备选方向。
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export function ResultsAlternativeProductsSection({
                 </div>
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                   <span className="inline-block rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-slate-300">
-                    {index === 0 ? "最具性价比" : "探索备选"}
+                    {index === 0 ? "另一条更省心的路线" : "探索备选"}
                   </span>
                   <span className="text-[10px] text-cyan-500/70">{product.brand}</span>
                 </div>
@@ -135,7 +135,7 @@ export function ResultsAlternativeProductsSection({
                 </div>
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                   <span className="inline-block rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-slate-300">
-                    {index === 0 ? "最具性价比" : "探索备选"}
+                    {index === 0 ? "另一条更省心的路线" : "探索备选"}
                   </span>
                   <span className="text-[10px] text-cyan-500/70">{product.brand}</span>
                 </div>
@@ -183,7 +183,7 @@ export function ResultsAlternativeProductsSection({
                   </span>
                 </div>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  {backupDirectionTeaser.directionText}，不影响当前主推荐排序。
+                  {backupDirectionTeaser.directionText}，这些方向不会改动当前主推荐，只是在你想换重点时给你另一条路。
                 </p>
               </div>
               <ChevronDown

@@ -74,7 +74,7 @@ const UNISEX_HARD_PATTERNS = [
 const FEMALE_DEFAULT_BRANDS = new Set([
   "womanizer",
   "iroha",
-  "kistoy",
+  "kisstoy",
   "绒谱",
   "romp",
 ]);

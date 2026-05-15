@@ -10,6 +10,7 @@ export function QuizPage({
   onSelectOption,
   onBackQuestion,
   onBackHome,
+  onBackResults,
   onJumpToQuestion,
 }: {
   pageVariants: any;
@@ -24,6 +25,7 @@ export function QuizPage({
   ) => void;
   onBackQuestion: () => void;
   onBackHome: () => void;
+  onBackResults?: () => void;
   onJumpToQuestion?: (questionIndex: number) => void;
 }) {
   const currentQuestion = activeQuestions[step];
@@ -49,14 +51,26 @@ export function QuizPage({
       <div className="pointer-events-none absolute left-[24%] bottom-[24%] -z-10 h-1 w-1 rounded-full bg-indigo-200/50 shadow-[0_0_14px_rgba(165,180,252,0.35)]" />
 
       <div className="mb-4 flex w-full max-w-xl items-center justify-between gap-3 px-1 sm:px-2">
-        <button
-          type="button"
-          onClick={onBackHome}
-          className="inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-slate-950/50 px-3 py-1.5 text-xs text-cyan-100/85 shadow-[0_0_24px_rgba(8,47,73,0.18)] backdrop-blur-md transition-colors hover:border-cyan-200/36 hover:bg-cyan-300/10 hover:text-white"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>返回首页</span>
-        </button>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onBackHome}
+            className="inline-flex items-center gap-2 rounded-full border border-cyan-300/18 bg-slate-950/50 px-3 py-1.5 text-xs text-cyan-100/85 shadow-[0_0_24px_rgba(8,47,73,0.18)] backdrop-blur-md transition-colors hover:border-cyan-200/36 hover:bg-cyan-300/10 hover:text-white"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>返回首页</span>
+          </button>
+          {onBackResults ? (
+            <button
+              type="button"
+              onClick={onBackResults}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200/14 bg-emerald-300/[0.08] px-3 py-1.5 text-xs text-emerald-50/86 backdrop-blur-md transition-colors hover:border-emerald-100/28 hover:bg-emerald-300/[0.14] hover:text-white"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>返回结果页</span>
+            </button>
+          ) : null}
+        </div>
         {step > 0 ? (
           <button
             type="button"

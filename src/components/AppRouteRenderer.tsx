@@ -68,6 +68,7 @@ type AppRouteRendererProps = {
   ) => void;
   onBackQuestion: () => void;
   onBackHome: () => void;
+  onBackResults?: () => void;
   onJumpToQuestion?: (questionIndex: number) => void;
   onCloseBodyPersonaQuiz?: () => void;
   onChangeBodyPersonaAnswer?: (
@@ -140,6 +141,7 @@ export function AppRouteRenderer({
   onSelectOption,
   onBackQuestion,
   onBackHome,
+  onBackResults,
   onJumpToQuestion,
   onCloseBodyPersonaQuiz,
   onChangeBodyPersonaAnswer,
@@ -196,6 +198,7 @@ export function AppRouteRenderer({
             onSelectOption={onSelectOption}
             onBackQuestion={onBackQuestion}
             onBackHome={onBackHome}
+            onBackResults={onBackResults}
             onJumpToQuestion={onJumpToQuestion}
           />
         )}

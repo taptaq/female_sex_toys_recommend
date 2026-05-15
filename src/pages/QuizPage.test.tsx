@@ -139,3 +139,19 @@ test("quiz page renders earlier completed steps as direct revise targets", () =>
   assert.match(html, /返回修改第 2 题/);
   assert.match(html, /cursor-pointer/);
 });
+
+test("quiz page shows a return-to-results entry when the user is revising answers from the results page", () => {
+  const html = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={1}
+      activeQuestions={multiStepQuestions}
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+      onBackResults={() => {}}
+    />,
+  );
+
+  assert.match(html, /返回结果页/);
+});
