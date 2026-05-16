@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   replaceUrlsWithPlaceholders,
+  resolveTranslationFallbackProvider,
   restoreUrlPlaceholders,
 } from './raw-description-translator.ts';
 
@@ -19,4 +20,23 @@ test('replaceUrlsWithPlaceholders protects raw URLs and restoreUrlPlaceholders r
 
   const restored = restoreUrlPlaceholders(replaced.text, replaced.placeholders);
   assert.equal(restored, source);
+});
+
+test('resolveTranslationFallbackProvider prefers deepseek retry before glm fallback', () => {
+  assert.equal(
+    resolveTranslationFallbackProvider({
+      DEEPSEEK_API_KEY: 'deepseek-key',
+      GLM_API_KEY: 'glm-key',
+    } as NodeJS.ProcessEnv),
+    'deepseek',
+  );
+
+  assert.equal(
+    resolveTranslationFallbackProvider({
+      GLM_API_KEY: 'glm-key',
+    } as NodeJS.ProcessEnv),
+    'glm',
+  );
+
+  assert.equal(resolveTranslationFallbackProvider({} as NodeJS.ProcessEnv), null);
 });

@@ -31,15 +31,45 @@ function getPrimaryClient(): OpenAI {
 
 function getFallbackClient(): OpenAI {
   if (fallbackClient) return fallbackClient;
-  const apiKey = process.env.GLM_API_KEY;
-  if (!apiKey) {
-    throw new Error('GLM_API_KEY 未配置，无法执行英文转中文兜底。');
+  const provider = resolveTranslationFallbackProvider();
+
+  if (provider === 'deepseek') {
+    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('DEEPSEEK_API_KEY / OPENAI_API_KEY 未配置，无法执行 DeepSeek 翻译兜底。');
+    }
+    fallbackClient = new OpenAI({
+      apiKey,
+      baseURL: 'https://api.deepseek.com/v1',
+    });
+    return fallbackClient;
   }
-  fallbackClient = new OpenAI({
-    apiKey,
-    baseURL: 'https://open.bigmodel.cn/api/paas/v4/',
-  });
-  return fallbackClient;
+
+  if (provider === 'glm') {
+    const apiKey = process.env.GLM_API_KEY;
+    if (!apiKey) {
+      throw new Error('GLM_API_KEY 未配置，无法执行 GLM 翻译兜底。');
+    }
+    fallbackClient = new OpenAI({
+      apiKey,
+      baseURL: 'https://open.bigmodel.cn/api/paas/v4/',
+    });
+    return fallbackClient;
+  }
+
+  throw new Error('DEEPSEEK_API_KEY / OPENAI_API_KEY / GLM_API_KEY 均未配置，无法执行英文转中文兜底。');
+}
+
+export function resolveTranslationFallbackProvider(
+  env: NodeJS.ProcessEnv = process.env,
+): 'deepseek' | 'glm' | null {
+  if (env.DEEPSEEK_API_KEY || env.OPENAI_API_KEY) {
+    return 'deepseek';
+  }
+  if (env.GLM_API_KEY) {
+    return 'glm';
+  }
+  return null;
 }
 
 function ensureDir(filePath: string) {
@@ -170,8 +200,24 @@ ${chunk}
     });
     const output = sanitizeModelOutput(response.choices[0]?.message?.content || '');
     return output || chunk;
-  } catch {
+  } catch (primaryError) {
+    const provider = resolveTranslationFallbackProvider();
+    if (!provider) {
+      throw primaryError;
+    }
+
     const fallback = getFallbackClient();
+
+    if (provider === 'deepseek') {
+      const response = await fallback.chat.completions.create({
+        model: 'deepseek-v4-flash',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+      });
+      const output = sanitizeModelOutput(response.choices[0]?.message?.content || '');
+      return output || chunk;
+    }
+
     const response = await fallback.chat.completions.create({
       model: 'glm-4.6v',
       messages: [{ role: 'user', content: prompt }],
