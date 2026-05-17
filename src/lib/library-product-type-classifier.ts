@@ -860,6 +860,7 @@ function classifyFemaleTypeFromContext(
     couples: 0,
     wearable_remote: 0,
     care_accessory: 0,
+    bdsm: 0,
     unknown: 0,
   };
 
