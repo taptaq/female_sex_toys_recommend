@@ -193,6 +193,19 @@ description: >-
 
 如果默认币种不是 USD，例如 Hot Octopuss 是 `GBP`，要按真实币种换，不要硬写 USD。
 
+如果源价格已经是人民币：
+
+- `price_source_currency = CNY`
+- 或价格标识带 `¥ / ￥`
+
+则不要再次换算人民币。
+
+推荐行为：
+
+- 直接标准化为 `CNY`
+- `fx_rate_to_cny = 1`
+- `price_rmb = price_source_amount`
+
 ## cleaner 规则
 
 ### 输出文件

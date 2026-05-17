@@ -15,6 +15,34 @@ test('resolveRmbPrice converts GBP prices to rounded RMB', () => {
   assert.equal(cleaner.resolveRmbPrice(null, 9.1), null);
 });
 
+test('buildNormalizedSpecs keeps CNY prices as RMB without conversion', () => {
+  const specs = cleaner.buildNormalizedSpecs(
+    {
+      name: 'Lem Clitoral Massager',
+      subtitle: 'Personal Massager',
+      priceSourceAmount: 89,
+      originalPriceSourceAmount: 159,
+      priceCurrency: '¥',
+      rawDescription: 'Clitoral massager with air suction.',
+      genderHint: 'female',
+      categoryHints: ['Personal Massager'],
+    },
+    {
+      rate: 1,
+      source: 'identity',
+      date: null,
+      currency: 'CNY',
+    },
+  );
+
+  assert.equal(specs.price_source_currency, 'CNY');
+  assert.equal(specs.price_source_amount, 89);
+  assert.equal(specs.price_rmb, 89);
+  assert.equal(specs.original_price_rmb, 159);
+  assert.equal(specs.fx_rate_to_cny, 1);
+  assert.equal(specs.fx_rate_source, 'identity');
+});
+
 test('buildNormalizedSpecs converts GBP prices and preserves FX metadata', () => {
   const specs = cleaner.buildNormalizedSpecs(
     {

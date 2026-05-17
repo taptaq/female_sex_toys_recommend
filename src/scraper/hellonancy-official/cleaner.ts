@@ -24,15 +24,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const BUFFER_PATH = path.resolve(__dirname, '../../data/hotoctopuss-official-review-buffer.json');
-export const CLEANED_PATH = path.resolve(__dirname, '../../data/hotoctopuss-official-cleaned-data.json');
-const RAW_TRANSLATION_CACHE_PATH = path.resolve(__dirname, '../../data/hotoctopuss-official-raw-description-zh-cache.json');
-const BRAND_NAME = 'Hot Octopuss';
-const FALLBACK_CURRENCY_TO_CNY_RATE: Record<string, number> = {
-  GBP: 9.1,
-  USD: 7.2,
-  EUR: 7.8,
-};
+export const BUFFER_PATH = path.resolve(__dirname, '../../data/hellonancy-official-review-buffer.json');
+export const CLEANED_PATH = path.resolve(__dirname, '../../data/hellonancy-official-cleaned-data.json');
+const RAW_TRANSLATION_CACHE_PATH = path.resolve(__dirname, '../../data/hellonancy-official-raw-description-zh-cache.json');
+const BRAND_NAME = 'Nancy';
 
 type Gender = 'male' | 'female' | 'unisex';
 
@@ -105,7 +100,7 @@ export function resolveRmbPrice(amount: number | null, rate: number): number | n
 
 function normalizeSourceCurrency(value: unknown): string {
   const normalized = String(value || '').trim().toUpperCase();
-  if (!normalized) return 'GBP';
+  if (!normalized) return 'CNY';
   if (normalized === '¥' || normalized === '￥' || normalized === 'CNY' || normalized === 'RMB') return 'CNY';
   return normalized;
 }
@@ -156,40 +151,38 @@ function normalizeGenderHint(value: unknown): Gender {
 function inferMaterial(name: string, rawDescription: string): string {
   const text = `${name}\n${rawDescription}`.toLowerCase();
   if (/silicone/.test(text)) return '硅胶';
-  if (/steel|stainless/.test(text)) return '金属';
   if (/abs|plastic/.test(text)) return 'ABS/硅胶复合';
+  if (/metal|steel/.test(text)) return '金属';
   return '硅胶';
 }
 
 function inferAppearance(text: string): string {
-  return /remote|wearable|discreet|wrist|便携|远控|穿戴/i.test(text) ? 'high_disguise' : 'normal';
+  return /quiet|discreet|portable|travel|便携|静音/i.test(text) ? 'high_disguise' : 'normal';
 }
 
 function inferPhysicalForm(text: string): string {
-  if (/prostate|insert|internal|anal|plug|g-spot|vaginal|前列腺|插入|肛门|g点/i.test(text)) return 'internal';
+  if (/g-spot|g spot|internal|insertable|insert|vaginal|anal|pelvic|kegel|阴道|肛门|插入/i.test(text)) return 'internal';
   return 'external';
 }
 
 function inferMotorType(text: string): string {
-  return /powerful|deep|rumbl|intense|强劲|高强/i.test(text) ? 'strong' : 'gentle';
+  return /powerful|deep|rumbly|intense|strong|强劲|强烈/i.test(text) ? 'strong' : 'gentle';
 }
 
 function inferWaterproof(text: string): number | null {
   const ipx = text.match(/ipx\s*([0-9])/i)?.[1];
   if (ipx) return Number(ipx);
-  return /waterproof|防水/i.test(text) ? 7 : null;
+  return /waterproof|splashproof|防水/i.test(text) ? 7 : null;
 }
 
 function inferFunctionTags(text: string): string[] {
   return uniqueStrings([
     hasAnyHint(text, ['vibrator', 'vibration', 'vibrating', '震动', '振动']) ? '震动刺激' : null,
-    hasAnyHint(text, ['masturbator', 'guybrator', 'stroking', 'penis']) ? '男性快感' : null,
     hasAnyHint(text, ['clitoral', 'clitoris', '阴蒂']) ? '阴蒂刺激' : null,
-    hasAnyHint(text, ['prostate', '前列腺']) ? '前列腺刺激' : null,
-    hasAnyHint(text, ['cock ring', 'penis ring', '阴茎环']) ? '环类' : null,
-    hasAnyHint(text, ['couples', 'partner']) ? '双人互动' : null,
-    hasAnyHint(text, ['waterproof', 'ipx', '防水']) ? '防水' : null,
-    hasAnyHint(text, ['usb', 'rechargeable', 'charging']) ? '可充电' : null,
+    hasAnyHint(text, ['g-spot', 'g spot', 'g点']) ? 'G点刺激' : null,
+    hasAnyHint(text, ['suction', 'air suction', '吸吮', '吮吸']) ? '吸吮刺激' : null,
+    hasAnyHint(text, ['waterproof', 'splashproof', '防水']) ? '防水' : null,
+    hasAnyHint(text, ['rechargeable', 'usb', 'charging']) ? '可充电' : null,
     hasAnyHint(text, ['bundle', 'set', 'kit']) ? '套装' : null,
   ]);
 }
@@ -231,7 +224,7 @@ async function withDbRetry<T>(label: string, action: () => Promise<T>): Promise<
 }
 
 async function refreshCurrencyToCnyRate(currency: string): Promise<FxSnapshot> {
-  const normalized = normalizeSourceCurrency(currency) || 'GBP';
+  const normalized = normalizeSourceCurrency(currency);
   if (normalized === 'CNY') {
     return {
       rate: 1,
@@ -240,28 +233,12 @@ async function refreshCurrencyToCnyRate(currency: string): Promise<FxSnapshot> {
       currency: 'CNY',
     };
   }
-  try {
-    const response = await fetch(`https://api.frankfurter.dev/v1/latest?base=${normalized}&symbols=CNY`, {
-      headers: { accept: 'application/json' },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const payload = (await response.json()) as { date?: string; rates?: Record<string, number> };
-    const rate = Number(payload?.rates?.CNY);
-    if (!Number.isFinite(rate) || rate <= 0) throw new Error('missing CNY rate');
-    return {
-      rate,
-      source: 'frankfurter',
-      date: String(payload?.date || '').trim() || null,
-      currency: normalized,
-    };
-  } catch {
-    return {
-      rate: FALLBACK_CURRENCY_TO_CNY_RATE[normalized] || FALLBACK_CURRENCY_TO_CNY_RATE.GBP,
-      source: 'fallback',
-      date: null,
-      currency: normalized,
-    };
-  }
+  return {
+    rate: 1,
+    source: 'identity',
+    date: null,
+    currency: normalized,
+  };
 }
 
 export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): NormalizedSpecs {
@@ -271,10 +248,12 @@ export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): N
   const signalText = `${name}\n${subtitle}\n${rawDescription}`;
   const priceSourceAmount = parsePositiveNumber(item.priceSourceAmount);
   const originalPriceSourceAmount = parsePositiveNumber(item.originalPriceSourceAmount);
+  const priceSourceCurrency = normalizeSourceCurrency(item.priceCurrency || fx.currency || 'CNY');
   const genderHint = normalizeGenderHint(item.genderHint);
   const classifierTags = Array.isArray(item.categoryHints)
     ? item.categoryHints.filter((value): value is string => typeof value === 'string')
     : [];
+
   const type_code = classifyLibraryTypeCode({
     gender: genderHint,
     physicalForm: inferPhysicalForm(signalText),
@@ -291,8 +270,6 @@ export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): N
     typeCode: type_code,
   });
 
-  const priceSourceCurrency = normalizeSourceCurrency(item.priceCurrency || fx.currency || 'GBP');
-
   return {
     price_source_currency: priceSourceCurrency,
     price_source_amount: priceSourceAmount,
@@ -308,20 +285,11 @@ export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): N
     physical_form: inferPhysicalForm(signalText),
     motor_type: inferMotorType(signalText),
     waterproof: inferWaterproof(signalText),
-    max_db: hasAnyHint(signalText, ['quiet', 'silent', 'whisper']) ? 50 : null,
+    max_db: hasAnyHint(signalText, ['quiet', 'silent', 'shhh']) ? 50 : null,
     function_tags: inferFunctionTags(signalText),
     type_code,
     subtype_code,
   };
-}
-
-export function formatHotoctopussRawDescription(rawDescription: string): string {
-  return normalizeWhitespace(
-    String(rawDescription || '')
-      .replace(/\bFeatures\b/gi, '\nFeatures: ')
-      .replace(/\bDetails\b/gi, '\nDetails: ')
-      .replace(/\bShipping\b/gi, '\nShipping: '),
-  );
 }
 
 function loadTranslationCache(): Record<string, string> {
@@ -339,10 +307,8 @@ function saveTranslationCache(cache: Record<string, string>) {
 }
 
 async function translateForPersistence(rawDescription: string, canonicalName: string): Promise<string> {
-  const normalizedRaw = formatHotoctopussRawDescription(rawDescription);
-  if (!hasMeaningfulEnglish(normalizedRaw)) {
-    return normalizedRaw;
-  }
+  const normalizedRaw = normalizeWhitespace(rawDescription);
+  if (!hasMeaningfulEnglish(normalizedRaw)) return normalizedRaw;
 
   const cache = loadTranslationCache();
   const cacheKey = canonicalName || normalizedRaw.slice(0, 120);
@@ -376,7 +342,7 @@ export async function runCleaner(): Promise<CleanedRow[]> {
 
   const prepared = prepareUniqueBufferItemsForCleaning(bufferData);
   console.log(`[clean] review-buffer 已载入 ${prepared.items.length} 条`);
-  const fx = await refreshCurrencyToCnyRate(String((prepared.items[0] as CleanerBufferItem)?.priceCurrency || 'GBP'));
+  const fx = await refreshCurrencyToCnyRate(String((prepared.items[0] as CleanerBufferItem)?.priceCurrency || 'CNY'));
   const cleanedRows: CleanedRow[] = [];
 
   for (const [index, item] of (prepared.items as CleanerBufferItem[]).entries()) {
@@ -442,10 +408,7 @@ export async function runCleaner(): Promise<CleanedRow[]> {
         const existingProduct = await prisma.products.findFirst({ where: { name: canonicalName } });
         let originalId: string;
         if (existingProduct) {
-          const updated = await prisma.products.update({
-            where: { id: existingProduct.id },
-            data: productPayload,
-          });
+          const updated = await prisma.products.update({ where: { id: existingProduct.id }, data: productPayload });
           originalId = updated.id;
         } else {
           const created = await prisma.products.create({ data: productPayload });
