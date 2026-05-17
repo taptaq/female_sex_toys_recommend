@@ -167,6 +167,141 @@ test("classifyLibraryTypeCode keeps lingerie rows as care_accessory instead of d
   );
 });
 
+test("classifyLibraryTypeCode recognizes bondage restraint products as bdsm", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Leather Wrist Cuffs",
+      rawDescription: "adjustable bondage restraint cuffs for roleplay",
+      tags: ["bondage", "restraint"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode recognizes impact tools as bdsm", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Leather Paddle",
+      rawDescription: "spanking paddle for bdsm impact play",
+      tags: ["paddle", "impact"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode keeps plain plugs out of bdsm", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "internal",
+      name: "Metal Butt Plug",
+      rawDescription: "stainless steel butt plug for anal play",
+      tags: ["anal", "plug"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify generic sensory toy copy as bdsm", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "Heat Flex 4",
+      rawDescription: "感官兔子震动棒，阴蒂刺激，亲肤材质，易于清洁",
+      tags: ["女性", "阴蒂", "rabbit"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify mainstream toy rows as bdsm only because an optional nipple clamp variant exists", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "司沃康相姬",
+      rawDescription: "吮吸玩具；支持APP操控；可选项包含带乳夹版本",
+      tags: ["女性", "APP控制", "吮吸"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify 司沃康桃话 as bdsm", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "司沃康桃话",
+      rawDescription:
+        "亲亲熊乳吸杯，乳房/乳尖精准刺激，夹吸/旋转/恒温/可替换头，前戏套装，约会必备。",
+      tags: ["女性", "乳房", "乳尖", "夹吸", "旋转"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify 司沃康白色相机 as bdsm", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "司沃康白色相机",
+      rawDescription:
+        "相姬（CAMERA SUCKING TOY），吮吸玩具；支持APP操控；可选项包含白色带乳夹与白色单机。",
+      tags: ["女性", "APP控制", "吮吸"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode recognizes NAVE nipple clamp massager as bdsm", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "NAVE",
+      rawDescription:
+        "产品名称/型号: NAVE Vibrating Nipple Clamps。副标题: 无线乳夹按摩器。夫妻间互动震动玩具，支持APP智能操控和远程控制。",
+      tags: ["乳夹按摩器", "APP智能操控"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify generic sensory marketing copy as bdsm", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Satisfyer Partner Box 3",
+      rawDescription:
+        "在您的爱爱中享受感官的多样性 - 使用满足者伴侣套装！亲肤材质，易于清洁，情侣适用。",
+      tags: ["情侣适用", "app"],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode does not classify penis ring products as bdsm from sensory wording alone", () => {
+  assert.notEqual(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Satisfyer Rocket Ring",
+      rawDescription:
+        "用我们的Satisfyer Rocket Ring为您的男性气概带来感官升级。阴茎环，情侣、男性适用。",
+      tags: ["情侣", "阴茎环"],
+    }),
+    "bdsm",
+  );
+});
+
 test("classifyLibraryTypeCode upgrades stale unisex cup rows to masturbator instead of care_accessory", () => {
   assert.equal(
     classifyLibraryTypeCode({
@@ -743,6 +878,63 @@ test("classifyLibrarySubtypeCode recognizes lingerie subtype", () => {
       tags: ["内衣", "蕾丝"],
     }),
     "lingerie",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes bondage restraint subtype", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Leather Wrist Cuffs",
+      rawDescription: "adjustable bondage restraint cuffs for roleplay",
+      tags: ["bondage", "restraint"],
+      typeCode: "bdsm",
+    }),
+    "bondage_restraint",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes gag subtype", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Silicone Ball Gag",
+      rawDescription: "soft ball gag for bdsm roleplay",
+      tags: ["gag", "bdsm"],
+      typeCode: "bdsm",
+    }),
+    "gag_mask",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes nipple play subtype", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Adjustable Nipple Clamps",
+      rawDescription: "metal nipple clamps with chain for fetish play",
+      tags: ["nipple clamp", "fetish"],
+      typeCode: "bdsm",
+    }),
+    "nipple_play",
+  );
+});
+
+test("classifyLibrarySubtypeCode recognizes NAVE as nipple_play", () => {
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "NAVE",
+      rawDescription:
+        "产品名称/型号: NAVE Vibrating Nipple Clamps。副标题: 无线乳夹按摩器。夫妻间互动震动玩具，支持APP智能操控和远程控制。",
+      tags: ["乳夹按摩器", "APP智能操控"],
+      typeCode: "bdsm",
+    }),
+    "nipple_play",
   );
 });
 

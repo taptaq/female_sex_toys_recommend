@@ -11,6 +11,7 @@ export type LibraryTypeCode =
   | "couples"
   | "wearable_remote"
   | "care_accessory"
+  | "bdsm"
   | "unknown";
 
 export type LibrarySelectableTypeCode = LibraryTypeCode;
@@ -40,7 +41,15 @@ export type LibrarySubtypeCode =
   | "dual_wearable_remote"
   | "lube_care"
   | "condom"
-  | "lingerie";
+  | "lingerie"
+  | "bondage_restraint"
+  | "impact_play"
+  | "sensory_play"
+  | "gag_mask"
+  | "collar_leash"
+  | "anal_hook_probe"
+  | "nipple_play"
+  | "fetish_accessory";
 
 export type LibrarySubtypeSelection = LibrarySubtypeCode | "all";
 
@@ -55,6 +64,7 @@ const TYPE_LABELS: Record<LibraryTypeCode, string> = {
   couples: "双人互动",
   wearable_remote: "远控穿戴",
   care_accessory: "护理与周边",
+  bdsm: "BDSM",
   unknown: "其他",
 };
 
@@ -82,6 +92,14 @@ const SUBTYPE_LABELS: Record<LibrarySubtypeCode, string> = {
   lube_care: "润滑护理",
   condom: "避孕套",
   lingerie: "内衣服饰",
+  bondage_restraint: "束缚拘束",
+  impact_play: "拍打调教",
+  sensory_play: "感官玩法",
+  gag_mask: "口塞面罩",
+  collar_leash: "项圈牵引",
+  anal_hook_probe: "肛钩探具",
+  nipple_play: "乳夹刺激",
+  fetish_accessory: "恋物周边",
 };
 
 const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]> = {
@@ -96,6 +114,7 @@ const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]
     "couples",
     "wearable_remote",
     "care_accessory",
+    "bdsm",
     "unknown",
   ],
   female: [
@@ -105,10 +124,11 @@ const GENDER_TO_TYPES: Record<LibraryAudienceGender, LibrarySelectableTypeCode[]
     "dual_stimulation",
     "wearable_remote",
     "care_accessory",
+    "bdsm",
     "unknown",
   ],
-  male: ["masturbator", "prostate", "cock_ring", "care_accessory", "unknown"],
-  unisex: ["couples", "wearable_remote", "care_accessory", "unknown"],
+  male: ["masturbator", "prostate", "cock_ring", "care_accessory", "bdsm", "unknown"],
+  unisex: ["couples", "wearable_remote", "care_accessory", "bdsm", "unknown"],
 };
 
 const TYPE_TO_SUBTYPES: Partial<Record<Exclude<LibrarySelectableTypeCode, "unknown">, LibrarySubtypeCode[]>> = {
@@ -122,6 +142,16 @@ const TYPE_TO_SUBTYPES: Partial<Record<Exclude<LibrarySelectableTypeCode, "unkno
   couples: ["insertable_couples", "external_couples"],
   wearable_remote: ["panty_wearable", "insertable_remote", "dual_wearable_remote"],
   care_accessory: ["lube_care", "condom", "lingerie"],
+  bdsm: [
+    "bondage_restraint",
+    "impact_play",
+    "sensory_play",
+    "gag_mask",
+    "collar_leash",
+    "anal_hook_probe",
+    "nipple_play",
+    "fetish_accessory",
+  ],
 };
 
 const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCode> = {
@@ -148,6 +178,14 @@ const SUBTYPE_TO_PARENT_TYPE: Record<LibrarySubtypeCode, LibrarySelectableTypeCo
   lube_care: "care_accessory",
   condom: "care_accessory",
   lingerie: "care_accessory",
+  bondage_restraint: "bdsm",
+  impact_play: "bdsm",
+  sensory_play: "bdsm",
+  gag_mask: "bdsm",
+  collar_leash: "bdsm",
+  anal_hook_probe: "bdsm",
+  nipple_play: "bdsm",
+  fetish_accessory: "bdsm",
 };
 
 export function getLibraryTypeLabel(typeCode: LibraryTypeCode) {

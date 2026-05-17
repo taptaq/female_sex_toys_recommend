@@ -208,6 +208,36 @@ test("classifyTypeCodeBackfillRow keeps generic named dual products out of care_
   );
 });
 
+test("classifyTypeCodeBackfillRow recognizes bdsm restraint products", () => {
+  assert.equal(
+    classifyTypeCodeBackfillRow({
+      id: "toy-bdsm-1",
+      name: "Leather Bondage Kit",
+      gender: "unisex",
+      physical_form: "external",
+      raw_description: null,
+      product_tags: ["bondage", "cuffs", "collar"],
+      product_raw_description: "restraint kit for bdsm beginners",
+    }),
+    "bdsm",
+  );
+});
+
+test("classifySubtypeCodeBackfillRow recognizes nipple play subtype from joined metadata", () => {
+  assert.equal(
+    classifySubtypeCodeBackfillRow({
+      id: "toy-bdsm-2",
+      name: "Metal Nipple Clamps",
+      gender: "unisex",
+      physical_form: "external",
+      raw_description: null,
+      product_tags: ["nipple clamp", "fetish"],
+      product_raw_description: "adjustable pressure clamps for bdsm play",
+    }),
+    "nipple_play",
+  );
+});
+
 test("classifyTypeCodeBackfillRow keeps suction rows out of care_accessory despite lube-flavored tags", () => {
   assert.equal(
     classifyTypeCodeBackfillRow({

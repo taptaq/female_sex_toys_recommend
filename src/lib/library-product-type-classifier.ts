@@ -245,6 +245,101 @@ const COUPLES_PATTERNS = [
   /\bcouple/u,
 ];
 
+const BDSM_RESTRAINT_PATTERNS = [
+  /bondage/u,
+  /restraint/u,
+  /restrain/u,
+  /cuffs?/u,
+  /shackles?/u,
+  /hogtie/u,
+  /bondage\s*tape/u,
+  /rope/u,
+  /束缚/u,
+  /拘束/u,
+  /捆绑/u,
+  /手铐/u,
+  /脚铐/u,
+  /镣铐/u,
+];
+
+const BDSM_IMPACT_PATTERNS = [
+  /paddle/u,
+  /flogger/u,
+  /whip/u,
+  /crop/u,
+  /cane/u,
+  /spanking/u,
+  /impact\s*play/u,
+  /拍打/u,
+  /鞭打/u,
+  /皮鞭/u,
+  /拍板/u,
+  /藤条/u,
+];
+
+const BDSM_SENSORY_PATTERNS = [
+  /blindfold/u,
+  /hood/u,
+  /sensory/u,
+  /sensory\s*deprivation/u,
+  /blindfolded/u,
+  /mask/u,
+  /蒙眼/u,
+  /眼罩/u,
+  /头罩/u,
+  /感官/u,
+  /感官剥夺/u,
+];
+
+const BDSM_GAG_PATTERNS = [
+  /ball\s*gag/u,
+  /gag/u,
+  /mouth\s*gag/u,
+  /mouth\s*spreader/u,
+  /口塞/u,
+  /嘴塞/u,
+  /扩口器/u,
+];
+
+const BDSM_COLLAR_PATTERNS = [
+  /collar/u,
+  /leash/u,
+  /posture\s*collar/u,
+  /项圈/u,
+  /牵引/u,
+  /牵绳/u,
+];
+
+const BDSM_ANAL_HOOK_PATTERNS = [
+  /anal\s*hook/u,
+  /肛钩/u,
+];
+
+const BDSM_NIPPLE_PATTERNS = [
+  /nipple\s*clamp/u,
+  /nipple\s*clip/u,
+  /乳夹/u,
+  /乳头夹/u,
+];
+
+const BDSM_NIPPLE_STRONG_PATTERNS = [
+  /nipple\s*clamps?/u,
+  /nipple\s*clips?/u,
+  /乳夹按摩器/u,
+  /无线乳夹/u,
+  /震动乳夹/u,
+  /振动乳夹/u,
+  /乳头夹按摩器/u,
+];
+
+const BDSM_FETISH_PATTERNS = [
+  /fetish/u,
+  /bdsm/u,
+  /roleplay/u,
+  /调教/u,
+  /恋物/u,
+];
+
 const REMOTE_PATTERNS = [
   /远控/u,
   /遥控/u,
@@ -596,6 +691,7 @@ type LibraryTypeClassificationContext = {
   hasProstate: boolean;
   hasCockRing: boolean;
   hasCouples: boolean;
+  hasBdsm: boolean;
   hasRemote: boolean;
   hasWearable: boolean;
   hasPantyWearableSignals: boolean;
@@ -622,6 +718,31 @@ function buildClassificationContext(
   const hasProstate = hasAnySignal(signalText, PROSTATE_PATTERNS);
   const hasCockRing = hasAnySignal(signalText, COCK_RING_PATTERNS);
   const hasCouples = hasAnySignal(signalText, COUPLES_PATTERNS);
+  const trustedBdsmText = [
+    corpus.nameText,
+    corpus.tagText,
+    corpus.descriptionLeadText,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const hasBdsm =
+    hasAnySignal(signalText, BDSM_RESTRAINT_PATTERNS) ||
+    hasAnySignal(signalText, BDSM_IMPACT_PATTERNS) ||
+    hasAnySignal(trustedBdsmText, BDSM_GAG_PATTERNS) ||
+    hasAnySignal(trustedBdsmText, BDSM_COLLAR_PATTERNS) ||
+    hasAnySignal(trustedBdsmText, BDSM_ANAL_HOOK_PATTERNS) ||
+    hasAnySignal(trustedBdsmText, BDSM_FETISH_PATTERNS) ||
+    (
+      hasAnySignal(trustedBdsmText, BDSM_NIPPLE_STRONG_PATTERNS)
+    ) ||
+    (
+      hasAnySignal(trustedBdsmText, BDSM_NIPPLE_PATTERNS) &&
+      hasAnySignal(trustedBdsmText, BDSM_FETISH_PATTERNS)
+    ) ||
+    (
+      hasAnySignal(trustedBdsmText, BDSM_SENSORY_PATTERNS) &&
+      hasAnySignal(trustedBdsmText, [/blindfold/u, /hood/u, /mask/u, /蒙眼/u, /眼罩/u, /头罩/u, /感官剥夺/u])
+    );
   const hasRemote = hasAnySignal(signalText, REMOTE_PATTERNS);
   const hasWearable =
     hasAnySignal(signalText, WEARABLE_PATTERNS) &&
@@ -653,6 +774,7 @@ function buildClassificationContext(
     hasProstate,
     hasCockRing,
     hasCouples,
+    hasBdsm,
     hasRemote,
     hasWearable,
     hasPantyWearableSignals,
@@ -828,6 +950,10 @@ function classifyUnisexTypeFromContext(
   femaleTypeCode: LibraryTypeCode,
   maleTypeCode: LibraryTypeCode,
 ): LibraryTypeCode {
+  if (context.hasBdsm) {
+    return "bdsm";
+  }
+
   if (context.hasRemote && context.hasWearable) {
     return "wearable_remote";
   }
@@ -1143,6 +1269,13 @@ export function classifyLibrarySubtypeCode(
   const resolvedTypeCode =
     normalizeValue(input.typeCode) || classifyLibraryTypeCode(input);
   const corpus = buildSignalCorpus(input);
+  const trustedSubtypeText = [
+    corpus.nameText,
+    corpus.tagText,
+    corpus.descriptionLeadText,
+  ]
+    .filter(Boolean)
+    .join("\n");
   const signalText = corpus.signalText;
   const tagText = corpus.tagText;
   const hasSuction = hasAnySignal(signalText, SUCTION_PATTERNS);
@@ -1165,6 +1298,48 @@ export function classifyLibrarySubtypeCode(
 
   if (resolvedTypeCode === "care_accessory") {
     return selectCareAccessorySubtype(corpus);
+  }
+
+  if (resolvedTypeCode === "bdsm") {
+    if (hasAnySignal(trustedSubtypeText, BDSM_RESTRAINT_PATTERNS)) {
+      return "bondage_restraint";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_IMPACT_PATTERNS)) {
+      return "impact_play";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_GAG_PATTERNS)) {
+      return "gag_mask";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_COLLAR_PATTERNS)) {
+      return "collar_leash";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_ANAL_HOOK_PATTERNS)) {
+      return "anal_hook_probe";
+    }
+
+    if (
+      hasAnySignal(trustedSubtypeText, BDSM_NIPPLE_STRONG_PATTERNS) ||
+      (
+        hasAnySignal(trustedSubtypeText, BDSM_NIPPLE_PATTERNS) &&
+        hasAnySignal(trustedSubtypeText, BDSM_FETISH_PATTERNS)
+      )
+    ) {
+      return "nipple_play";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_SENSORY_PATTERNS)) {
+      return "sensory_play";
+    }
+
+    if (hasAnySignal(trustedSubtypeText, BDSM_FETISH_PATTERNS)) {
+      return "fetish_accessory";
+    }
+
+    return null;
   }
 
   return selectSubtypeFromSignals(
