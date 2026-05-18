@@ -124,10 +124,30 @@ export function ResultsAlternativeProductsSection({
                     “{product.reason}”
                   </p>
                 ) : null}
-                <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-                  <span className="text-sm text-cyan-400">¥{product.price}</span>
-                  {renderClickableHint("点击查看")}
-                </div>
+                          <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-cyan-400">¥{product.price}</span>
+                              {onToggleFavorite ? (
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    void onToggleFavorite(product);
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono transition-colors ${
+                                    favoriteProductIds?.has(product.originalId || product.id)
+                                      ? "border-rose-300/35 bg-rose-400/16 text-rose-100"
+                                      : "border-cyan-300/18 bg-cyan-300/10 text-cyan-100 hover:border-cyan-200/35 hover:text-white"
+                                  }`}
+                                >
+                                  <Heart className={`h-3 w-3 ${favoriteProductIds?.has(product.originalId || product.id) ? "fill-current" : ""}`} />
+                                  {favoriteProductIds?.has(product.originalId || product.id) ? "已收藏" : "收藏"}
+                                </button>
+                              ) : null}
+                            </div>
+                            {renderClickableHint("点击查看")}
+                          </div>
               </a>
             ) : (
               <div

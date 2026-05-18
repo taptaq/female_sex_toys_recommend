@@ -83,6 +83,36 @@ test("results page shows confidence, fit reasons, and caveats for the primary re
   assert.match(html, /防水表现达到 IPX7/);
 });
 
+test("results page shows the original natural language request when matched from free text", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音", "女性向"] }}
+      topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+      matchInputMode="natural-language"
+      naturalLanguageQuery="想要一个更静音、预算 300 以内、适合女生新手、最好容易清洁的产品。"
+    />,
+  );
+
+  assert.match(html, /你的原始描述/);
+  assert.match(html, /想要一个更静音、预算 300 以内、适合女生新手、最好容易清洁的产品。/);
+  assert.match(html, /你这次最该先确认/);
+});
+
 test("results page mounts the body persona entry and free summary block", () => {
   const html = renderToStaticMarkup(
     <ResultsPage

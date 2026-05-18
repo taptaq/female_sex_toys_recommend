@@ -24,6 +24,10 @@ export type LocalResultComputation = {
   fallbackTopProducts: StructuredRankedProduct[];
 };
 
+export type LocalResultComputationContext = {
+  naturalLanguageQuery?: string;
+};
+
 export function finalizeRankedProducts(
   products: StructuredRankedProduct[],
   reasonMap: Map<string, string>,
@@ -62,6 +66,7 @@ export function finalizeBackupProducts(
 export function buildLocalResultComputation(
   currentAnswers: AnswerState,
   productsData: Product[],
+  context?: LocalResultComputationContext,
 ): LocalResultComputation {
   const localRanking = buildLocalRecommendationRanking(
     currentAnswers,
@@ -69,6 +74,7 @@ export function buildLocalResultComputation(
     {
       rerankPoolSize: AI_RERANK_POOL_SIZE,
       finalSelectionCount: FINAL_SELECTION_COUNT,
+      context,
     },
   );
   const filtered = localRanking.filteredProducts;

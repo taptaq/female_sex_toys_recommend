@@ -22,6 +22,7 @@ import type { SavedRecommendationProfile } from "../lib/user-recommendation-prof
 import type { AuthPanelMode } from "../components/AuthPanel.tsx";
 import type { KnowledgeNebulaTopicSlug } from "../data/knowledge-nebula.ts";
 import type { RecommendationRerollReason } from "../lib/recommendation-reroll.ts";
+import type { QuizAnswerPathEntry } from "../lib/recommendation-session.ts";
 
 type BodyPersonaPageState = {
   sessionId: string;
@@ -37,6 +38,7 @@ type AppRouteRendererProps = {
   activeQuestions: Question[];
   isAiMatching: boolean;
   answers: AnswerState;
+  answerPath: QuizAnswerPathEntry[];
   appliedResultTuningModes?: ResultTuningMode[];
   topProducts: RankedProduct[];
   backupProducts: BackupCandidate[];
@@ -108,6 +110,8 @@ type AppRouteRendererProps = {
   themeId: AppThemeId;
   onThemeChange: (nextThemeId: AppThemeId) => void;
   onReset: () => void;
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
   favoriteProductIds: Set<string>;
   onToggleFavorite: (product: Product) => void | Promise<void>;
 };
@@ -119,6 +123,7 @@ export function AppRouteRenderer({
   activeQuestions,
   isAiMatching,
   answers,
+  answerPath,
   appliedResultTuningModes,
   topProducts,
   backupProducts,
@@ -174,6 +179,8 @@ export function AppRouteRenderer({
   themeId,
   onThemeChange,
   onReset,
+  matchInputMode = "quiz",
+  naturalLanguageQuery = "",
   favoriteProductIds,
   onToggleFavorite,
 }: AppRouteRendererProps) {
@@ -222,6 +229,7 @@ export function AppRouteRenderer({
         <ResultsPage
           pageVariants={pageVariants}
           answers={answers}
+          answerPath={answerPath}
           appliedResultTuningModes={appliedResultTuningModes}
           topProducts={topProducts}
           backupProducts={backupProducts}
@@ -256,6 +264,8 @@ export function AppRouteRenderer({
           authPanel={authPanel}
           onBackHome={onBackHome}
           onReset={onReset}
+          matchInputMode={matchInputMode}
+          naturalLanguageQuery={naturalLanguageQuery}
           isBodyPersonaUnlockLoginRequired={isBodyPersonaUnlockLoginRequired}
           isBodyPersonaFullReportOpen={isBodyPersonaFullReportOpen}
           favoriteProductIds={favoriteProductIds}

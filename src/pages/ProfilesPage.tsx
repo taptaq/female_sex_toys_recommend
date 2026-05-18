@@ -416,6 +416,19 @@ export function ProfilesPage({
                   </section>
                 )}
 
+                {selectedProfile.payload.matchInputMode === "natural-language" &&
+                typeof selectedProfile.payload.naturalLanguageQuery === "string" &&
+                selectedProfile.payload.naturalLanguageQuery.trim() ? (
+                  <section className="rounded-2xl border border-violet-300/14 bg-violet-300/[0.06] p-4">
+                    <h3 className="mb-3 text-sm font-medium text-violet-50">
+                      当时原始描述
+                    </h3>
+                    <p className="text-sm leading-6 text-violet-50/82">
+                      {selectedProfile.payload.naturalLanguageQuery}
+                    </p>
+                  </section>
+                ) : null}
+
                 <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045] p-4">
                   <h3 className="mb-3 text-sm font-medium text-cyan-50">
                     决策快照

@@ -45,6 +45,8 @@ import {
 import {
   buildResultAvoidanceTips,
   buildResultConfidenceSummary,
+  buildNaturalLanguageResultNarrative,
+  buildQuizResultNarrative,
   buildResultNextStepGroups,
   buildResultRouteSummary,
 } from "../lib/recommendation-results.ts";
@@ -57,6 +59,7 @@ import {
 } from "../lib/recommendation-reroll.ts";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
 import { buildKnowledgeNebulaPath } from "../lib/knowledge-nebula-route.ts";
+import type { QuizAnswerPathEntry } from "../lib/recommendation-session.ts";
 
 type ResultsBackupProduct = BackupCandidate;
 export type ResultEditableCondition = "budget" | "quietness" | "scene";
@@ -94,6 +97,8 @@ const PARAMETER_PREVIEW_ITEMS = [
     sectionId: "science-body",
   },
 ] as const;
+
+type ParameterPreviewItem = (typeof PARAMETER_PREVIEW_ITEMS)[number];
 
 function getSortedParameterPreviewItems(answers: AnswerState) {
   const scoredItems = PARAMETER_PREVIEW_ITEMS.map((item, index) => {
@@ -134,6 +139,35 @@ function getSortedParameterPreviewItems(answers: AnswerState) {
     .slice(0, 3);
 }
 
+function getNaturalLanguageParameterPreviewItems(
+  naturalLanguageQuery: string,
+): ParameterPreviewItem[] {
+  const query = naturalLanguageQuery.toLowerCase();
+  const scoredItems = PARAMETER_PREVIEW_ITEMS.map((item, index) => {
+    let score = 0;
+
+    if (item.id === "max-db" && /静音|噪音|安静|别太吵|适中/.test(query)) {
+      score += 10;
+    }
+    if (item.id === "waterproof" && /清洁|防水|好打理|可水洗/.test(query)) {
+      score += 10;
+    }
+    if (item.id === "motor-type" && /强烈|更强|温和|波形|刺激|节奏/.test(query)) {
+      score += 10;
+    }
+
+    return {
+      ...item,
+      score,
+      index,
+    };
+  });
+
+  return scoredItems
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, 3);
+}
+
 function normalizeGuidanceItem(item: string) {
   return item.replace(/\s+/g, " ").trim();
 }
@@ -151,6 +185,26 @@ function dedupeGuidanceItems(items: string[]) {
     result.push(normalizedItem);
     return result;
   }, []);
+}
+
+function buildNaturalLanguageNextStepLead(naturalLanguageQuery: string) {
+  const query = naturalLanguageQuery.toLowerCase();
+  const leads: string[] = [];
+
+  if (/静音|噪音|安静|别太吵|适中/.test(query)) {
+    leads.push("先确认真实噪音是不是落在你能接受的范围内，尤其是夜晚、同住或安静环境。");
+  }
+  if (/强烈|更强|波形|刺激/.test(query)) {
+    leads.push("先比较刺激强度和波形变化是否真的比当前主推更贴近你的体感预期，而不是只看参数高低。");
+  }
+  if (/预算|[0-9]{2,5}\s*(元|块)/.test(query)) {
+    leads.push("先看价格是否真的落在你心里可接受的预算带，再决定要不要继续比较更高一档的性能。");
+  }
+  if (/清洁|防水|好打理|可水洗/.test(query)) {
+    leads.push("先确认清洁方式和防水边界，避免到手后因为维护成本太高而影响复用率。");
+  }
+
+  return leads;
 }
 
 function renderProductImage(
@@ -316,6 +370,9 @@ type ResultsPageProps = {
   };
   onBackHome?: () => void;
   onReset: () => void;
+  answerPath?: QuizAnswerPathEntry[];
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
   favoriteProductIds?: Set<string>;
   onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
 };
@@ -359,6 +416,9 @@ export function ResultsPage({
   authPanel,
   onBackHome,
   onReset,
+  answerPath = [],
+  matchInputMode = "quiz",
+  naturalLanguageQuery = "",
   favoriteProductIds = new Set(),
   onToggleFavorite,
 }: ResultsPageProps) {
@@ -422,8 +482,27 @@ export function ResultsPage({
   const primaryConfidenceSummary = topProducts[0]
     ? buildResultConfidenceSummary(topProducts[0], answers)
     : null;
+  const quizNarrative = matchInputMode === "quiz"
+    ? buildQuizResultNarrative({
+        answers,
+        answerPath,
+      })
+    : null;
+  const isNaturalLanguageResult =
+    matchInputMode === "natural-language" &&
+    naturalLanguageQuery.trim().length > 0;
+  const naturalLanguageNarrative = isNaturalLanguageResult
+    ? buildNaturalLanguageResultNarrative({
+        answers,
+        naturalLanguageQuery,
+      })
+    : null;
   const primaryRouteSummary = topProducts[0]
-    ? buildResultRouteSummary(topProducts[0], answers)
+    ? isNaturalLanguageResult && naturalLanguageNarrative
+      ? naturalLanguageNarrative
+      : matchInputMode === "quiz" && quizNarrative
+        ? quizNarrative
+        : buildResultRouteSummary(topProducts[0], answers)
     : null;
   const prePurchaseChecklist = buildPrePurchaseChecklist(answers, topProducts[0]);
   const avoidanceTips = buildResultAvoidanceTips(answers);
@@ -433,13 +512,29 @@ export function ResultsPage({
     appliedResultTuningModes.includes(option.mode),
   );
   const isSignedIn = Boolean(authPanel.userLabel);
-  const sortedParameterPreviewItems = getSortedParameterPreviewItems(answers);
+  const sortedParameterPreviewItems = isNaturalLanguageResult
+    ? getNaturalLanguageParameterPreviewItems(naturalLanguageQuery)
+    : getSortedParameterPreviewItems(answers);
   const nextStepGroups = buildResultNextStepGroups({
     answers,
     relaxationTips,
     shoppingGuidanceItems,
   });
-  const primaryNextStepGroup = nextStepGroups[0] ?? null;
+  const naturalLanguageLeadItems = isNaturalLanguageResult
+    ? buildNaturalLanguageNextStepLead(naturalLanguageQuery)
+    : [];
+  const nextStepGroupsWithNaturalLanguageLead =
+    naturalLanguageLeadItems.length > 0
+      ? [
+          {
+            id: "purchase-focus" as const,
+            title: "你这次最该先确认",
+            items: naturalLanguageLeadItems,
+          },
+          ...nextStepGroups,
+        ]
+      : nextStepGroups;
+  const primaryNextStepGroup = nextStepGroupsWithNaturalLanguageLead[0] ?? null;
   const primaryNextStep = primaryNextStepGroup?.items[0] ?? null;
   const canBrowseSimilarLibraryProducts = Boolean(onBrowseLibrary && topProducts[0]);
   const handleOpenKnowledgeTopic = (
@@ -498,6 +593,16 @@ export function ResultsPage({
         <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-slate-500">
           先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。
         </p>
+        {isNaturalLanguageResult ? (
+          <div className="mx-auto mt-4 max-w-3xl rounded-2xl border border-violet-300/14 bg-violet-300/[0.06] px-4 py-3 text-left shadow-[0_14px_40px_rgba(67,56,202,0.12)]">
+            <p className="text-[11px] font-medium tracking-[0.18em] text-violet-100/86">
+              你的原始描述
+            </p>
+            <p className="mt-2 text-sm leading-6 text-violet-50/82">
+              {naturalLanguageQuery}
+            </p>
+          </div>
+        ) : null}
         {isEnhancingResults ? (
           <div className="mx-auto mt-4 flex max-w-xl items-start gap-3 rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.055] px-4 py-3 text-left shadow-[0_14px_40px_rgba(8,47,73,0.12)]">
             <LoaderCircle className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-cyan-200/80" />
@@ -836,7 +941,7 @@ export function ResultsPage({
         />
       )}
 
-      <ResultsNextStepsPanel nextStepGroups={nextStepGroups} />
+      <ResultsNextStepsPanel nextStepGroups={nextStepGroupsWithNaturalLanguageLead} />
 
       {topProducts[0] && (
         <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">

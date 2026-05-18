@@ -1,4 +1,5 @@
 import type { AnswerState, Product } from "../data/mock.js";
+import type { QuizAnswerPathEntry } from "./recommendation-session.js";
 import {
   buildBranchFallbackReason,
   buildBranchBackupReason,
@@ -64,6 +65,32 @@ export type ResultNextStepGroup = {
   title: string;
   items: string[];
 };
+
+export type ResultNarrativeContext = {
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
+};
+
+type AnswerPathNarrativeSummary = {
+  keyLabels: string[];
+  keyTags: string[];
+};
+
+export function buildAnswerPathNarrativeSummary(
+  answerPath: QuizAnswerPathEntry[] | undefined,
+): AnswerPathNarrativeSummary {
+  const safePath = Array.isArray(answerPath) ? answerPath : [];
+  const keyEntries = safePath.slice(-3);
+
+  return {
+    keyLabels: keyEntries
+      .map((entry) => String(entry.optionLabel || "").trim())
+      .filter(Boolean),
+    keyTags: keyEntries
+      .map((entry) => String(entry.tag || "").trim())
+      .filter(Boolean),
+  };
+}
 
 function hasPendingPreferenceTag(
   answers: Pick<RecommendationAnswers, "tags">,
@@ -615,4 +642,89 @@ export function buildResultNextStepGroups({
   }
 
   return groups.filter((group) => group.items.length > 0);
+}
+
+export function buildNaturalLanguageResultNarrative({
+  answers,
+  naturalLanguageQuery,
+}: {
+  answers: RecommendationAnswers;
+  naturalLanguageQuery?: string;
+}) {
+  const query = String(naturalLanguageQuery || "").trim();
+  const matchedTokens = [
+    /静音|安静|低调|不吵/.test(query) ? "静音" : null,
+    /预算|价格|价位/.test(query) ? "预算" : null,
+    /防水|清洁|好打理/.test(query) ? "清洁" : null,
+    /女生|女性|女用|女性向/.test(query) ? "女性向" : null,
+    /男生|男性|男用|男性向/.test(query) ? "男性向" : null,
+    /情侣|异地|双人|共用/.test(query) ? "情侣共玩" : null,
+    /新手|第一次|怕刺激|慢热/.test(query) ? "新手慢热" : null,
+    /强刺激|强烈|更猛/.test(query) ? "强刺激" : null,
+  ].filter((item): item is string => Boolean(item));
+
+  const userSummary = query
+    ? `你这次的描述里最明显的是：${matchedTokens.length > 0 ? matchedTokens.join("、") : "整体需求"}。`
+    : "这次是通过结构化问卷来匹配的。";
+
+  const parameterFocus = [
+    answers.maxDb != null ? "静音" : null,
+    answers.waterproof != null ? "清洁" : null,
+    answers.budget != null ? "预算" : null,
+    answers.experienceLevel ? "节奏" : null,
+    answers.physicalForm ? "路线" : null,
+  ].filter((item): item is string => Boolean(item));
+
+  const nextPriority = query
+    ? `下一步先确认${parameterFocus.slice(0, 2).join("、") || "最关键的体验约束"}，再回头看主推荐是否和你的原话一致。`
+    : "下一步先确认静音、清洁和预算是否还符合你的真实使用环境。";
+
+  const routeLabel =
+    /情侣|异地|双人|共用/.test(query)
+      ? "双人共玩路线"
+      : /男性|男用|男生/.test(query)
+        ? "男性向体验路线"
+        : "女性向体验路线";
+
+  const summary = query
+    ? `${userSummary} 这次更适合先看${parameterFocus.slice(0, 3).join(" / ") || "核心参数"}。`
+    : "这次更适合先看静音 / 清洁 / 预算这三项核心参数。";
+
+  return {
+    routeLabel,
+    summary,
+    nextPriority,
+    parameterFocus,
+    matchedTokens,
+  };
+}
+
+export function buildQuizResultNarrative({
+  answers,
+  answerPath,
+}: {
+  answers: RecommendationAnswers;
+  answerPath?: QuizAnswerPathEntry[];
+}) {
+  const summary = buildAnswerPathNarrativeSummary(answerPath);
+  const keySignalText =
+    summary.keyLabels.slice(0, 2).join("、") ||
+    summary.keyTags.slice(0, 2).join("、") ||
+    "你刚才选中的偏好";
+
+  const routeLabel =
+    answers.gender === "male"
+      ? "男性向体验路线"
+      : answers.gender === "unisex"
+        ? "双人共玩路线"
+        : "女性向体验路线";
+
+  return {
+    routeLabel,
+    summary: `这次更适合先沿着 ${keySignalText} 这条方向往下看，而不是把所有参数一次看满。`,
+    nextPriority:
+      answers.maxDb != null
+        ? "下一步先确认静音和第一次上手节奏，再比较价格与清洁边界。"
+        : "下一步先确认你刚才最在意的那两个条件，在主推荐上是否真的成立。",
+  };
 }

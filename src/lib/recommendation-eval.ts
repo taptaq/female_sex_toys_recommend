@@ -5,8 +5,10 @@ import {
   buildLocalRecommendationRanking,
   type StructuredRankedProduct,
 } from "./recommendation-local-ranking.js";
+import type { RecommendationCandidatePoolContext } from "./recommendation-candidate-pool.js";
 
 type TopProductExpectation = {
+  id?: string;
   gender?: Product["gender"];
   typeCodes?: string[];
 };
@@ -24,6 +26,7 @@ export type RecommendationEvalScenario = {
   answers: AnswerState;
   products: Product[];
   expectations: RecommendationEvalExpectations;
+  context?: RecommendationCandidatePoolContext;
 };
 
 export type RecommendationEvalResult = {
@@ -53,6 +56,7 @@ export function runRecommendationEvalScenario(
     {
       finalSelectionCount: scenario.expectations.topCount ?? 3,
       rerankPoolSize: Math.max(10, scenario.expectations.topCount ?? 3),
+      context: scenario.context,
     },
   );
   const topProducts = ranking.fallbackTopProducts;
@@ -68,6 +72,15 @@ export function runRecommendationEvalScenario(
     if (top1.gender !== expectedGender) {
       failures.push(
         `${scenario.id}: top1 gender should be ${expectedGender}, got ${formatProduct(top1)}`,
+      );
+    }
+  }
+
+  if (top1 && scenario.expectations.top1?.id) {
+    const expectedId = scenario.expectations.top1.id;
+    if (top1.id !== expectedId) {
+      failures.push(
+        `${scenario.id}: top1 id should be ${expectedId}, got ${formatProduct(top1)}`,
       );
     }
   }

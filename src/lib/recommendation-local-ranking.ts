@@ -1,6 +1,9 @@
 import type { AnswerState, Product } from "../data/mock.js";
 import type { RankedProduct } from "./app-shell.js";
-import { buildRecommendationCandidatePool } from "./recommendation-candidate-pool.js";
+import {
+  buildRecommendationCandidatePool,
+  type RecommendationCandidatePoolContext,
+} from "./recommendation-candidate-pool.js";
 import {
   getBranchPreferenceAdjustments,
   selectScorePresetId,
@@ -62,6 +65,12 @@ type ScorePreset = {
   label: string;
   weights: ScoreWeights;
   hardMissPolicy: HardMissPolicy;
+};
+
+type NaturalLanguagePreferenceAdjustment = {
+  score: number;
+  summary: string[];
+  hardMisses: number;
 };
 
 const SCORE_PRESET_FEMALE: ScorePreset = {
@@ -223,10 +232,122 @@ function getBudgetGap(price: number, budget?: [number, number]) {
   return 0;
 }
 
+function hasPositiveSuctionSignal(text: string) {
+  const normalized = String(text || "").toLowerCase();
+  if (!normalized) return false;
+  if (/不是吮吸|非吮吸|不带吮吸|无吮吸|not suction|non-suction/.test(normalized)) {
+    return false;
+  }
+  return /吮吸|吸感|吸吮|小海豚|阴蒂吸|air ?pulse|suction/.test(normalized);
+}
+
+function getNaturalLanguagePreferenceAdjustment(
+  product: Product,
+  naturalLanguageQuery?: string,
+): NaturalLanguagePreferenceAdjustment {
+  const query = String(naturalLanguageQuery || "").trim();
+  if (!query) {
+    return { score: 0, summary: [], hardMisses: 0 };
+  }
+
+  const lowerQuery = query.toLowerCase();
+  const haystack = [
+    product.name,
+    product.displayName,
+    product.safeDisplayName,
+    product.canonicalName,
+    product.rawDescription,
+    ...(product.tags ?? []),
+    product.typeCode,
+    product.subtypeCode,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  let score = 0;
+  let hardMisses = 0;
+  const summary: string[] = [];
+
+  const wantsSuction =
+    /吮吸|吸感|吸吮|小海豚|阴蒂吸|air ?pulse|suction/.test(lowerQuery);
+  const wantsStrongSuction =
+    /吮吸感更强|更强吮吸|更强吸感|吸力更强|吸感更强/.test(lowerQuery);
+  const allowsInsertable =
+    /入体|插入|深入|内外|双刺激|双通道|g点|g\s*点/.test(lowerQuery);
+  if (wantsSuction) {
+    const productSupportsSuction =
+      hasPositiveSuctionSignal(haystack) ||
+      product.typeCode === "suction";
+    if (productSupportsSuction) {
+      score += 42;
+      summary.push("原始描述明确偏向吮吸路线");
+    } else {
+      score -= 28;
+      hardMisses += 1;
+    }
+
+    if (!allowsInsertable && product.physicalForm === "external") {
+      score += 18;
+      summary.push("更贴近外部使用路径");
+    }
+
+    if (wantsStrongSuction) {
+      if (/强劲|强力|高能|爆发|大吸力|强吸/.test(haystack)) {
+        score += 24;
+        summary.push("更贴近强吮吸诉求");
+      } else if (productSupportsSuction) {
+        score += 8;
+      }
+    }
+  }
+
+  const wantsMorePatterns =
+    /波形.*多|模式.*多|档位.*多|变化.*多|花样.*多/.test(lowerQuery);
+  if (wantsMorePatterns) {
+    const productHasPatternSignals =
+      /波形|模式|档位|频率|节奏|变化/.test(haystack);
+    if (productHasPatternSignals) {
+      score += 16;
+      summary.push("模式变化更贴近你的原话");
+    }
+  }
+
+  const wantsStrongIntensity =
+    /更强|强一点|吸力强|力度强|刺激强/.test(lowerQuery) && !wantsStrongSuction;
+  if (wantsStrongIntensity) {
+    if (product.motorType === "strong" || /强劲|强力|高能|爆发/.test(haystack)) {
+      score += 18;
+      summary.push("强度表达更贴近你的描述");
+    } else if (product.motorType === "gentle") {
+      score -= 8;
+    }
+  }
+
+  const wantsModerateNoise = /噪音适中|声音适中|别太吵|不要太吵|静音|夜晚|宿舍|同住/.test(
+    lowerQuery,
+  );
+  if (wantsModerateNoise && product.maxDb != null) {
+    if (product.maxDb <= 50) {
+      score += 14;
+      summary.push("噪音表现更贴近原始场景");
+    } else if (product.maxDb > 58) {
+      score -= 12;
+    }
+  }
+
+  return {
+    score,
+    summary,
+    hardMisses,
+  };
+}
+
 export function scoreStructuredProduct(
   product: Product,
   answers: AnswerState,
   preset: ScorePreset,
+  context?: RecommendationCandidatePoolContext,
 ): StructuredRankedProduct {
   const weights = preset.weights;
   const hardMissPolicy = preset.hardMissPolicy;
@@ -364,6 +485,14 @@ export function scoreStructuredProduct(
   score += disguiseAdjustments.score;
   matchSummary.push(...disguiseAdjustments.summary);
 
+  const naturalLanguageAdjustments = getNaturalLanguagePreferenceAdjustment(
+    product,
+    context?.naturalLanguageQuery,
+  );
+  score += naturalLanguageAdjustments.score;
+  hardMisses += naturalLanguageAdjustments.hardMisses;
+  matchSummary.push(...naturalLanguageAdjustments.summary);
+
   return {
     ...product,
     score: Math.max(0, Math.round(score)),
@@ -396,16 +525,23 @@ export function buildLocalRecommendationRanking(
   options: {
     rerankPoolSize?: number;
     finalSelectionCount?: number;
+    context?: RecommendationCandidatePoolContext;
   } = {},
 ): LocalRecommendationRanking {
-  const recommendationPool = buildRecommendationCandidatePool(answers, products);
+  const recommendationPool = buildRecommendationCandidatePool(
+    answers,
+    products,
+    options.context,
+  );
   const candidates = recommendationPool.rankedInputProducts;
   const scorePreset = selectScorePreset(answers, candidates);
   const rerankPoolSize = options.rerankPoolSize ?? DEFAULT_AI_RERANK_POOL_SIZE;
   const finalSelectionCount =
     options.finalSelectionCount ?? DEFAULT_FINAL_SELECTION_COUNT;
   const rankedCandidates = candidates
-    .map((product) => scoreStructuredProduct(product, answers, scorePreset))
+    .map((product) =>
+      scoreStructuredProduct(product, answers, scorePreset, options.context),
+    )
     .sort(compareStructuredProducts);
   const rerankPool = rankedCandidates.slice(0, rerankPoolSize);
 

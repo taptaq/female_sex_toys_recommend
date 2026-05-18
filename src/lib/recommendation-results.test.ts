@@ -7,7 +7,10 @@ import type {
 import {
   buildBackupDirectionTeaser,
   buildBackupCandidates,
+  buildAnswerPathNarrativeSummary,
   buildResultConfidenceSummary,
+  buildNaturalLanguageResultNarrative,
+  buildQuizResultNarrative,
   buildResultRouteSummary,
   buildResultNextStepGroups,
   buildLocalBackupReason,
@@ -15,6 +18,7 @@ import {
   buildResultAvoidanceTips,
   buildLocalPrimaryReason,
 } from "./recommendation-results.ts";
+import type { QuizAnswerPathEntry } from "./recommendation-session.ts";
 
 function makeProduct(
   overrides: Partial<RecommendationRankedProduct> & Pick<RecommendationRankedProduct, "id" | "name" | "score" | "price">,
@@ -460,4 +464,88 @@ test("buildLocalShoppingGuidance does not treat maxDb 100 as a quietness prefere
     "更省预算：价格约 169 元，预算压力更小",
     "更防水：防水约 IPX8，清洁维护更省心",
   ]);
+});
+
+test("buildNaturalLanguageResultNarrative reflects the original prompt in a user-facing summary", () => {
+  const result = buildNaturalLanguageResultNarrative({
+    answers: {
+      tags: ["女性向", "静音"],
+      maxDb: 50,
+      waterproof: 7,
+      budget: [100, 300],
+      gender: "female",
+      physicalForm: "external",
+      motorType: "gentle",
+    },
+    naturalLanguageQuery:
+      "我是女生，想找一个吮吸感更强一点的，波形更多的，噪音适中的。",
+  });
+
+  assert.match(result.summary, /静音/);
+  assert.match(result.summary, /女性向/);
+  assert.match(result.nextPriority, /静音|清洁|预算/);
+  assert.match(result.routeLabel, /女性向/);
+});
+
+test("buildAnswerPathNarrativeSummary keeps the most recent quiz choices", () => {
+  const result = buildAnswerPathNarrativeSummary([
+    {
+      step: 0,
+      questionId: "q1",
+      questionTitle: "路线",
+      field: "physicalForm",
+      optionLabel: "外部细节优先",
+      optionValue: "external",
+      tag: "外部震动/吮吸",
+      selectedAt: "2026-05-18T00:00:00.000Z",
+    },
+    {
+      step: 1,
+      questionId: "q2",
+      questionTitle: "静音",
+      field: "maxDb",
+      optionLabel: "一般可接受",
+      optionValue: 50,
+      tag: "< 50dB",
+      selectedAt: "2026-05-18T00:00:01.000Z",
+    },
+  ] satisfies QuizAnswerPathEntry[]);
+
+  assert.deepEqual(result.keyLabels, ["外部细节优先", "一般可接受"]);
+  assert.deepEqual(result.keyTags, ["外部震动/吮吸", "< 50dB"]);
+});
+
+test("buildQuizResultNarrative reflects recent answer path choices", () => {
+  const result = buildQuizResultNarrative({
+    answers: {
+      tags: ["女性向", "< 50dB"],
+      gender: "female",
+      maxDb: 50,
+    },
+    answerPath: [
+      {
+        step: 0,
+        questionId: "q1",
+        questionTitle: "路线",
+        field: "physicalForm",
+        optionLabel: "外部细节优先",
+        optionValue: "external",
+        tag: "外部震动/吮吸",
+        selectedAt: "2026-05-18T00:00:00.000Z",
+      },
+      {
+        step: 1,
+        questionId: "q2",
+        questionTitle: "静音",
+        field: "maxDb",
+        optionLabel: "一般可接受",
+        optionValue: 50,
+        tag: "< 50dB",
+        selectedAt: "2026-05-18T00:00:01.000Z",
+      },
+    ],
+  });
+
+  assert.match(result.summary, /外部细节优先|一般可接受/);
+  assert.match(result.nextPriority, /静音/);
 });

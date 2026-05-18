@@ -56,6 +56,16 @@ const personaProfile: SavedRecommendationProfile = {
   },
 };
 
+const naturalLanguageProfile: SavedRecommendationProfile = {
+  ...detailedProfile,
+  payload: {
+    ...detailedProfile.payload,
+    matchInputMode: "natural-language",
+    naturalLanguageQuery:
+      "想要一个更静音、预算 300 以内、适合女生新手、最好容易清洁的产品。",
+  },
+};
+
 test("profiles page renders saved equipment matching profiles", () => {
   const html = renderToStaticMarkup(
     <ProfilesPage
@@ -186,6 +196,23 @@ test("profiles detail no longer renders a later-comparison candidate section", (
 
   assert.doesNotMatch(html, /稍后比较/);
   assert.doesNotMatch(html, /当时特意留下来想继续看的候选/);
+});
+
+test("profiles detail shows original natural language request when the archive came from free-text matching", () => {
+  const html = renderToStaticMarkup(
+    <ProfilesPage
+      profiles={[naturalLanguageProfile]}
+      isLoading={false}
+      error={null}
+      userLabel="taptaq"
+      initialSelectedProfile={naturalLanguageProfile}
+      onBack={() => {}}
+      onReload={() => {}}
+    />,
+  );
+
+  assert.match(html, /当时原始描述/);
+  assert.match(html, /想要一个更静音、预算 300 以内、适合女生新手、最好容易清洁的产品。/);
 });
 
 test("profiles page gives mobile users a calmer stacked archive layout and a wider detail sheet", () => {

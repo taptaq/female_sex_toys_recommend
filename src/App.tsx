@@ -113,6 +113,8 @@ import {
   type QuizAnswerPathEntry,
 } from "./lib/recommendation-session";
 import { MatchingPage } from "./pages/MatchingPage";
+import { MatchModePage } from "./pages/MatchModePage";
+import { NaturalLanguageMatchPage } from "./pages/NaturalLanguageMatchPage";
 import {
   type ResultEditableCondition,
 } from "./pages/ResultsPage";
@@ -121,6 +123,7 @@ import {
   LibraryPage,
 } from "./pages/LibraryPage";
 import { HomeAuthOverlay } from "./pages/HomePage";
+import { deriveAnswersFromNaturalLanguage } from "./lib/natural-language-matching";
 import {
   buildKnowledgeNebulaPath,
   parseKnowledgeNebulaPath,
@@ -195,6 +198,8 @@ type PersistedAppState = {
   filterPriceRange?: string;
   currentResultProvider?: AppAiProvider;
   currentResultModelName?: string;
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
 };
 
 type QuizReturnToResultsState = {
@@ -216,6 +221,8 @@ type QuizReturnToResultsState = {
   bodyPersonaDraftAnswers: BodyPersonaAnswers;
   currentResultProvider?: AppAiProvider;
   currentResultModelName?: string;
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
 };
 
 function normalizeLibraryAudienceGender(value: string): LibraryAudienceGender {
@@ -368,6 +375,12 @@ export default function App() {
   const [currentResultModelName, setCurrentResultModelName] = useState<
     string | undefined
   >(persistedResultSourceState.currentResultModelName);
+  const [matchInputMode, setMatchInputMode] = useState<
+    "quiz" | "natural-language"
+  >(persistedState.matchInputMode ?? "quiz");
+  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState(
+    persistedState.naturalLanguageQuery ?? "",
+  );
   const [quizReturnToResultsState, setQuizReturnToResultsState] =
     useState<QuizReturnToResultsState | null>(null);
   const [isRecalibratingResults, setIsRecalibratingResults] = useState(false);
@@ -392,6 +405,8 @@ export default function App() {
   const [favoriteActionError, setFavoriteActionError] = useState<string | null>(null);
   const [isFavoriteAuthOpen, setIsFavoriteAuthOpen] = useState(false);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
+  const [naturalLanguagePrompt, setNaturalLanguagePrompt] = useState("");
+  const [naturalLanguageError, setNaturalLanguageError] = useState<string | null>(null);
   const [recommendationProfiles, setRecommendationProfiles] = useState<
     SavedRecommendationProfile[]
   >([]);
@@ -568,7 +583,58 @@ export default function App() {
     setAnswerPath([]);
     setAnswers({ tags: [] });
     setStep(0);
+    setMatchInputMode("quiz");
+    setNaturalLanguagePrompt("");
+    setNaturalLanguageQuery("");
+    setNaturalLanguageError(null);
+    navigateTo("/match-mode");
+  };
+
+  const handleStartQuizMode = () => {
+    setMatchInputMode("quiz");
+    setNaturalLanguagePrompt("");
+    setNaturalLanguageQuery("");
+    setNaturalLanguageError(null);
     navigateTo("/quiz");
+  };
+
+  const handleStartNaturalLanguageMode = () => {
+    setMatchInputMode("natural-language");
+    setNaturalLanguageError(null);
+    navigateTo("/match-text");
+  };
+
+  const handleSubmitNaturalLanguageMatch = async () => {
+    const trimmedPrompt = naturalLanguagePrompt.trim();
+    if (trimmedPrompt.length < 10) {
+      setNaturalLanguageError("请再多描述一点，比如感觉、场景、预算或静音要求。");
+      return;
+    }
+
+    const { answers: derivedAnswers } = deriveAnswersFromNaturalLanguage(trimmedPrompt);
+    const mergedAnswers: AnswerState = {
+      ...derivedAnswers,
+      tags: derivedAnswers.tags ?? [],
+    };
+
+    setMatchInputMode("natural-language");
+    setNaturalLanguageQuery(trimmedPrompt);
+    setNaturalLanguageError(null);
+    setAnswers(mergedAnswers);
+    setAnswerPath([]);
+    setStep(getActiveQuestions(mergedAnswers.gender).length);
+    setIsAiMatching(false);
+    navigateTo("/quiz");
+
+    const data =
+      allProducts.length > 0 ? allProducts : await fetchProducts({ preferCachedResult: true });
+    void calculateResults(
+      mergedAnswers,
+      getActiveQuestions(mergedAnswers.gender),
+      data,
+      [],
+      trimmedPrompt,
+    );
   };
 
   const clearThemeSwitchStabilizeTimeout = () => {
@@ -829,6 +895,8 @@ export default function App() {
         filterPriceRange,
         currentResultProvider,
         currentResultModelName,
+        matchInputMode,
+        naturalLanguageQuery,
       },
     );
   }, [
@@ -855,6 +923,8 @@ export default function App() {
     filterPriceRange,
     currentResultProvider,
     currentResultModelName,
+    matchInputMode,
+    naturalLanguageQuery,
   ]);
 
   useEffect(() => {
@@ -1188,6 +1258,8 @@ export default function App() {
 当前候选池已经由结构化规则筛到较小范围。请你在这些候选商品中，重新挑选最匹配的前 3 名，并给出每个商品的推荐理由。
 
 用户偏好标签: [${context.userPreferences.join(", ")}]
+本次匹配方式: ${matchInputMode === "natural-language" ? "自然语言匹配" : "答题匹配"}
+${matchInputMode === "natural-language" && naturalLanguageQuery ? `用户原始描述: ${naturalLanguageQuery}` : ""}
 用户结构化偏好信号: ${JSON.stringify({ preferenceSignals: context.preferenceSignals })}
 
 候选商品列表（已按结构化分数从高到低排序，仅可从中选择）:
@@ -1263,6 +1335,8 @@ Top 3 主推荐已经确定，请只补充两个结果区域：
 2. 为结果页写 3-5 条选购建议
 
 用户偏好标签: [${context.userPreferences.join(", ")}]
+本次匹配方式: ${matchInputMode === "natural-language" ? "自然语言匹配" : "答题匹配"}
+${matchInputMode === "natural-language" && naturalLanguageQuery ? `用户原始描述: ${naturalLanguageQuery}` : ""}
 候选池数量: ${context.filteredCount}
 
 已确定 Top 3（仅供参考，不需要重排）:
@@ -1304,7 +1378,10 @@ ${JSON.stringify(context.backupCandidates)}
   ) {
     resultEnhancementRunRef.current += 1;
     setIsEnhancingResults(false);
-    const localResult = buildLocalResultComputation(answers, allProducts);
+    const localResult = buildLocalResultComputation(answers, allProducts, {
+      naturalLanguageQuery:
+        matchInputMode === "natural-language" ? naturalLanguageQuery : undefined,
+    });
 
     if (localResult.rerankPool.length === 0) {
       setResultRecalibrationError("暂无可用于重校准的候选结果。");
@@ -1448,7 +1525,10 @@ ${JSON.stringify(context.backupCandidates)}
       ? appliedResultTuningModes
       : [...appliedResultTuningModes, mode];
     const tunedAnswers = applyResultTuningModes(baseAnswers, nextAppliedModes);
-    const localResult = buildLocalResultComputation(tunedAnswers, allProducts);
+    const localResult = buildLocalResultComputation(tunedAnswers, allProducts, {
+      naturalLanguageQuery:
+        matchInputMode === "natural-language" ? naturalLanguageQuery : undefined,
+    });
 
     setResultBaseAnswers(baseAnswers);
     setAppliedResultTuningModes(nextAppliedModes);
@@ -1582,6 +1662,40 @@ ${JSON.stringify(context.backupCandidates)}
     }
   }
 
+  async function handleRemoveFavoriteFromModal(product: Product) {
+    const favoriteKey = product.originalId || product.id;
+    const authToken =
+      supabaseSession?.access_token ||
+      (await getCurrentSupabaseSession())?.access_token ||
+      "";
+
+    if (!authToken) {
+      setFavoriteActionError("需要登录后才能取消收藏。");
+      setIsFavoriteAuthOpen(true);
+      return;
+    }
+
+    setFavoriteActionError(null);
+    setFavoriteProductIds((current) => {
+      const next = new Set(current);
+      next.delete(favoriteKey);
+      return next;
+    });
+
+    try {
+      await removeFavorite({ authToken, productId: favoriteKey });
+    } catch (error) {
+      setFavoriteProductIds((current) => {
+        const rollback = new Set(current);
+        rollback.add(favoriteKey);
+        return rollback;
+      });
+      setFavoriteActionError(
+        error instanceof Error ? error.message : "取消收藏失败，请稍后重试。",
+      );
+    }
+  }
+
   async function handleSaveRecommendationProfile() {
     const authToken =
       supabaseSession?.access_token ||
@@ -1605,6 +1719,8 @@ ${JSON.stringify(context.backupCandidates)}
           backupProducts,
           recommendationTips,
           shoppingGuidance,
+          matchInputMode,
+          naturalLanguageQuery: matchInputMode === "natural-language" ? naturalLanguageQuery : undefined,
           bodyPersona:
             bodyPersonaState?.status === "unlocked" &&
             bodyPersonaState.fullReport &&
@@ -1641,13 +1757,18 @@ ${JSON.stringify(context.backupCandidates)}
     activeQs: Question[] = activeQuestions,
     productsData: Product[] = allProducts,
     currentAnswerPath: QuizAnswerPathEntry[] = answerPath,
+    currentNaturalLanguageQuery?: string,
   ) => {
     const enhancementRunId = resultEnhancementRunRef.current + 1;
     resultEnhancementRunRef.current = enhancementRunId;
     clearQuizReturnToResultsState();
     setResultBaseAnswers(currentAnswers);
     setAppliedResultTuningModes([]);
-    const localResult = buildLocalResultComputation(currentAnswers, productsData);
+    const localResult = buildLocalResultComputation(currentAnswers, productsData, {
+      naturalLanguageQuery:
+        currentNaturalLanguageQuery ??
+        (matchInputMode === "natural-language" ? naturalLanguageQuery : undefined),
+    });
 
     setIsAiMatching(true);
     setResultRecalibrationError(null);
@@ -2086,6 +2207,42 @@ ${JSON.stringify(context.backupCandidates)}
     );
   }
 
+  if (currentRoute === "/match-mode") {
+    return (
+      <div className="theme-synced-page relative min-h-screen overflow-hidden">
+        <ThemeCosmosLayer variant="quiz" />
+        <div className="relative z-10">
+          <MatchModePage
+            pageVariants={pageVariants}
+            onSelectQuizMode={handleStartQuizMode}
+            onSelectNaturalLanguageMode={handleStartNaturalLanguageMode}
+            onBackHome={() => navigateTo("/")}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (currentRoute === "/match-text") {
+    return (
+      <div className="theme-synced-page relative min-h-screen overflow-hidden">
+        <ThemeCosmosLayer variant="quiz" />
+        <div className="relative z-10">
+          <NaturalLanguageMatchPage
+            pageVariants={pageVariants}
+            prompt={naturalLanguagePrompt}
+            isSubmitting={isLoading}
+            error={naturalLanguageError}
+            onPromptChange={setNaturalLanguagePrompt}
+            onSubmit={handleSubmitNaturalLanguageMatch}
+            onBack={() => navigateTo("/match-mode")}
+            onBackHome={() => navigateTo("/")}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (currentRoute === "/library") {
     return (
       <div className="theme-synced-page relative min-h-screen overflow-hidden">
@@ -2243,6 +2400,7 @@ ${JSON.stringify(context.backupCandidates)}
           activeQuestions={activeQuestions}
           isAiMatching={isAiMatching}
           answers={answers}
+          answerPath={answerPath}
           appliedResultTuningModes={appliedResultTuningModes}
           topProducts={topProducts}
           backupProducts={backupProducts}
@@ -2309,6 +2467,8 @@ ${JSON.stringify(context.backupCandidates)}
           themeId={themeId}
           onThemeChange={handleThemeChange}
           onReset={resetQuiz}
+          matchInputMode={matchInputMode}
+          naturalLanguageQuery={naturalLanguageQuery}
           favoriteProductIds={favoriteProductIds}
           onToggleFavorite={handleToggleFavorite}
         />
@@ -2390,6 +2550,17 @@ ${JSON.stringify(context.backupCandidates)}
                       <p className="mt-2 text-xs leading-5 text-slate-400">
                         材质：{product.material} · {product.gender === "male" ? "男性向" : product.gender === "female" ? "女性向" : "通用型"}
                       </p>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void handleRemoveFavoriteFromModal(product);
+                        }}
+                        className="mt-4 inline-flex items-center gap-1 rounded-full border border-rose-300/18 bg-rose-400/10 px-3 py-1.5 text-xs text-rose-100 transition-colors hover:bg-rose-400/16"
+                      >
+                        取消收藏
+                      </button>
                     </div>
                   );
 

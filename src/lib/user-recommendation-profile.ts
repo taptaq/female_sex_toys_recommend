@@ -28,6 +28,8 @@ export type RecommendationProfilePayload = {
   title: string;
   summary: string;
   topProductIds: string[];
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
   answers: AnswerState;
   topProducts: RecommendationProfileProduct[];
   backupProducts: RecommendationProfileProduct[];
@@ -71,6 +73,8 @@ export function buildRecommendationProfilePayload({
   recommendationTips,
   shoppingGuidance,
   bodyPersona,
+  matchInputMode,
+  naturalLanguageQuery,
 }: {
   answers: AnswerState;
   topProducts: RankedProduct[];
@@ -78,6 +82,8 @@ export function buildRecommendationProfilePayload({
   recommendationTips: string[];
   shoppingGuidance: string[];
   bodyPersona?: RecommendationProfileBodyPersonaSnapshot;
+  matchInputMode?: "quiz" | "natural-language";
+  naturalLanguageQuery?: string;
 }): RecommendationProfilePayload {
   const topProductSnapshots = topProducts.map(pickProductSnapshot);
   const backupProductSnapshots = backupProducts.map(pickProductSnapshot);
@@ -101,6 +107,8 @@ export function buildRecommendationProfilePayload({
     title,
     summary: summaryParts.join("；") || "推荐档案",
     topProductIds: topProductSnapshots.map((product) => product.id),
+    ...(matchInputMode ? { matchInputMode } : {}),
+    ...(naturalLanguageQuery ? { naturalLanguageQuery } : {}),
     answers: normalizedAnswers,
     topProducts: topProductSnapshots,
     backupProducts: backupProductSnapshots,

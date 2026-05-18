@@ -178,3 +178,49 @@ test("couple partner composition keeps compatible gendered toys in the candidate
     ["female-dual", "unisex-ring"],
   );
 });
+
+test("natural language suction requests keep only external candidates unless insertable is explicitly requested", () => {
+  const pool = buildRecommendationCandidatePool(
+    { gender: "female", tags: [] },
+    [
+      makeProduct({
+        id: "external-suction",
+        gender: "female",
+        typeCode: "suction",
+        subtypeCode: "clitoral_suction",
+        physicalForm: "external",
+      }),
+      makeProduct({
+        id: "internal-gspot",
+        gender: "female",
+        typeCode: "insertable",
+        subtypeCode: "gspot_insertable",
+        physicalForm: "internal",
+      }),
+      makeProduct({
+        id: "composite-dual",
+        gender: "female",
+        typeCode: "dual_stimulation",
+        subtypeCode: "dual_wearable_remote",
+        physicalForm: "composite",
+        rawDescription: "双刺激震动器，主打内外震动，不带吮吸头。",
+      }),
+      makeProduct({
+        id: "external-vibe",
+        gender: "female",
+        typeCode: "external_vibe",
+        subtypeCode: "bullet_vibe",
+        physicalForm: "external",
+        rawDescription: "外部震动器，震感明显，但不是吮吸类产品。",
+      }),
+    ],
+    {
+      naturalLanguageQuery: "我是女生，想找一个吮吸感更强一点的，波形更多的，噪音适中的。",
+    },
+  );
+
+  assert.deepEqual(
+    pool.relaxedProducts.map((product) => product.id),
+    ["external-suction"],
+  );
+});

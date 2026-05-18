@@ -14,6 +14,8 @@ import { getProductDisplayName } from "./product-display-name.js";
 
 export type AppRoute =
   | "/"
+  | "/match-mode"
+  | "/match-text"
   | "/quiz"
   | "/results"
   | "/library"
@@ -282,6 +284,8 @@ export function detectRoute(pathname: string): AppRoute {
   }
   if (pathname === "/library") return "/library";
   if (pathname === "/profiles") return "/profiles";
+  if (pathname === "/match-mode") return "/match-mode";
+  if (pathname === "/match-text") return "/match-text";
   if (pathname === "/results") return "/results";
   if (pathname === "/quiz") return "/quiz";
   return "/";
