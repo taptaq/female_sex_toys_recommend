@@ -1,10 +1,30 @@
-import { VolumeX, Droplets, Zap } from "lucide-react";
+import { Heart, VolumeX, Droplets, Zap } from "lucide-react";
 import { Product } from "../data/mock.ts";
 import { getProductDisplayName } from "../lib/product-display-name.ts";
 import { ProductImage } from "./ProductImage.tsx";
 
-export function ProductCardContent({ product }: { product: Product }) {
+export function ProductCardContent({
+  product,
+  isFavorited = false,
+  onToggleFavorite,
+}: {
+  product: Product;
+  isFavorited?: boolean;
+  onToggleFavorite?: (product: Product) => void;
+}) {
   const displayName = getProductDisplayName(product);
+  const audienceLabel =
+    product.gender === "male"
+      ? "男性向"
+      : product.gender === "female"
+        ? "女性向"
+        : "通用型";
+  const audienceToneClassName =
+    product.gender === "male"
+      ? "border-blue-400/25 bg-blue-500/12 text-blue-100"
+      : product.gender === "female"
+        ? "border-rose-300/28 bg-rose-400/14 text-rose-50"
+        : "border-violet-300/24 bg-violet-400/14 text-violet-50";
 
   return (
     <>
@@ -16,15 +36,24 @@ export function ProductCardContent({ product }: { product: Product }) {
           imageClassName="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
         />
         <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-          <div
-            className={`px-2 py-0.5 rounded border text-[9px] font-mono ${product.gender === "male" ? "bg-blue-500/20 border-blue-500/30 text-blue-300" : product.gender === "female" ? "bg-pink-500/20 border-pink-500/30 text-pink-300" : "bg-purple-500/20 border-purple-500/30 text-purple-300"}`}
-          >
-            {product.gender === "male"
-              ? "男用"
-              : product.gender === "female"
-                ? "女用"
-                : "通用"}
-          </div>
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              aria-label={isFavorited ? "取消收藏" : "收藏产品"}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleFavorite(product);
+              }}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition-colors ${
+                isFavorited
+                  ? "border-rose-300/45 bg-rose-400/18 text-rose-100"
+                  : "border-white/18 bg-slate-950/78 text-white/85 hover:border-cyan-300/45 hover:text-white"
+              }`}
+            >
+              <Heart className={`h-4.5 w-4.5 ${isFavorited ? "fill-current" : ""}`} />
+            </button>
+          ) : null}
         </div>
       </div>
       <div className="p-5 flex flex-col flex-1">
@@ -43,6 +72,17 @@ export function ProductCardContent({ product }: { product: Product }) {
         <div className="text-[10px] text-slate-500 mb-2 flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 rounded-full bg-cyan-500/40"></div>
           <span>材质: {product.material}</span>
+        </div>
+
+        <div className="mb-3">
+          <span
+            className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium tracking-[0.08em] ${audienceToneClassName}`}
+          >
+            <span className="text-[10px] uppercase tracking-[0.18em] opacity-70">
+              适用对象
+            </span>
+            <span>{audienceLabel}</span>
+          </span>
         </div>
 
         {product.personaAnalysis && (
@@ -77,6 +117,24 @@ export function ProductCardContent({ product }: { product: Product }) {
         )}
 
         <div className="flex flex-wrap gap-2 mt-auto pt-2">
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleFavorite(product);
+              }}
+              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-full border transition-colors ${
+                isFavorited
+                  ? "border-rose-300/35 bg-rose-400/16 text-rose-100"
+                  : "border-cyan-300/18 bg-cyan-300/10 text-cyan-100 hover:border-cyan-200/35 hover:text-white"
+              }`}
+            >
+              <Heart className={`w-3 h-3 ${isFavorited ? "fill-current" : ""}`} />
+              {isFavorited ? "已收藏" : "收藏"}
+            </button>
+          ) : null}
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-white/5 border border-white/5 px-2 py-1 rounded">
             <VolumeX className="w-3 h-3 text-cyan-500/70" />
             {product.maxDb == null ? "无噪音参数" : `<${product.maxDb}dB`}

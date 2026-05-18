@@ -23,12 +23,15 @@ export function createUsernameRegistrationService({
       });
 
       const email = buildInternalAuthEmailFromUsername(username);
-      const { error } = await adminClient.auth.admin.createUser({
+      const { data, error } = await adminClient.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
         user_metadata: {
           username,
+        },
+        app_metadata: {
+          display_name: username,
         },
       });
 
@@ -36,7 +39,12 @@ export function createUsernameRegistrationService({
         throw new Error(error.message || "注册失败，请稍后重试");
       }
 
-      return { success: true } as const;
+      const userId = data.user?.id;
+      if (!userId) {
+        throw new Error("注册成功但未返回用户 ID");
+      }
+
+      return { success: true, userId } as const;
     },
   };
 }

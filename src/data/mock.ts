@@ -1,5 +1,6 @@
 export type Product = {
   id: string;
+  originalId?: string | null;
   name: string;
   displayName?: string;
   safeDisplayName?: string;

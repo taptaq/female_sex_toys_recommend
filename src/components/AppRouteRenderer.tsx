@@ -5,7 +5,7 @@ import { MatchingPage } from "../pages/MatchingPage.tsx";
 import { ResultsPage, type ResultEditableCondition } from "../pages/ResultsPage.tsx";
 import { ProfilesPage } from "../pages/ProfilesPage.tsx";
 import { KnowledgeNebulaPage } from "../pages/KnowledgeNebulaPage.tsx";
-import type { AnswerState, Question } from "../data/mock.ts";
+import type { AnswerState, Product, Question } from "../data/mock.ts";
 import type { AppThemeId } from "../lib/app-theme.ts";
 import type { RankedProduct } from "../lib/app-shell.ts";
 import type { BackupCandidate } from "../lib/recommendation-results.ts";
@@ -58,6 +58,7 @@ type AppRouteRendererProps = {
   onBrowseLibraryResults: (product?: RankedProduct) => void;
   onOpenKnowledgeNebula: (path?: string) => void;
   onOpenProfiles: () => void;
+  onOpenFavorites: () => void;
   onBackProfiles: () => void;
   onSelectOption: (
     field: keyof AnswerState,
@@ -107,6 +108,8 @@ type AppRouteRendererProps = {
   themeId: AppThemeId;
   onThemeChange: (nextThemeId: AppThemeId) => void;
   onReset: () => void;
+  favoriteProductIds: Set<string>;
+  onToggleFavorite: (product: Product) => void | Promise<void>;
 };
 
 export function AppRouteRenderer({
@@ -137,6 +140,7 @@ export function AppRouteRenderer({
   onBrowseLibraryResults,
   onOpenKnowledgeNebula,
   onOpenProfiles,
+  onOpenFavorites,
   onBackProfiles,
   onSelectOption,
   onBackQuestion,
@@ -170,6 +174,8 @@ export function AppRouteRenderer({
   themeId,
   onThemeChange,
   onReset,
+  favoriteProductIds,
+  onToggleFavorite,
 }: AppRouteRendererProps) {
   return (
     <AnimatePresence mode="wait">
@@ -182,6 +188,7 @@ export function AppRouteRenderer({
             onOpenKnowledgeNebula();
           }}
           onOpenProfiles={onOpenProfiles}
+          onOpenFavorites={onOpenFavorites}
           themeId={themeId}
           onThemeChange={onThemeChange}
           authPanel={authPanel}
@@ -251,6 +258,8 @@ export function AppRouteRenderer({
           onReset={onReset}
           isBodyPersonaUnlockLoginRequired={isBodyPersonaUnlockLoginRequired}
           isBodyPersonaFullReportOpen={isBodyPersonaFullReportOpen}
+          favoriteProductIds={favoriteProductIds}
+          onToggleFavorite={onToggleFavorite}
         />
       )}
 

@@ -505,6 +505,81 @@ test("library page shows subtype options only after a supported top-level type i
   assert.match(html, /双头多点/);
 });
 
+test("library page brand options follow origin filter", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({
+          id: "d1",
+          brand: "国产一号",
+          isDomestic: true,
+        }),
+        makeProduct({
+          id: "i1",
+          brand: "Overseas One",
+          isDomestic: false,
+        }),
+      ]}
+      filterGender="all"
+      filterType="all"
+      filterSubtype="all"
+      filterBrand="all"
+      filterOrigin="international"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterSubtypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /Overseas One/);
+  assert.doesNotMatch(html, /国产一号/);
+});
+
+test("library page keeps favorites-only filter behind advanced filters entry", () => {
+  const html = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[makeProduct()]}
+      filterGender="all"
+      filterType="all"
+      filterSubtype="all"
+      filterBrand="all"
+      filterOrigin="all"
+      showFavoritesOnly={true}
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterTypeChange={() => {}}
+      onFilterSubtypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onShowFavoritesOnlyChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(html, /高级筛选/);
+  assert.doesNotMatch(html, /只看已收藏/);
+});
+
 test("library page shows male subtype options for masturbator products", () => {
   const html = renderToStaticMarkup(
     <LibraryPage

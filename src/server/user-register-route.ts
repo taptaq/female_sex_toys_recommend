@@ -4,13 +4,19 @@ type UsernameRegistrationService = {
   createUsernameUser: (
     username: string,
     password: string,
-  ) => Promise<{ success: true }>;
+  ) => Promise<{ success: true; userId: string }>;
+};
+
+type UserProfileStore = {
+  upsertProfile: (input: { userId: string; username: string }) => Promise<void>;
 };
 
 export function createUsernameRegistrationHandler({
   service,
+  profileStore,
 }: {
   service: UsernameRegistrationService;
+  profileStore?: UserProfileStore;
 }) {
   return async (req: Request, res: Response) => {
     const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
@@ -24,6 +30,12 @@ export function createUsernameRegistrationHandler({
     }
 
     const result = await service.createUsernameUser(username, password);
-    res.status(201).json(result);
+    if (profileStore) {
+      await profileStore.upsertProfile({
+        userId: result.userId,
+        username,
+      });
+    }
+    res.status(201).json({ success: true });
   };
 }

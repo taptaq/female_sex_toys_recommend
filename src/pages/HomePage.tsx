@@ -308,6 +308,7 @@ export function HomeAuthOverlay({
 function HomeAuthEntry({
   authPanel,
   onOpenProfiles,
+  onOpenFavorites,
 }: {
   authPanel: {
     isConfigured: boolean;
@@ -318,6 +319,7 @@ function HomeAuthEntry({
     onSignOut: () => Promise<void>;
   };
   onOpenProfiles: () => void;
+  onOpenFavorites: () => void;
 }) {
   const [isAuthPanelOpen, setIsAuthPanelOpen] = useState(false);
   const authEntryButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -364,6 +366,13 @@ function HomeAuthEntry({
             className="inline-flex items-center gap-1 rounded-full border border-cyan-200/16 bg-cyan-100/8 px-3 py-1.5 text-xs text-cyan-50 transition-colors hover:bg-cyan-100/14"
           >
             匹配档案
+          </button>
+          <button
+            type="button"
+            onClick={onOpenFavorites}
+            className="inline-flex items-center gap-1 rounded-full border border-cyan-200/16 bg-cyan-100/8 px-3 py-1.5 text-xs text-cyan-50 transition-colors hover:bg-cyan-100/14"
+          >
+            我的收藏
           </button>
           <button
             type="button"
@@ -498,6 +507,7 @@ export function HomePage({
   onBrowseLibrary,
   onOpenKnowledgeNebula,
   onOpenProfiles,
+  onOpenFavorites,
   themeId,
   onThemeChange,
   authPanel,
@@ -507,6 +517,7 @@ export function HomePage({
   onBrowseLibrary: () => void;
   onOpenKnowledgeNebula: () => void;
   onOpenProfiles: () => void;
+  onOpenFavorites: () => void;
   themeId: AppThemeId;
   onThemeChange: (themeId: AppThemeId) => void;
   authPanel: {
@@ -848,7 +859,11 @@ export function HomePage({
               </SecondaryEntryButton>
             </div>
 
-            <HomeAuthEntry authPanel={authPanel} onOpenProfiles={onOpenProfiles} />
+            <HomeAuthEntry
+              authPanel={authPanel}
+              onOpenProfiles={onOpenProfiles}
+              onOpenFavorites={onOpenFavorites}
+            />
           </div>
         </motion.div>
       </div>

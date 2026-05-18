@@ -167,6 +167,7 @@ export function LibraryPage({
   filterSubtype = "all",
   filterBrand,
   filterOrigin,
+  showFavoritesOnly = false,
   filterMaterial,
   filterPriceRange,
   filterMaxDb,
@@ -178,11 +179,14 @@ export function LibraryPage({
   onFilterSubtypeChange = () => {},
   onFilterBrandChange,
   onFilterOriginChange,
+  onShowFavoritesOnlyChange = () => {},
   onFilterMaterialChange,
   onFilterPriceRangeChange,
   onFilterMaxDbChange,
   onResetFilters = () => {},
   onBack,
+  favoriteProductIds = new Set<string>(),
+  onToggleFavorite,
 }: {
   allProducts: Product[];
   filterGender: string;
@@ -190,6 +194,7 @@ export function LibraryPage({
   filterSubtype?: string;
   filterBrand: string;
   filterOrigin: string;
+  showFavoritesOnly?: boolean;
   filterMaterial: string;
   filterPriceRange: string;
   filterMaxDb: number;
@@ -201,11 +206,14 @@ export function LibraryPage({
   onFilterSubtypeChange?: (value: string) => void;
   onFilterBrandChange: (value: string) => void;
   onFilterOriginChange: (value: string) => void;
+  onShowFavoritesOnlyChange?: (value: boolean) => void;
   onFilterMaterialChange: (value: string) => void;
   onFilterPriceRangeChange: (value: string) => void;
   onFilterMaxDbChange: (value: number) => void;
   onResetFilters?: () => void;
   onBack: () => void;
+  favoriteProductIds?: Set<string>;
+  onToggleFavorite?: (product: Product) => void | Promise<void>;
 }) {
   const products = Array.isArray(allProducts) ? allProducts : [];
   const normalizedFilterGender: LibraryAudienceGender =
@@ -235,9 +243,25 @@ export function LibraryPage({
     effectiveFilterSubtype !== "all" ||
     filterBrand !== "all" ||
     filterOrigin !== "all" ||
+    showFavoritesOnly ||
     filterMaterial !== "all" ||
     filterPriceRange !== "all" ||
     filterMaxDb !== DEFAULT_LIBRARY_FILTER_MAX_DB;
+
+  const brandOptionProducts = products.filter((product) => {
+    if (filterOrigin === "all") return true;
+    if (filterOrigin === "domestic") return product.isDomestic === true;
+    return product.isDomestic === false;
+  });
+
+  const availableBrandOptions = Array.from(
+    new Set(brandOptionProducts.map((product) => product.brand).filter(Boolean)),
+  )
+    .sort()
+    .map((brand) => ({
+      value: brand,
+      label: brand,
+    }));
 
   useEffect(() => {
     const container = containerRef.current;
@@ -422,25 +446,6 @@ export function LibraryPage({
               <div className="mt-4 grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
                 <div className="space-y-2">
                   <label className={libraryFilterLabelClassName}>
-                    品牌厂商
-                  </label>
-                  <LibraryFilterSelect
-                    value={filterBrand}
-                    onChange={onFilterBrandChange}
-                    options={[
-                      { value: "all", label: "所有品牌" },
-                      ...Array.from(new Set(products.map((product) => product.brand)))
-                        .sort()
-                        .map((brand) => ({
-                          value: brand,
-                          label: brand,
-                        })),
-                    ]}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className={libraryFilterLabelClassName}>
                     出品地区
                   </label>
                   <LibraryFilterSelect
@@ -450,6 +455,34 @@ export function LibraryPage({
                       { value: "all", label: "不限产地" },
                       { value: "domestic", label: "国产品牌" },
                       { value: "international", label: "海外品牌" },
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className={libraryFilterLabelClassName}>
+                    品牌厂商
+                  </label>
+                  <LibraryFilterSelect
+                    value={filterBrand}
+                    onChange={onFilterBrandChange}
+                    options={[
+                      { value: "all", label: "所有品牌" },
+                      ...availableBrandOptions,
+                    ]}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className={libraryFilterLabelClassName}>
+                    收藏视图
+                  </label>
+                  <LibraryFilterSelect
+                    value={showFavoritesOnly ? "favorites" : "all"}
+                    onChange={(value) => onShowFavoritesOnlyChange(value === "favorites")}
+                    options={[
+                      { value: "all", label: "显示全部产品" },
+                      { value: "favorites", label: "只看已收藏" },
                     ]}
                   />
                 </div>
@@ -543,6 +576,9 @@ export function LibraryPage({
                 (filterOrigin === "domestic"
                   ? product.isDomestic === true
                   : product.isDomestic === false);
+              const favoriteKey = product.originalId || product.id;
+              const matchFavorite =
+                !showFavoritesOnly || favoriteProductIds.has(favoriteKey);
               const matchDb =
                 product.maxDb == null || product.maxDb <= filterMaxDb;
               const matchMaterial =
@@ -559,6 +595,7 @@ export function LibraryPage({
                 matchSubtype &&
                 matchBrand &&
                 matchOrigin &&
+                matchFavorite &&
                 matchDb &&
                 matchMaterial &&
                 matchPrice
@@ -574,14 +611,22 @@ export function LibraryPage({
                   rel="noopener noreferrer"
                   className="glass-panel rounded-[1.35rem] overflow-hidden flex flex-col group hover:border-cyan-500/40 transition-all hover:bg-white/5 cursor-pointer sm:rounded-2xl"
                 >
-                  <ProductCardContent product={product} />
+                  <ProductCardContent
+                    product={product}
+                    isFavorited={favoriteProductIds.has(product.originalId || product.id)}
+                    onToggleFavorite={onToggleFavorite}
+                  />
                 </a>
               ) : (
                 <div
                   key={product.id}
                   className="glass-panel rounded-[1.35rem] overflow-hidden flex flex-col group hover:border-cyan-500/40 transition-all hover:bg-white/5 sm:rounded-2xl"
                 >
-                  <ProductCardContent product={product} />
+                  <ProductCardContent
+                    product={product}
+                    isFavorited={favoriteProductIds.has(product.originalId || product.id)}
+                    onToggleFavorite={onToggleFavorite}
+                  />
                 </div>
               );
               })}

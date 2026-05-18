@@ -49,6 +49,11 @@ import {
   saveRecommendationProfile,
 } from "./lib/user-recommendation-profile";
 import {
+  addFavorite,
+  listFavorites,
+  removeFavorite,
+} from "./lib/user-favorites";
+import {
   BODY_PERSONA_QUESTIONS,
   resolveBodyPersonaResult,
   type BodyPersonaAnswers,
@@ -89,6 +94,7 @@ import {
   signOutOfSupabase,
 } from "./lib/supabase-auth";
 import type { AuthPanelMode } from "./components/AuthPanel";
+import { AuthPanel } from "./components/AuthPanel";
 import {
   ThemeCosmosLayer,
   type ThemeCosmosVariant,
@@ -114,6 +120,7 @@ import {
   DEFAULT_LIBRARY_FILTER_MAX_DB,
   LibraryPage,
 } from "./pages/LibraryPage";
+import { HomeAuthOverlay } from "./pages/HomePage";
 import {
   buildKnowledgeNebulaPath,
   parseKnowledgeNebulaPath,
@@ -182,6 +189,7 @@ type PersistedAppState = {
   filterSubtype?: string;
   filterBrand?: string;
   filterOrigin?: string;
+  showFavoritesOnly?: boolean;
   filterMaxDb?: number;
   filterMaterial?: string;
   filterPriceRange?: string;
@@ -306,6 +314,9 @@ export default function App() {
   const [filterOrigin, setFilterOrigin] = useState<string>(
     persistedState.filterOrigin ?? "all",
   );
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(
+    persistedState.showFavoritesOnly ?? false,
+  );
   const [filterMaxDb, setFilterMaxDb] = useState<number>(
     persistedState.filterMaxDb ?? DEFAULT_LIBRARY_FILTER_MAX_DB,
   );
@@ -375,6 +386,12 @@ export default function App() {
   const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
   const [authStatusMessage, setAuthStatusMessage] = useState<string | null>(null);
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [favoriteProductIds, setFavoriteProductIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [favoriteActionError, setFavoriteActionError] = useState<string | null>(null);
+  const [isFavoriteAuthOpen, setIsFavoriteAuthOpen] = useState(false);
+  const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
   const [recommendationProfiles, setRecommendationProfiles] = useState<
     SavedRecommendationProfile[]
   >([]);
@@ -674,6 +691,24 @@ export default function App() {
   }, [currentRoute, supabaseSession?.access_token]);
 
   useEffect(() => {
+    const authToken = supabaseSession?.access_token || "";
+    if (!authToken) {
+      setFavoriteProductIds(new Set());
+      return;
+    }
+
+    void listFavorites({ authToken })
+      .then((result) => {
+        setFavoriteProductIds(new Set(result.productIds));
+      })
+      .catch((error) => {
+        setFavoriteActionError(
+          error instanceof Error ? error.message : "读取收藏失败，请稍后重试。",
+        );
+      });
+  }, [supabaseSession?.access_token]);
+
+  useEffect(() => {
     if (!supabaseSession?.user?.id || !shouldContinueBodyPersonaUnlockAfterAuth) {
       return;
     }
@@ -722,15 +757,20 @@ export default function App() {
       return;
     }
 
-    if (isLoading || hasAutoRefreshedLibraryProductsRef.current) {
+    if (
+      isLoading ||
+      hasAutoRefreshedLibraryProductsRef.current ||
+      hasFetched ||
+      allProducts.length > 0
+    ) {
       return;
     }
 
     hasAutoRefreshedLibraryProductsRef.current = true;
     void fetchProducts({
-      preferCachedResult: allProducts.length === 0,
+      preferCachedResult: true,
     });
-  }, [currentRoute, isLoading, allProducts.length]);
+  }, [currentRoute, isLoading, allProducts.length, hasFetched]);
 
   useEffect(() => {
     const nextGender = normalizeLibraryAudienceGender(filterGender);
@@ -744,6 +784,23 @@ export default function App() {
       sanitizeLibrarySubtypeSelection(currentSubtype, nextGender, nextType),
     );
   }, [filterGender, filterType]);
+
+  useEffect(() => {
+    if (filterBrand === "all") {
+      return;
+    }
+
+    const brandStillAllowed = allProducts.some((product) => {
+      if (product.brand !== filterBrand) return false;
+      if (filterOrigin === "all") return true;
+      if (filterOrigin === "domestic") return product.isDomestic === true;
+      return product.isDomestic === false;
+    });
+
+    if (!brandStillAllowed) {
+      setFilterBrand("all");
+    }
+  }, [allProducts, filterBrand, filterOrigin]);
 
   useEffect(() => {
     writeSessionJsonStorage(
@@ -766,6 +823,7 @@ export default function App() {
         filterSubtype,
         filterBrand,
         filterOrigin,
+        showFavoritesOnly,
         filterMaxDb,
         filterMaterial,
         filterPriceRange,
@@ -791,6 +849,7 @@ export default function App() {
     filterSubtype,
     filterBrand,
     filterOrigin,
+    showFavoritesOnly,
     filterMaxDb,
     filterMaterial,
     filterPriceRange,
@@ -1462,6 +1521,7 @@ ${JSON.stringify(context.backupCandidates)}
       await signOutOfSupabase();
       setSupabaseSession(null);
       setRecommendationProfiles([]);
+      setFavoriteProductIds(new Set());
       setShouldContinueBodyPersonaUnlockAfterAuth(false);
       setIsBodyPersonaFullReportOpen(false);
       setAuthStatusMessage("已退出登录。");
@@ -1472,6 +1532,53 @@ ${JSON.stringify(context.backupCandidates)}
       );
     } finally {
       setIsSubmittingAuth(false);
+    }
+  }
+
+  async function handleToggleFavorite(product: Product) {
+    const authToken =
+      supabaseSession?.access_token ||
+      (await getCurrentSupabaseSession())?.access_token ||
+      "";
+
+    if (!authToken) {
+      setFavoriteActionError("需要登录后才能收藏产品。");
+      setIsFavoriteAuthOpen(true);
+      return;
+    }
+
+    const favoriteKey = product.originalId || product.id;
+    const isFavorited = favoriteProductIds.has(favoriteKey);
+    setFavoriteActionError(null);
+    setFavoriteProductIds((current) => {
+      const next = new Set(current);
+      if (isFavorited) {
+        next.delete(favoriteKey);
+      } else {
+        next.add(favoriteKey);
+      }
+      return next;
+    });
+
+    try {
+      if (isFavorited) {
+        await removeFavorite({ authToken, productId: favoriteKey });
+      } else {
+        await addFavorite({ authToken, productId: favoriteKey });
+      }
+    } catch (error) {
+      setFavoriteProductIds((current) => {
+        const rollback = new Set(current);
+        if (isFavorited) {
+          rollback.add(favoriteKey);
+        } else {
+          rollback.delete(favoriteKey);
+        }
+        return rollback;
+      });
+      setFavoriteActionError(
+        error instanceof Error ? error.message : "收藏操作失败，请稍后重试。",
+      );
     }
   }
 
@@ -1927,6 +2034,10 @@ ${JSON.stringify(context.backupCandidates)}
     navigateTo(resolveProfilesReturnRoute(profilesOriginRoute));
   };
 
+  const handleOpenFavoritesFromHome = () => {
+    setIsFavoritesModalOpen(true);
+  };
+
   const handleBackFromKnowledge = () => {
     const backNavigation = resolveKnowledgeBackNavigation(
       knowledgeOriginRoute,
@@ -1940,6 +2051,23 @@ ${JSON.stringify(context.backupCandidates)}
 
     navigateTo(backNavigation.route);
   };
+
+  const favoriteProducts = allProducts.filter((product) =>
+    favoriteProductIds.has(product.originalId || product.id),
+  );
+
+  useEffect(() => {
+    if (
+      !isFavoritesModalOpen ||
+      favoriteProductIds.size === 0 ||
+      allProducts.length > 0 ||
+      isLoading
+    ) {
+      return;
+    }
+
+    void fetchProducts({ preferCachedResult: true });
+  }, [isFavoritesModalOpen, favoriteProductIds.size, allProducts.length, isLoading]);
 
   if (isLoading && currentRoute !== "/library") {
     return (
@@ -1970,6 +2098,7 @@ ${JSON.stringify(context.backupCandidates)}
             filterSubtype={filterSubtype}
             filterBrand={filterBrand}
             filterOrigin={filterOrigin}
+            showFavoritesOnly={showFavoritesOnly}
             filterMaterial={filterMaterial}
             filterPriceRange={filterPriceRange}
             filterMaxDb={filterMaxDb}
@@ -2001,6 +2130,7 @@ ${JSON.stringify(context.backupCandidates)}
             }
             onFilterBrandChange={setFilterBrand}
             onFilterOriginChange={setFilterOrigin}
+            onShowFavoritesOnlyChange={setShowFavoritesOnly}
             onFilterMaterialChange={setFilterMaterial}
             onFilterPriceRangeChange={setFilterPriceRange}
             onFilterMaxDbChange={setFilterMaxDb}
@@ -2010,11 +2140,14 @@ ${JSON.stringify(context.backupCandidates)}
               setFilterSubtype("all");
               setFilterBrand("all");
               setFilterOrigin("all");
+              setShowFavoritesOnly(false);
               setFilterMaterial("all");
               setFilterPriceRange("all");
               setFilterMaxDb(DEFAULT_LIBRARY_FILTER_MAX_DB);
             }}
             onBack={() => navigateTo(getReturnRoute())}
+            favoriteProductIds={favoriteProductIds}
+            onToggleFavorite={handleToggleFavorite}
           />
         </div>
       </div>
@@ -2138,11 +2271,14 @@ ${JSON.stringify(context.backupCandidates)}
             );
           }}
           onOpenProfiles={navigateToProfiles}
+          onOpenFavorites={handleOpenFavoritesFromHome}
           onBackProfiles={handleBackFromProfiles}
           onSelectOption={handleOptionSelect}
           onBackQuestion={handleBackQuestion}
           onBackHome={handleBackHomeFromQuiz}
-          onBackResults={handleBackToResultsFromQuiz}
+          onBackResults={
+            quizReturnToResultsState ? handleBackToResultsFromQuiz : undefined
+          }
           onJumpToQuestion={handleJumpToQuizQuestion}
           onCloseBodyPersonaQuiz={handleCloseBodyPersonaQuiz}
           onChangeBodyPersonaAnswer={handleChangeBodyPersonaAnswer}
@@ -2173,8 +2309,109 @@ ${JSON.stringify(context.backupCandidates)}
           themeId={themeId}
           onThemeChange={handleThemeChange}
           onReset={resetQuiz}
+          favoriteProductIds={favoriteProductIds}
+          onToggleFavorite={handleToggleFavorite}
         />
       </div>
+
+      {isFavoriteAuthOpen ? (
+        <HomeAuthOverlay onClose={() => setIsFavoriteAuthOpen(false)}>
+          <div>
+            <AuthPanel {...authPanel} surface="modal" />
+            <p className="mt-3 text-center text-xs leading-5 text-cyan-100/65">
+              登录后即可收藏全息装备库和匹配结果中的产品。
+            </p>
+            {favoriteActionError ? (
+              <p className="mt-2 text-center text-xs leading-5 text-rose-200/80">
+                {favoriteActionError}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setIsFavoriteAuthOpen(false)}
+              className="mt-3 w-full rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+            >
+              暂时不用
+            </button>
+          </div>
+        </HomeAuthOverlay>
+      ) : null}
+
+      {isFavoritesModalOpen ? (
+        <HomeAuthOverlay onClose={() => setIsFavoritesModalOpen(false)}>
+          <div className="w-full max-w-4xl rounded-[1.7rem] border border-cyan-300/18 bg-slate-950 p-5 text-left shadow-[0_0_90px_rgba(8,47,73,0.38)] sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4 border-b border-cyan-100/10 pb-4">
+              <div className="min-w-0">
+                <p className="mb-2 text-[10px] tracking-[0.28em] text-cyan-200/45">
+                  FAVORITES
+                </p>
+                <h2 className="text-lg font-medium text-white sm:text-xl">
+                  我的收藏
+                </h2>
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  这里会集中展示你在全息装备库和匹配结果中收藏过的产品。
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFavoritesModalOpen(false)}
+                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] p-2 text-slate-300 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                关闭
+              </button>
+            </div>
+
+            {isLoading && favoriteProducts.length === 0 ? (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center text-sm text-slate-400">
+                正在读取收藏产品...
+              </div>
+            ) : favoriteProducts.length === 0 ? (
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center">
+                <p className="text-sm text-white">还没有收藏产品</p>
+                <p className="mt-2 text-xs leading-5 text-slate-400">
+                  你可以在全息装备库或匹配结果中点击收藏，之后会显示在这里。
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {favoriteProducts.map((product) => {
+                  const productUrl = product.sourceUrl || product.link;
+                  const card = (
+                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all hover:border-cyan-300/24 hover:bg-cyan-300/[0.05]">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <span className="rounded-full border border-cyan-300/16 bg-cyan-300/8 px-2.5 py-1 text-[11px] text-cyan-100/75">
+                          {product.brand}
+                        </span>
+                        <span className="text-sm text-cyan-300">¥{product.price}</span>
+                      </div>
+                      <h3 className="text-base font-medium leading-6 text-white">
+                        {getProductDisplayName(product)}
+                      </h3>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        材质：{product.material} · {product.gender === "male" ? "男性向" : product.gender === "female" ? "女性向" : "通用型"}
+                      </p>
+                    </div>
+                  );
+
+                  return productUrl ? (
+                    <a
+                      key={product.id}
+                      href={productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      {card}
+                    </a>
+                  ) : (
+                    <div key={product.id}>{card}</div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </HomeAuthOverlay>
+      ) : null}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { createJsonEtag, requestHasMatchingEtag } from "./http-cache.js";
 
 type QueryResultRow = {
   id: string;
+  original_id: string | null;
   name: string;
   safe_display_name: string | null;
   price: string | number | null;
@@ -159,6 +160,7 @@ function normalizeLibraryRows(rows: QueryResultRow[]) {
 
     return {
       id: toy.id,
+      originalId: toy.original_id || null,
       name: toy.name,
       canonicalName: toy.name,
       displayName: safeDisplayName,
@@ -228,6 +230,7 @@ export function createListRecommenderToysHandler({
       const result = await queryWithRetry(pool, `
         SELECT
           t.id,
+          t.original_id,
           t.name,
           t.safe_display_name,
           t.price,

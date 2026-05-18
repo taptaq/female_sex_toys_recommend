@@ -32,11 +32,17 @@ function createMockResponse() {
 
 test("username registration handler creates a confirmed hidden-email user", async () => {
   let captured: unknown;
+  let profileUpsert: unknown;
   const handler = createUsernameRegistrationHandler({
     service: {
       createUsernameUser: async (username, password) => {
         captured = { username, password };
-        return { success: true };
+        return { success: true, userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00" };
+      },
+    },
+    profileStore: {
+      upsertProfile: async (input) => {
+        profileUpsert = input;
       },
     },
   });
@@ -50,12 +56,19 @@ test("username registration handler creates a confirmed hidden-email user", asyn
   assert.equal(mockResponse.readStatusCode(), 201);
   assert.deepEqual(mockResponse.readJsonPayload(), { success: true });
   assert.deepEqual(captured, { username: "taptaq", password: "secret-pass" });
+  assert.deepEqual(profileUpsert, {
+    userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
+    username: "taptaq",
+  });
 });
 
 test("username registration handler rejects missing credentials", async () => {
   const handler = createUsernameRegistrationHandler({
     service: {
-      createUsernameUser: async () => ({ success: true }),
+      createUsernameUser: async () => ({
+        success: true,
+        userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
+      }),
     },
   });
 

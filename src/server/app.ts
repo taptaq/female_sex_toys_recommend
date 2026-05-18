@@ -63,6 +63,19 @@ import {
   createUserRecommendationStore,
   ensureUserRecommendationSchema,
 } from "./user-recommendation-store.js";
+import {
+  createUserProfileStore,
+  ensureUserProfileSchema,
+} from "./user-profile-store.js";
+import {
+  createUserFavoritesStore,
+  ensureUserFavoritesSchema,
+} from "./user-favorites-store.js";
+import {
+  createAddFavoriteHandler,
+  createDeleteFavoriteHandler,
+  createListFavoritesHandler,
+} from "./user-favorites-route.js";
 import { createUsernameRegistrationHandler } from "./user-register-route.js";
 import { createUsernameRegistrationService } from "./user-register-service.js";
 
@@ -110,6 +123,12 @@ const getKnowledgeRecordCardViewHandler = createLazyValue(() =>
 const getUserRecommendationStore = createLazyValue(() =>
   createUserRecommendationStore({ pool }),
 );
+const getUserProfileStore = createLazyValue(() =>
+  createUserProfileStore({ pool }),
+);
+const getUserFavoritesStore = createLazyValue(() =>
+  createUserFavoritesStore({ pool }),
+);
 const getUserFeedbackStore = createLazyValue(() =>
   createUserFeedbackStore({ pool }),
 );
@@ -137,11 +156,6 @@ const getSupabaseAccessTokenVerifier = createLazyValue(() =>
   createSupabaseAccessTokenVerifier({
     supabaseUrl: process.env.VITE_SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  }),
-);
-const getRegisterUsernameHandler = createLazyValue(() =>
-  createUsernameRegistrationHandler({
-    service: getUsernameRegistrationService(),
   }),
 );
 const getSaveUserFeedbackHandler = createLazyValue(() =>
@@ -199,6 +213,27 @@ const getListRecommendationProfilesHandler = createLazyValue(() =>
     jwtSecret: process.env.JWT_SECRET,
     authVerifier: getSupabaseAccessTokenVerifier(),
     store: getUserRecommendationStore(),
+  }),
+);
+const getAddFavoriteHandler = createLazyValue(() =>
+  createAddFavoriteHandler({
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserFavoritesStore(),
+  }),
+);
+const getListFavoritesHandler = createLazyValue(() =>
+  createListFavoritesHandler({
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserFavoritesStore(),
+  }),
+);
+const getDeleteFavoriteHandler = createLazyValue(() =>
+  createDeleteFavoriteHandler({
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserFavoritesStore(),
   }),
 );
 
@@ -284,6 +319,20 @@ function ensureUserRecommendationRouteReady() {
   });
 }
 
+function ensureUserProfileRouteReady() {
+  return ensureRouteInitialized("user-profile", async () => {
+    ensureDatabaseConfigured();
+    await ensureUserProfileSchema(pool);
+  });
+}
+
+function ensureUserFavoritesRouteReady() {
+  return ensureRouteInitialized("user-favorites", async () => {
+    ensureDatabaseConfigured();
+    await ensureUserFavoritesSchema(pool);
+  });
+}
+
 app.get(
   "/api/recommender/toys",
   createListRecommenderToysHandler({
@@ -346,7 +395,14 @@ app.post("/api/ai/recalibrate-results", (req, res) =>
 );
 app.post(
   "/api/auth/register",
-  (req, res) => getRegisterUsernameHandler()(req, res),
+  withLazyRouteHandler(
+    ensureUserProfileRouteReady,
+    () =>
+      createUsernameRegistrationHandler({
+        service: getUsernameRegistrationService(),
+        profileStore: getUserProfileStore(),
+      }),
+  ),
 );
 app.get(
   "/api/knowledge/topics/:slug",
@@ -444,6 +500,48 @@ app.get(
   withLazyRouteHandler(
     ensureUserRecommendationRouteReady,
     getListRecommendationProfilesHandler,
+  ),
+);
+app.get(
+  "/api/user/favorites",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getListFavoritesHandler,
+  ),
+);
+app.post(
+  "/api/user/favorites",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getAddFavoriteHandler,
+  ),
+);
+app.delete(
+  "/api/user/favorites/:productId",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getDeleteFavoriteHandler,
+  ),
+);
+app.get(
+  "/api/user/favorites",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getListFavoritesHandler,
+  ),
+);
+app.post(
+  "/api/user/favorites",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getAddFavoriteHandler,
+  ),
+);
+app.delete(
+  "/api/user/favorites/:productId",
+  withLazyRouteHandler(
+    ensureUserFavoritesRouteReady,
+    getDeleteFavoriteHandler,
   ),
 );
 

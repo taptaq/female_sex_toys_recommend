@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown } from "lucide-react";
+import { Boxes, ChevronDown, Heart } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { RankedProduct } from "../../lib/app-shell.ts";
@@ -21,6 +21,8 @@ export function ResultsAlternativeProductsSection({
   renderProductImage,
   renderClickableHint,
   getMetricChips,
+  favoriteProductIds,
+  onToggleFavorite,
 }: {
   topProducts: RankedProduct[];
   canBrowseSimilarLibraryProducts: boolean;
@@ -43,6 +45,8 @@ export function ResultsAlternativeProductsSection({
     sectionId?: string;
     icon: React.ComponentType<{ className?: string }>;
   }>;
+  favoriteProductIds?: Set<string>;
+  onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
 }) {
   const backupDirectionTeaser = buildBackupDirectionTeaser(backupProducts);
 
@@ -215,6 +219,24 @@ export function ResultsAlternativeProductsSection({
                         <div className="flex h-full flex-col md:flex-row">
                           <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-black/20 md:w-44">
                             {renderProductImage(product, "h-6 w-6 text-white/40")}
+                            {onToggleFavorite ? (
+                              <button
+                                type="button"
+                                aria-label={favoriteProductIds?.has(product.originalId || product.id) ? "取消收藏" : "收藏产品"}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  void onToggleFavorite(product);
+                                }}
+                                className={`absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                                  favoriteProductIds?.has(product.originalId || product.id)
+                                    ? "border-rose-300/45 bg-rose-400/18 text-rose-100"
+                                    : "border-white/12 bg-slate-950/65 text-white/70 hover:border-cyan-300/35 hover:text-white"
+                                }`}
+                              >
+                                <Heart className={`h-4 w-4 ${favoriteProductIds?.has(product.originalId || product.id) ? "fill-current" : ""}`} />
+                              </button>
+                            ) : null}
                           </div>
 
                           <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">

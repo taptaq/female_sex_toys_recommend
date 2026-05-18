@@ -75,6 +75,7 @@ test("profiles page renders saved equipment matching profiles", () => {
   assert.match(html, /回看这次判断/);
   assert.match(html, /当时更在意/);
   assert.match(html, /先看路线/);
+  assert.doesNotMatch(html, /我的收藏/);
 });
 
 test("profiles page renders an empty state", () => {

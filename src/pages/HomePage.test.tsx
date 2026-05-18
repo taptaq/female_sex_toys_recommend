@@ -31,6 +31,7 @@ function renderHomePage() {
       onBrowseLibrary={() => {}}
       onOpenKnowledgeNebula={() => {}}
       onOpenProfiles={() => {}}
+      onOpenFavorites={() => {}}
       themeId="inner-space"
       onThemeChange={() => {}}
       authPanel={authPanel}
@@ -476,6 +477,7 @@ test("home page keeps secondary entry navigation and auth actions structurally d
       onBrowseLibrary={() => {}}
       onOpenKnowledgeNebula={() => {}}
       onOpenProfiles={() => {}}
+      onOpenFavorites={() => {}}
       themeId="inner-space"
       onThemeChange={() => {}}
       authPanel={{ ...authPanel, userLabel: "taptaq" }}

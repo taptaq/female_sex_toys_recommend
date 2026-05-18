@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertCircle, Sparkles } from "lucide-react";
+import { AlertCircle, Heart, Sparkles } from "lucide-react";
 
 import type { RankedProduct } from "../../lib/app-shell.ts";
 import {
@@ -87,6 +87,8 @@ export function ResultsPrimaryRecommendationPanel({
   primaryNextStep,
   renderProductImage,
   renderClickableHint,
+  isFavorited = false,
+  onToggleFavorite,
 }: {
   className: string;
   topProduct: RankedProduct;
@@ -100,12 +102,32 @@ export function ResultsPrimaryRecommendationPanel({
   primaryNextStep?: string | null;
   renderProductImage: (product: RankedProduct, iconClassName: string) => ReactNode;
   renderClickableHint: (label?: string) => ReactNode;
+  isFavorited?: boolean;
+  onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
 }) {
   return (
     <section className={className}>
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-stretch">
         <div className="relative min-h-56 overflow-hidden rounded-3xl border border-white/8 bg-black/20">
+          {onToggleFavorite ? (
+            <button
+              type="button"
+              aria-label={isFavorited ? "取消收藏" : "收藏产品"}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void onToggleFavorite(topProduct);
+              }}
+              className={`absolute right-4 top-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+                isFavorited
+                  ? "border-rose-300/45 bg-rose-400/18 text-rose-100"
+                  : "border-white/12 bg-slate-950/65 text-white/70 hover:border-cyan-300/35 hover:text-white"
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
+            </button>
+          ) : null}
           {primaryProductHref ? (
             <>
               <a

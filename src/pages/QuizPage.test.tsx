@@ -88,7 +88,8 @@ test("quiz scan background is sized to cover the full viewport", () => {
   assert.doesNotMatch(source, /\.quiz-starfield\s*{[^}]*animation:/s);
   assert.match(source, /\.quiz-starfield::before/);
   assert.match(source, /@keyframes quiz-starfield-drift/);
-  assert.match(appSource, /currentRoute === "\/quiz"\s*\?\s*"h-dvh min-h-dvh p-0"/);
+  assert.match(appSource, /effectiveShellRoute === "\/quiz"/);
+  assert.match(appSource, /"h-dvh min-h-dvh p-0"/);
   assert.match(pageMarkup, /flex/);
   assert.match(pageMarkup, /justify-center/);
 });
@@ -154,4 +155,19 @@ test("quiz page shows a return-to-results entry when the user is revising answer
   );
 
   assert.match(html, /返回结果页/);
+});
+
+test("quiz page hides the return-to-results entry during a fresh quiz flow", () => {
+  const html = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={1}
+      activeQuestions={multiStepQuestions}
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.doesNotMatch(html, /返回结果页/);
 });

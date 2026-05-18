@@ -55,6 +55,7 @@ test("createListRecommenderToysHandler caches the normalized library payload and
           rows: [
             {
               id: "toy-1",
+              original_id: "product-1",
               name: "测试装备",
               safe_display_name: "测试装备",
               price: "199.00",
@@ -93,6 +94,7 @@ test("createListRecommenderToysHandler caches the normalized library payload and
   assert.deepEqual(first.readJsonPayload(), [
     {
       id: "toy-1",
+      originalId: "product-1",
       name: "测试装备",
       canonicalName: "测试装备",
       displayName: "测试装备",
@@ -136,6 +138,7 @@ test("createListRecommenderToysHandler returns 304 when the cached payload etag 
         rows: [
           {
             id: "toy-1",
+            original_id: "product-1",
             name: "测试装备",
             safe_display_name: "测试装备",
             price: "199.00",
@@ -193,9 +196,10 @@ test("createListRecommenderToysHandler retries once on transient database discon
         }
         return {
           rows: [
-            {
-              id: "toy-1",
-              name: "测试装备",
+          {
+            id: "toy-1",
+            original_id: "product-1",
+            name: "测试装备",
               safe_display_name: "测试装备",
               price: "199.00",
               max_db: 42,
@@ -229,6 +233,7 @@ test("createListRecommenderToysHandler retries once on transient database discon
   assert.deepEqual(response.readJsonPayload(), [
     {
       id: "toy-1",
+      originalId: "product-1",
       name: "测试装备",
       canonicalName: "测试装备",
       displayName: "测试装备",

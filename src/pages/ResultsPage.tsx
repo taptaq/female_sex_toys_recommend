@@ -316,6 +316,8 @@ type ResultsPageProps = {
   };
   onBackHome?: () => void;
   onReset: () => void;
+  favoriteProductIds?: Set<string>;
+  onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
 };
 
 export function ResultsPage({
@@ -357,6 +359,8 @@ export function ResultsPage({
   authPanel,
   onBackHome,
   onReset,
+  favoriteProductIds = new Set(),
+  onToggleFavorite,
 }: ResultsPageProps) {
   const [isRecalibrationPanelOpen, setIsRecalibrationPanelOpen] = useState(false);
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false);
@@ -523,6 +527,8 @@ export function ResultsPage({
           primaryNextStep={primaryNextStep}
           renderProductImage={renderProductImage}
           renderClickableHint={renderClickableHint}
+          isFavorited={favoriteProductIds.has(topProducts[0].originalId || topProducts[0].id)}
+          onToggleFavorite={onToggleFavorite}
         />
       ) : null}
 
@@ -678,6 +684,8 @@ export function ResultsPage({
           renderProductImage={renderProductImage}
           renderClickableHint={renderClickableHint}
           getMetricChips={getMetricChips}
+          favoriteProductIds={favoriteProductIds}
+          onToggleFavorite={onToggleFavorite}
         />
       ) : (
         <div className="glass-panel rounded-3xl p-8 text-center">
