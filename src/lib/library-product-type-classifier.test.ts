@@ -180,6 +180,26 @@ test("classifyLibraryTypeCode recognizes bondage restraint products as bdsm", ()
   );
 });
 
+test("classifyLibraryTypeCode recognizes female-labelled restraint products as bdsm", () => {
+  const input = {
+    gender: "female",
+    physicalForm: "external",
+    name: "Cuffies",
+    rawDescription:
+      "柔性硅胶手铐。柔软、有弹性的身体安全硅胶约束手铐，适合伴侣或单人感官游戏。BDSM 束缚。",
+    tags: ["BDSM", "手铐", "束缚"],
+  };
+
+  assert.equal(classifyLibraryTypeCode(input), "bdsm");
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      ...input,
+      typeCode: "bdsm",
+    }),
+    "bondage_restraint",
+  );
+});
+
 test("classifyLibraryTypeCode recognizes impact tools as bdsm", () => {
   assert.equal(
     classifyLibraryTypeCode({
@@ -1129,5 +1149,221 @@ test("resolveLibrarySubtypeCode falls back to subtype classifier when stored sub
       tags: [],
     }),
     "suction_pure",
+  );
+});
+
+test("classifyLibraryTypeCode recognizes official clitoral vibrators currently marked unknown", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "SIRI™ 3",
+      rawDescription:
+        "新一代声控振动器，增强功率和精准度。规格包含硅胶、锂电池、充电、最大噪音水平。",
+      tags: [],
+    }),
+    "external_vibe",
+  );
+
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "external_vibe",
+      gender: "female",
+      physicalForm: "external",
+      name: "Squish",
+      rawDescription:
+        "挤压玩具是一款可挤压、响应式的振动器，纹理尖端提供精准刺激，4种强度与2种模式。",
+      tags: [],
+    }),
+    "bullet_vibe",
+  );
+});
+
+test("classifyLibraryTypeCode treats vibrator necklaces as external vibes, not panty wearables", () => {
+  const input = {
+    gender: "female",
+    physicalForm: "external",
+    name: "Vesper 2",
+    rawDescription:
+      "维斯珀2号振动器项链延续了亲密与自我表达的传统，愉悦珠宝，可佩戴。",
+    tags: [],
+  };
+
+  assert.equal(classifyLibraryTypeCode(input), "external_vibe");
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      ...input,
+      typeCode: "external_vibe",
+    }),
+    "bullet_vibe",
+  );
+});
+
+test("classifyLibraryTypeCode keeps remote-controlled male strokers as masturbators", () => {
+  const input = {
+    gender: "male",
+    physicalForm: "external",
+    name: "PULSE SOLO LUX",
+    rawDescription:
+      "Powerful vibrating masturbator with edging action and wrist-remote control.",
+    tags: ["remote", "wearable controller", "vibrating masturbator"],
+  };
+
+  assert.equal(classifyLibraryTypeCode(input), "masturbator");
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      ...input,
+      typeCode: "masturbator",
+    }),
+    "vibrating_masturbator",
+  );
+});
+
+test("classifyLibraryTypeCode lets strong male masturbator copy override wearable controller wording", () => {
+  const input = {
+    gender: "male",
+    physicalForm: "external",
+    name: "PULSE SOLO LUX – Powerful Vibrating Masturbator with Edging Action & Wrist-Remote",
+    rawDescription:
+      "脉冲单机豪华版 – 强力振动自慰器，带边缘控制动作与腕带遥控器。多项获奖！这款豪华单人男性用品带有腕带遥控器。时尚可佩戴的腕带遥控器让您轻松调整节奏。功能：9速振荡器，6种可调频率振动模式。噪音等级：低于55分贝。防水：是。",
+    tags: [],
+  };
+
+  assert.equal(classifyLibraryTypeCode(input), "masturbator");
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      ...input,
+      typeCode: "masturbator",
+    }),
+    "vibrating_masturbator",
+  );
+});
+
+test("classifyLibraryTypeCode does not treat USB wording as a unisex audience signal", () => {
+  const input = {
+    gender: "male",
+    physicalForm: "external",
+    name: "PULSE SOLO LUX – Powerful Vibrating Masturbator with Edging Action & Wrist-Remote",
+    rawDescription:
+      "强力振动自慰器，带边缘控制动作与腕带遥控器。男性用品，9速振荡器，6种可调频率振动模式。充电：通用串行总线线缆。防水：是。",
+    tags: ["男性快感", "防水"],
+  };
+
+  assert.equal(resolveLibraryAudienceGender(input), "male");
+  assert.equal(classifyLibraryTypeCode(input), "masturbator");
+});
+
+test("classifyLibraryTypeCode recognizes suction products from LELO sona copy", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "external",
+      name: "SONA™ 3",
+      rawDescription:
+        "采用先进的 SenSonic 技术，实现精准、温和且防水的刺激。产品为索娜声波阴蒂刺激器。",
+      tags: [],
+    }),
+    "suction",
+  );
+});
+
+test("classifyLibraryTypeCode recognizes male sleeve and powered masturbator rows", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "male",
+      physicalForm: "external",
+      name: "Arcwave Ghost",
+      rawDescription:
+        "男性硅胶刺激器，配备可反转纹理套筒，无需电池，无需麻烦。",
+      tags: [],
+    }),
+    "masturbator",
+  );
+
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "masturbator",
+      gender: "male",
+      physicalForm: "external",
+      name: "Arcwave Ghost",
+      rawDescription:
+        "男性硅胶刺激器，配备可反转纹理套筒，无需电池，无需麻烦。",
+      tags: [],
+    }),
+    "manual_masturbator",
+  );
+
+  assert.equal(
+    classifyLibrarySubtypeCode({
+      typeCode: "masturbator",
+      gender: "male",
+      physicalForm: "external",
+      name: "Arcwave Zing",
+      rawDescription:
+        "开放式袖套设计，两个电机提供强劲振动，可调节紧度带。",
+      tags: [],
+    }),
+    "vibrating_masturbator",
+  );
+});
+
+test("classifyLibraryTypeCode separates kegel trainers and bdsm cuffs from unknown", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "female",
+      physicalForm: "internal",
+      name: "Ami 3 Step Kegel Training Set",
+      rawDescription: "三步凯格尔训练套装，三种渐进式重量，强化盆底肌。",
+      tags: [],
+    }),
+    "insertable",
+  );
+
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Cuffies",
+      rawDescription: "柔性硅胶手铐，身体安全硅胶约束手铐，适合伴侣或单人感官游戏。",
+      tags: [],
+    }),
+    "bdsm",
+  );
+});
+
+test("classifyLibraryTypeCode keeps non-device wellness and storage products as care_accessory", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Melt",
+      rawDescription: "按摩蜡烛和身体油，融化后变成温热的按摩油。",
+      tags: [],
+    }),
+    "care_accessory",
+  );
+
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Pleasure Pouch",
+      rawDescription: "愉悦收纳袋，将玩具、润滑剂和自爱用品安全整洁地收纳在一起。",
+      tags: [],
+    }),
+    "care_accessory",
+  );
+});
+
+test("classifyLibraryTypeCode keeps intimacy prompt cards out of insertable categories", () => {
+  assert.equal(
+    classifyLibraryTypeCode({
+      gender: "unisex",
+      physicalForm: "external",
+      name: "Journey Deeper: Intimacy Edition",
+      rawDescription: "100张提示卡，帮助伴侣深入亲密与连接，激发有意义对话。",
+      tags: [],
+    }),
+    "unknown",
   );
 });

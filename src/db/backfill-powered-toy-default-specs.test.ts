@@ -73,6 +73,87 @@ test("isPoweredToyCandidate rejects non-toy and non-powered rows", () => {
     }),
     false,
   );
+
+  assert.equal(
+    isPoweredToyCandidate({
+      id: "toy-4b",
+      original_id: "product-4b",
+      name: "Stainless Steel 3 Ring Set",
+      type_code: "cock_ring",
+      raw_description: "Manual stainless steel rings with no motor.",
+      max_db: 50,
+      waterproof: null,
+      product_tags: [],
+      product_raw_description: null,
+    }),
+    false,
+  );
+});
+
+test("isPoweredToyCandidate accepts vibrating cock rings but not classic rings", () => {
+  assert.equal(
+    isPoweredToyCandidate({
+      id: "toy-ring-powered",
+      original_id: "product-ring-powered",
+      name: "Magic Dante Ⅱ",
+      type_code: "cock_ring",
+      raw_description: "智能可穿戴阴茎环，10种手动模式震动模式，app control.",
+      max_db: null,
+      waterproof: null,
+      product_tags: [],
+      product_raw_description: null,
+    }),
+    true,
+  );
+
+  assert.equal(
+    isPoweredToyCandidate({
+      id: "toy-ring-tag-noise",
+      original_id: "product-ring-tag-noise",
+      name: "Lovehoney Black Mega Boost Double Stamina Ring",
+      type_code: "cock_ring",
+      raw_description: "双倍耐力环，提供紧密贴合，没有震动、马达或充电说明。",
+      max_db: null,
+      waterproof: null,
+      product_tags: ["可充电"],
+      product_raw_description: null,
+    }),
+    false,
+  );
+});
+
+test("isPoweredToyCandidate rejects manual masturbators with incidental app text", () => {
+  assert.equal(
+    isPoweredToyCandidate({
+      id: "manual-stroker",
+      original_id: "manual-stroker-product",
+      name: "Fleshlight Riley Reid Utopia Texture",
+      type_code: "masturbator",
+      raw_description: "手动仿真阴道。页面模板包含 APP支持: 是。",
+      max_db: null,
+      waterproof: null,
+      product_tags: [],
+      product_raw_description: null,
+    }),
+    false,
+  );
+});
+
+test("isPoweredToyCandidate rejects non-powered insertables with incidental charging text", () => {
+  assert.equal(
+    isPoweredToyCandidate({
+      id: "steel-wand",
+      original_id: "steel-wand-product",
+      name: "njoy Pure Wand Stainless Steel",
+      type_code: "insertable",
+      raw_description: "不锈钢双头按摩棒。页面附近包含其他商品的充电信息。",
+      max_db: null,
+      waterproof: null,
+      product_tags: [],
+      product_raw_description: null,
+    }),
+    false,
+  );
 });
 
 test("buildPoweredToySpecPatch fills only missing defaults", () => {

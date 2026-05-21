@@ -68,15 +68,100 @@ const POWERED_SIGNAL_PATTERNS = [
   /\bsmart silence\b/u,
 ];
 
+const STRONG_POWERED_SIGNAL_PATTERNS = [
+  /震动/u,
+  /振动/u,
+  /吮吸/u,
+  /吸吮/u,
+  /气脉冲/u,
+  /脉冲/u,
+  /电动/u,
+  /加热/u,
+  /充电/u,
+  /可充电/u,
+  /马达/u,
+  /rechargeable/u,
+  /\bmotor\b/u,
+  /\bpowered\b/u,
+  /\belectric\b/u,
+  /\bsuction\b/u,
+  /\bvibrat/i,
+  /\bautomatic\b/i,
+  /\bsmart silence\b/u,
+];
+
 const NEGATIVE_SIGNAL_PATTERNS = [
   /\bmanual\b/u,
-  /手动/u,
+  /手动(?!模式)/u,
   /\bnon[-\s]?powered\b/u,
   /\bwithout motor\b/u,
   /\bwithout battery\b/u,
+  /\bno motor\b/u,
+  /\bno battery\b/u,
+  /非振动/u,
+  /无振动/u,
+  /(?:没有|无|不含)[^。.!?\n]*(?:震动|振动|马达|充电|电动)/u,
   /\bglass dildo\b/u,
   /玻璃/u,
 ];
+
+const STATIC_NON_POWERED_SIGNAL_PATTERNS = [
+  /\bstainless steel\b/i,
+  /不锈钢/u,
+  /\bmetal\b/i,
+  /金属/u,
+  /\bjewelled\b/i,
+  /\bglass\b/i,
+  /玻璃/u,
+  /\bclassic silicone beads?\b/i,
+  /\bsilicone beads?\b/i,
+  /肛门串珠/u,
+  /\bfleshlight\b/i,
+  /\bstroker\b/i,
+  /自慰套/u,
+  /\brealistic vagina\b/i,
+  /\bpocket pussy\b/i,
+  /真实(?:阴道|名器)/u,
+  /\bstrap-on harness\b/i,
+  /\bharness kit\b/i,
+  /绑带式穿戴工具/u,
+];
+
+const STRICT_POWERED_TYPE_CODES = new Set([
+  "insertable",
+  "masturbator",
+  "prostate",
+]);
+
+const BOILERPLATE_POWERED_SIGNAL_PATTERNS = [
+  /页面(?:模板|附近)[^\n。.!?]*(?:app|充电|遥控|remote|charging)[^\n。.!?]*/giu,
+  /(?:app|充电|遥控|remote|charging)\s*(?:支持|信息)\s*[:：]?\s*(?:是|yes)?/giu,
+  /\bcharging information\b/giu,
+];
+
+const COCK_RING_POWERED_SIGNAL_PATTERNS = [
+  /震动/u,
+  /振动/u,
+  /马达/u,
+  /充电/u,
+  /app/u,
+  /遥控/u,
+  /\bvibrat/i,
+  /\bmotor\b/u,
+  /\brechargeable\b/u,
+  /\bremote\b/u,
+];
+
+function stripBoilerplatePoweredSignals(text: string) {
+  return BOILERPLATE_POWERED_SIGNAL_PATTERNS.reduce(
+    (cleanText, pattern) => cleanText.replace(pattern, " "),
+    text,
+  );
+}
+
+function hasStrongPoweredSignal(text: string) {
+  return STRONG_POWERED_SIGNAL_PATTERNS.some((pattern) => pattern.test(text));
+}
 
 export function buildPoweredToySignalText(row: PoweredToyCandidateRow) {
   return [
@@ -85,6 +170,17 @@ export function buildPoweredToySignalText(row: PoweredToyCandidateRow) {
     row.raw_description,
     row.product_raw_description,
     ...(Array.isArray(row.product_tags) ? row.product_tags : []),
+  ]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join("\n");
+}
+
+export function buildStrictPoweredToySignalText(row: PoweredToyCandidateRow) {
+  return [
+    row.name,
+    row.type_code,
+    row.raw_description,
+    row.product_raw_description,
   ]
     .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
     .join("\n");
@@ -106,6 +202,30 @@ export function isPoweredToyCandidate(row: PoweredToyCandidateRow) {
 
   if (NEGATIVE_SIGNAL_PATTERNS.some((pattern) => pattern.test(signalText))) {
     return false;
+  }
+
+  if (row.type_code === "cock_ring") {
+    const strictSignalText = stripBoilerplatePoweredSignals(
+      buildStrictPoweredToySignalText(row),
+    );
+    return COCK_RING_POWERED_SIGNAL_PATTERNS.some((pattern) =>
+      pattern.test(strictSignalText),
+    );
+  }
+
+  if (row.type_code && STRICT_POWERED_TYPE_CODES.has(row.type_code)) {
+    const strictSignalText = stripBoilerplatePoweredSignals(
+      buildStrictPoweredToySignalText(row),
+    );
+    if (
+      STATIC_NON_POWERED_SIGNAL_PATTERNS.some((pattern) =>
+        pattern.test(strictSignalText),
+      )
+    ) {
+      return false;
+    }
+
+    return hasStrongPoweredSignal(strictSignalText);
   }
 
   return POWERED_SIGNAL_PATTERNS.some((pattern) => pattern.test(signalText));
@@ -203,6 +323,7 @@ async function readToyBatch(
 }
 
 async function backfillPoweredToyDefaultSpecs() {
+  const dryRun = process.argv.includes("--dry-run");
   const pool = new Pool({
     connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL,
   });
@@ -211,15 +332,18 @@ async function backfillPoweredToyDefaultSpecs() {
 
   try {
     console.log(
-      `[backfill-powered-toy-default-specs] 开始回填电动玩具默认参数 max_db=${DEFAULT_POWERED_MAX_DB}, waterproof=${DEFAULT_POWERED_WATERPROOF} ...`,
+      `[backfill-powered-toy-default-specs] 开始${dryRun ? "预演" : "回填"}电动玩具默认参数 max_db=${DEFAULT_POWERED_MAX_DB}, waterproof=${DEFAULT_POWERED_WATERPROOF} ...`,
     );
-    await client.query("BEGIN");
+    if (!dryRun) {
+      await client.query("BEGIN");
+    }
     await client.query("SET statement_timeout TO 0");
     await client.query("SET lock_timeout TO '5s'");
 
     let scanned = 0;
     let toyUpdates = 0;
     let productUpdates = 0;
+    let candidateCount = 0;
     let lastSeenId: string | undefined;
     const sampleNames: string[] = [];
 
@@ -258,6 +382,7 @@ async function backfillPoweredToyDefaultSpecs() {
         .filter(isPoweredToyCandidate)
         .map((row) => ({ row, patch: buildPoweredToySpecPatch(row) }))
         .filter(({ patch }) => patch.max_db != null || patch.waterproof != null);
+      candidateCount += rowsToPatch.length;
 
       for (const { row } of rowsToPatch) {
         if (sampleNames.length >= 10) {
@@ -267,6 +392,10 @@ async function backfillPoweredToyDefaultSpecs() {
       }
 
       for (const batch of chunkItems(rowsToPatch, UPDATE_BATCH_SIZE)) {
+        if (dryRun) {
+          continue;
+        }
+
         for (const { row, patch } of batch) {
           const toyResult = await client.query(
             `
@@ -324,12 +453,16 @@ async function backfillPoweredToyDefaultSpecs() {
       }
     }
 
-    await client.query("COMMIT");
+    if (!dryRun) {
+      await client.query("COMMIT");
+    }
 
     console.log(
       JSON.stringify(
         {
           scanned,
+          dryRun,
+          candidates: candidateCount,
           recommender_toys_updated: toyUpdates,
           products_updated: productUpdates,
           default_max_db: DEFAULT_POWERED_MAX_DB,

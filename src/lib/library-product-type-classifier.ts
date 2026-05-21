@@ -63,10 +63,14 @@ const SUCTION_PATTERNS = [
   /吸感/u,
   /压力波/u,
   /空气脉冲/u,
+  /声波/u,
+  /sonic/u,
+  /sensonic/u,
   /\bsuction\b/u,
   /air\s*pulse/u,
   /clitoral\s*suction/u,
   /\bwomanizer\b/u,
+  /\bsona\b/u,
 ];
 
 const EXTERNAL_VIBE_PATTERNS = [
@@ -78,6 +82,14 @@ const EXTERNAL_VIBE_PATTERNS = [
   /按摩棒/u,
   /震动棒/u,
   /振动棒/u,
+  /声控振动器/u,
+  /声控震动器/u,
+  /(振动器|震动器)项链/u,
+  /震动项链/u,
+  /阴蒂.{0,8}(振动器|震动器)/u,
+  /(振动器|震动器).{0,8}阴蒂/u,
+  /necklace\s+vibrat/i,
+  /vibrat(?:or|ing).{0,16}necklace/i,
   /魔杖/u,
   /\bvibe\b/u,
   /\bvibrator\b/u,
@@ -161,12 +173,16 @@ const MASTURBATOR_PATTERNS = [
   /软胶杯/u,
   /名器/u,
   /伸缩杯/u,
+  /套筒/u,
+  /袖套/u,
+  /刺激器/u,
   /\bfleshlight\b/u,
   /\begg\s*(set)?\b/u,
   /\bspinner\b/u,
   /\bmasturbator\b/u,
   /\bstroker\b/u,
   /\bcup\b/u,
+  /\bsleeve\b/u,
 ];
 
 const INTERACTIVE_PATTERNS = [
@@ -195,7 +211,11 @@ const MANUAL_MASTURBATOR_PATTERNS = [
   /手持/u,
   /免电/u,
   /非震动/u,
+  /无需电池/u,
+  /无需马达/u,
   /\bmanual\b/u,
+  /\bno\s+batter(?:y|ies)\b/u,
+  /\bwithout\s+(?:motor|batter(?:y|ies))\b/u,
 ];
 
 const PROSTATE_PATTERNS = [
@@ -365,6 +385,10 @@ const PANTY_WEARABLE_PATTERNS = [
   /panty/u,
   /panties/u,
   /隐形佩戴/u,
+  /项链/u,
+  /珠宝/u,
+  /jewelry/u,
+  /necklace/u,
 ];
 
 const NEGATED_WEARABLE_PATTERNS = [
@@ -401,6 +425,16 @@ const CONDOM_STRONG_PATTERNS = [
   /\bcondom(s)?\b/iu,
 ];
 
+const WELLNESS_STRONG_PATTERNS = [
+  /按摩蜡烛/u,
+  /按摩油/u,
+  /身体油/u,
+  /储物袋/u,
+  /\bmassage\s*(candle|oil)\b/iu,
+  /\bstorage\s*(bag|pouch)\b/iu,
+  /\bpouch\b/iu,
+];
+
 const LINGERIE_STRONG_PATTERNS = [
   /情趣内衣/u,
   /内衣/u,
@@ -432,16 +466,27 @@ const DEVICE_BLOCKER_PATTERNS = [
   /\bdildo\b/u,
 ];
 
+const INTIMACY_PROMPT_PATTERNS = [
+  /提示卡/u,
+  /对话/u,
+  /话题/u,
+  /\bprompt\s*cards?\b/iu,
+  /\bconversation\s*(cards?|deck)\b/iu,
+];
+
 const CONTAMINANT_STRONG_NAME_PATTERNS = [
   /sex\s*machine/u,
   /\badapter\b/u,
   /\bconnector\b/u,
   /\breplacement\b/u,
+  /\battachment\b/u,
+  /\bharness\b/u,
   /\bwebcam\b/u,
   /扑克牌/u,
   /适配器/u,
   /连接器/u,
   /配件/u,
+  /背带/u,
   /替换(头|件|装|配件)/u,
   /转接器/u,
   /机座/u,
@@ -517,7 +562,10 @@ const MALE_AUDIENCE_PATTERNS = [
 ];
 
 const UNISEX_AUDIENCE_PATTERNS = [
-  /通用/u,
+  /男女通用/u,
+  /通用款/u,
+  /通用人群/u,
+  /通用型/u,
   /男女/u,
   /双方/u,
   /for\s+two/u,
@@ -564,6 +612,10 @@ function selectCareSubtypeFromText(text: string) {
     return null;
   }
 
+  if (hasAnySignal(text, WELLNESS_STRONG_PATTERNS)) {
+    return "lube_care" as const;
+  }
+
   if (hasAnySignal(text, LINGERIE_STRONG_PATTERNS)) {
     return "lingerie" as const;
   }
@@ -595,6 +647,15 @@ function selectCareAccessorySubtype(corpus: SignalCorpus) {
 
   if (hasAnySignal(trustedDeviceText, DEVICE_BLOCKER_PATTERNS)) {
     return null;
+  }
+
+  const leadSentencesForCare = corpus.descriptionLeadText
+    .split(/[。.!?\n]/u)
+    .slice(0, 2)
+    .join("\n");
+  const descriptionSubtype = selectCareSubtypeFromText(leadSentencesForCare);
+  if (descriptionSubtype) {
+    return descriptionSubtype;
   }
 
   const tagSubtype = selectCareSubtypeFromText(corpus.tagText);
@@ -658,7 +719,14 @@ function inferExplicitAudienceGender(corpus: SignalCorpus) {
 }
 
 export function isLibraryContaminantInput(input: LibraryTypeClassifierInput) {
-  return isAccessoryOrMachineLike(buildSignalCorpus(input));
+  const corpus = buildSignalCorpus(input);
+  return (
+    isAccessoryOrMachineLike(corpus) ||
+    hasAnySignal(
+      [corpus.nameText, corpus.descriptionLeadText].filter(Boolean).join("\n"),
+      INTIMACY_PROMPT_PATTERNS,
+    )
+  );
 }
 
 function scoreBySource(
@@ -810,6 +878,15 @@ function selectTopScoredType(
 function classifyFemaleTypeFromContext(
   context: LibraryTypeClassificationContext,
 ): LibraryTypeCode {
+  if (
+    hasAnySignal(
+      [context.corpus.nameText, context.corpus.descriptionLeadText].filter(Boolean).join("\n"),
+      INTIMACY_PROMPT_PATTERNS,
+    )
+  ) {
+    return "unknown";
+  }
+
   const insertableStrongScore = scoreBySource(
     context.corpus,
     INSERTABLE_STRONG_PATTERNS,
@@ -875,6 +952,17 @@ function classifyFemaleTypeFromContext(
     scores.insertable += 4;
   }
 
+  if (
+    context.physicalForm === "internal" &&
+    /kegel|凯格尔|盆底肌|训练球|training\s*set/u.test(
+      [context.corpus.nameText, context.corpus.descriptionLeadText]
+        .filter(Boolean)
+        .join("\n"),
+    )
+  ) {
+    scores.insertable += 7;
+  }
+
   if (context.physicalForm === "external") {
     if (context.hasExternalVibe || clitoralScore > 0) {
       scores.external_vibe += 3;
@@ -891,6 +979,19 @@ function classifyFemaleTypeFromContext(
 
   if (context.hasCuratedDualTag) {
     scores.dual_stimulation += 5;
+  }
+
+  if (
+    context.hasSuction &&
+    hasAnySignal(context.corpus.signalText, [
+      /气脉冲/u,
+      /压力波/u,
+      /空气脉冲/u,
+      /air\s*pulse/u,
+      /\bwomanizer\b/u,
+    ])
+  ) {
+    scores.suction += 4;
   }
 
   if (context.hasPairedTargetZones && context.hasSuction) {
@@ -931,6 +1032,13 @@ function classifyFemaleTypeFromContext(
 function classifyMaleTypeFromContext(
   context: LibraryTypeClassificationContext,
 ): LibraryTypeCode {
+  if (
+    context.hasMasturbator &&
+    hasAnySignal(context.signalText, POWERED_MASTURBATOR_PATTERNS)
+  ) {
+    return "masturbator";
+  }
+
   if (context.hasProstate) {
     return "prostate";
   }
@@ -1205,12 +1313,25 @@ export function classifyLibraryTypeCode(
 ): LibraryTypeCode {
   const context = buildClassificationContext(input);
 
+  if (
+    hasAnySignal(
+      [context.corpus.nameText, context.corpus.descriptionLeadText].filter(Boolean).join("\n"),
+      INTIMACY_PROMPT_PATTERNS,
+    )
+  ) {
+    return "unknown";
+  }
+
   if (isAccessoryOrMachineLike(context.corpus)) {
     return "unknown";
   }
 
   if (context.careAccessorySubtype) {
     return "care_accessory";
+  }
+
+  if (context.hasBdsm) {
+    return "bdsm";
   }
 
   const femaleTypeCode = classifyFemaleTypeFromContext(context);
