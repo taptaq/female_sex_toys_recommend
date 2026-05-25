@@ -20,7 +20,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
+import { CuteAstronaut } from "../components/CuteAstronaut.tsx";
 import { HomeFeedbackModal } from "../components/HomeFeedbackModal.tsx";
+import { canShowMvpEntry, shouldUseFemaleMvp } from "../lib/app-mode.ts";
 import {
   APP_THEME_HOME_COSMOS_IMAGE_BY_ID,
   APP_THEME_OPTIONS,
@@ -729,6 +731,89 @@ export function HomePage({
     } finally {
       setIsFeedbackSubmitting(false);
     }
+  }
+
+  if (shouldUseFemaleMvp()) {
+    return (
+      <>
+        <main
+          className={[
+            "female-mvp-home relative isolate flex min-h-[calc(100svh-7rem)] w-full flex-col overflow-hidden rounded-[2rem] px-5 py-5 text-slate-800 shadow-[0_24px_80px_rgba(196,124,146,0.18)] sm:min-h-[620px] sm:rounded-[2.4rem] sm:px-8 sm:py-7",
+            shouldAnimate ? "" : "ambient-motion-paused",
+          ].join(" ")}
+        >
+          <div className="female-mvp-stars" aria-hidden="true" />
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            <span className="inline-flex items-center rounded-full border border-white/70 bg-white/62 px-3.5 py-1.5 text-xs font-semibold tracking-[0.16em] text-rose-500 shadow-[0_10px_30px_rgba(255,153,184,0.18)]">
+              Luna 小宇航员
+            </span>
+            {canShowMvpEntry("favorites") ? (
+              <button
+                type="button"
+                onClick={onOpenFavorites}
+                className="rounded-full border border-sky-100/80 bg-white/58 px-3 py-1.5 text-xs font-medium text-sky-600 shadow-[0_10px_26px_rgba(117,181,214,0.16)] transition-colors hover:bg-white/82 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/80"
+              >
+                收藏
+              </button>
+            ) : null}
+          </div>
+
+          <section className="relative z-10 mx-auto flex w-full max-w-[25rem] flex-1 flex-col items-center justify-center pb-5 pt-8 text-center sm:max-w-[31rem]">
+            <CuteAstronaut
+              label="Luna 小宇航员"
+              className="female-mvp-astronaut"
+            />
+            <p className="mt-7 text-[11px] font-bold tracking-[0.22em] text-sky-500">
+              女性向 · 萌系宇航员推荐舱
+            </p>
+            <h1 className="mt-3 text-[2.35rem] font-black leading-[1.08] tracking-normal text-slate-900 sm:text-5xl">
+              找到适合你的第一颗小星球
+            </h1>
+            <p className="mt-5 max-w-[21rem] text-[15px] leading-7 text-slate-600 sm:max-w-md sm:text-base">
+              用 3 分钟轻问答，先从感受、场景和新手友好度出发，帮你避开参数焦虑，找到更安心的女性向推荐。
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              {["本地先体验", "隐私友好", "女性向"].map((chip) => (
+                <span
+                  key={chip}
+                  className="rounded-full border border-white/72 bg-white/64 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-[0_8px_24px_rgba(148,163,184,0.12)]"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={onStart}
+              className="female-mvp-primary-button mt-8 inline-flex w-full items-center justify-center rounded-[1.35rem] px-5 py-4 text-base font-black tracking-[0.1em] text-white shadow-[0_18px_42px_rgba(244,114,182,0.34)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/90 sm:max-w-[20rem]"
+            >
+              开始匹配
+            </button>
+          </section>
+        </main>
+
+        <HomeFeedbackModal
+          isOpen={isFeedbackModalOpen}
+          message={feedbackMessage}
+          screenshotPreviews={feedbackScreenshotPreviews}
+          isSubmitting={isFeedbackSubmitting}
+          submitError={feedbackSubmitError}
+          submitSuccess={feedbackSubmitSuccess}
+          onMessageChange={(message) => {
+            clearFeedbackCloseTimeout();
+            setFeedbackMessage(message);
+            setFeedbackSubmitError(null);
+            setFeedbackSubmitSuccess(null);
+          }}
+          onFileSelect={handleFeedbackFileSelect}
+          onRemoveScreenshot={handleFeedbackScreenshotRemove}
+          onClose={closeFeedbackModal}
+          onSubmit={handleFeedbackSubmit}
+        />
+      </>
+    );
   }
 
   return (

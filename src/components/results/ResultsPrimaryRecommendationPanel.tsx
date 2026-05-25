@@ -91,6 +91,7 @@ export function ResultsPrimaryRecommendationPanel({
   renderClickableHint,
   isFavorited = false,
   onToggleFavorite,
+  isFemaleMvp = false,
 }: {
   className: string;
   topProduct: RankedProduct;
@@ -106,6 +107,7 @@ export function ResultsPrimaryRecommendationPanel({
   renderClickableHint: (label?: string) => ReactNode;
   isFavorited?: boolean;
   onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
+  isFemaleMvp?: boolean;
 }) {
   const resolvedBrandBrief = resolveBrandBrief(topProduct.brandBrief, topProduct.brand);
 
@@ -206,7 +208,7 @@ export function ResultsPrimaryRecommendationPanel({
               </div>
             )}
 
-            <BrandBriefCard brief={resolvedBrandBrief} />
+            <BrandBriefCard brief={resolvedBrandBrief} showKnowledgeLink={!isFemaleMvp} />
 
             {primaryConfidenceSummary && renderConfidenceSummary(primaryConfidenceSummary)}
 

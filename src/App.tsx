@@ -5,7 +5,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { getActiveQuestions, AnswerState, Product, Question } from "./data/mock.ts";
+import {
+  getActiveQuestions,
+  femaleMvpQuestionFlow,
+  AnswerState,
+  Product,
+  Question,
+} from "./data/mock.ts";
 import {
   AppRoute,
   APP_STATE_STORAGE_KEY,
@@ -85,6 +91,10 @@ import {
   serializeRecommendationTopProducts,
   type LocalResultComputation,
 } from "./lib/app-result-flow.ts";
+import {
+  DEFAULT_MVP_ANSWERS,
+  shouldUseFemaleMvp,
+} from "./lib/app-mode.ts";
 import {
   getCurrentSupabaseSession,
   isSupabaseAuthConfigured,
@@ -233,6 +243,21 @@ function normalizeLibraryAudienceGender(value: string): LibraryAudienceGender {
   return "all";
 }
 
+function withFemaleMvpDefaults(answers: AnswerState): AnswerState {
+  if (!shouldUseFemaleMvp()) {
+    return answers;
+  }
+
+  return {
+    ...DEFAULT_MVP_ANSWERS,
+    ...answers,
+    gender: DEFAULT_MVP_ANSWERS.gender,
+    tags: Array.from(
+      new Set([...(answers.tags ?? []), ...DEFAULT_MVP_ANSWERS.tags]),
+    ),
+  };
+}
+
 export default function App() {
   const initialPathname = window.location.pathname;
   const initialLocationSnapshot = readAppLocationSnapshot(
@@ -245,6 +270,7 @@ export default function App() {
   );
   const persistedResultSourceState = readResultSourceState(persistedState);
   const cachedProducts = readProductsCache();
+  const isFemaleMvp = shouldUseFemaleMvp();
 
   const [currentRoute, setCurrentRoute] = useState<AppRoute>(() =>
     initialLocationSnapshot.route,
@@ -270,8 +296,10 @@ export default function App() {
     AppRoute | undefined
   >(initialLocationSnapshot.profilesOriginRoute);
   const [step, setStep] = useState<number>(persistedState.step ?? -1);
-  const [answers, setAnswers] = useState<AnswerState>(
-    persistedState.answers ?? { tags: [] },
+  const [answers, setAnswers] = useState<AnswerState>(() =>
+    isFemaleMvp
+      ? withFemaleMvpDefaults(persistedState.answers ?? DEFAULT_MVP_ANSWERS)
+      : persistedState.answers ?? { tags: [] },
   );
   const [answerPath, setAnswerPath] = useState<QuizAnswerPathEntry[]>(
     persistedState.answerPath ?? [],
@@ -418,7 +446,9 @@ export default function App() {
   const themeSwitchRunRef = useRef(0);
   const themeSwitchStabilizeTimeoutRef = useRef<number | null>(null);
 
-  const activeQuestions: Question[] = getActiveQuestions(answers.gender);
+  const activeQuestions: Question[] = isFemaleMvp
+    ? femaleMvpQuestionFlow
+    : getActiveQuestions(answers.gender);
 
   const pageVariants: any = {
     initial: { opacity: 0, x: 20, scale: 0.95 },
@@ -581,13 +611,13 @@ export default function App() {
     clearBodyPersonaFlow();
     setRecommendationSessionId(createRecommendationSessionId());
     setAnswerPath([]);
-    setAnswers({ tags: [] });
+    setAnswers(isFemaleMvp ? withFemaleMvpDefaults({ tags: [] }) : { tags: [] });
     setStep(0);
     setMatchInputMode("quiz");
     setNaturalLanguagePrompt("");
     setNaturalLanguageQuery("");
     setNaturalLanguageError(null);
-    navigateTo("/match-mode");
+    navigateTo(isFemaleMvp ? "/quiz" : "/match-mode");
   };
 
   const handleStartQuizMode = () => {
@@ -612,17 +642,20 @@ export default function App() {
     }
 
     const { answers: derivedAnswers } = deriveAnswersFromNaturalLanguage(trimmedPrompt);
-    const mergedAnswers: AnswerState = {
+    const mergedAnswers: AnswerState = withFemaleMvpDefaults({
       ...derivedAnswers,
       tags: derivedAnswers.tags ?? [],
-    };
+    });
+    const targetQuestions = isFemaleMvp
+      ? femaleMvpQuestionFlow
+      : getActiveQuestions(mergedAnswers.gender);
 
     setMatchInputMode("natural-language");
     setNaturalLanguageQuery(trimmedPrompt);
     setNaturalLanguageError(null);
     setAnswers(mergedAnswers);
     setAnswerPath([]);
-    setStep(getActiveQuestions(mergedAnswers.gender).length);
+    setStep(targetQuestions.length);
     setIsAiMatching(false);
     navigateTo("/quiz");
 
@@ -630,7 +663,7 @@ export default function App() {
       allProducts.length > 0 ? allProducts : await fetchProducts({ preferCachedResult: true });
     void calculateResults(
       mergedAnswers,
-      getActiveQuestions(mergedAnswers.gender),
+      targetQuestions,
       data,
       [],
       trimmedPrompt,
@@ -1015,16 +1048,18 @@ export default function App() {
           answerPatch,
         })
       : answerPath;
-    const newAnswers = {
+    const newAnswers = withFemaleMvpDefaults({
       ...answers,
       ...(answerPatch ?? {}),
       ...(value === undefined ? {} : { [field]: value }),
       tags: [...answers.tags, tag],
-    };
+    });
     setAnswerPath(nextAnswerPath);
     setAnswers(newAnswers);
 
-    const activeQs = getActiveQuestions(newAnswers.gender);
+    const activeQs = isFemaleMvp
+      ? femaleMvpQuestionFlow
+      : getActiveQuestions(newAnswers.gender);
 
     if (step < activeQs.length - 1) {
       setStep(step + 1);
@@ -2353,7 +2388,13 @@ ${JSON.stringify(context.backupCandidates)}
       : effectiveShellRoute === "/knowledge" ||
         (effectiveShellRoute === "/quiz" && step === activeQuestions.length)
       ? "overflow-visible"
+      : effectiveShellRoute === "/quiz" && isFemaleMvp
+        ? "overflow-y-auto overflow-x-hidden"
       : "overflow-hidden";
+  const shellAlignmentClassName =
+    effectiveShellRoute === "/quiz" && isFemaleMvp
+      ? "justify-start"
+      : "justify-center";
   const shellViewportClassName = isKnowledgeHubRoute
     ? "h-dvh min-h-dvh p-0"
     : isShellKnowledgeDetailRoute
@@ -2382,7 +2423,8 @@ ${JSON.stringify(context.backupCandidates)}
   return (
     <div
       className={[
-        "theme-synced-page relative flex flex-col items-center justify-center",
+        "theme-synced-page relative flex flex-col items-center",
+        shellAlignmentClassName,
         effectiveShellRoute === "/" ? "theme-home-route" : "",
         shellViewportClassName,
         shellOverflowClassName,

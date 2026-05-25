@@ -618,6 +618,8 @@ export const questionFlows: Record<AudienceGender, Question[]> = {
   unisex: [OPENING_QUESTION, ...COUPLE_QUESTIONS],
 };
 
+export const femaleMvpQuestionFlow: Question[] = FEMALE_QUESTIONS;
+
 export function getActiveQuestions(gender?: AudienceGender): Question[] {
   if (!gender) {
     return [OPENING_QUESTION];

@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { MatchingPage } from "./MatchingPage.tsx";
 
-test("matching page can render the unified library loading state", () => {
+test("matching page renders a soft female MVP loading ritual", () => {
   const html = renderToStaticMarkup(
     <MatchingPage
       pageVariants={{}}
@@ -17,10 +17,13 @@ test("matching page can render the unified library loading state", () => {
     />,
   );
 
-  assert.match(html, /链路解析中/);
-  assert.match(html, /正在连接星港数据库/);
-  assert.match(html, /正在统一分析环境/);
-  assert.doesNotMatch(html, /全息装备库载入中/);
+  assert.match(html, /LUNA 星球校准中/);
+  assert.match(html, /正在为你挑一颗舒服的小星球/);
+  assert.match(html, /正在为 Luna 打开推荐舱/);
+  assert.match(html, /先休息一下，马上回来。/);
+  assert.doesNotMatch(html, /链路解析中/);
+  assert.doesNotMatch(html, /雷达/);
+  assert.doesNotMatch(html, /量子晶体/);
 });
 
 test("matching page keeps the answer-driven matching state", () => {
@@ -33,76 +36,38 @@ test("matching page keeps the answer-driven matching state", () => {
     />,
   );
 
-  assert.match(html, /链路解析中/);
-  assert.match(html, /AI 专家深度匹配中/);
-  assert.match(html, /AI 模型分析预计需要 1-2 分钟/);
+  assert.match(html, /LUNA 星球校准中/);
+  assert.match(html, /Luna 正在认真匹配/);
+  assert.match(html, /大概需要 1-2 分钟，请先别关闭页面。/);
+  assert.match(html, /只筛选女性向候选/);
   assert.match(html, /静音/);
   assert.match(html, /新手友好/);
+});
+
+test("matching page uses the cute astronaut instead of the old radar shell", () => {
+  const source = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/MatchingPage.tsx"),
+    "utf8",
+  );
+
+  assert.match(source, /CuteAstronaut/);
+  assert.match(source, /female-mvp-matching/);
+  assert.match(source, /gsap\.fromTo/);
+  assert.match(source, /getGsapDuration/);
+  assert.match(source, /if \(!ritualRef\.current\) return;/);
+  assert.doesNotMatch(source, /FloatingKnowledgeField/);
+  assert.doesNotMatch(source, /radar-container/);
 });
 
 test("matching page keeps lightweight ornamental motion for small screens", () => {
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
+  assert.match(source, /\.female-mvp-matching\s*\{[\s\S]*linear-gradient\(160deg, #fff8ea/);
+  assert.match(source, /\.female-mvp-matching__stars\s*\{[\s\S]*female-mvp-stars-drift 34s linear infinite/);
+  assert.match(source, /\.female-mvp-matching__halo\s*\{[\s\S]*female-mvp-matching-orbit 7s ease-in-out infinite/);
+  assert.match(source, /\.female-mvp-matching__comet\s*\{[\s\S]*female-mvp-matching-comet 1\.55s ease-in-out infinite/);
   assert.match(
     source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.radar-sweep\s*\{[\s\S]*animation:\s*radar-spin\s+3\.6s\s+linear\s+infinite;/,
+    /\.ambient-motion-paused \.female-mvp-matching__stars,[\s\S]*\.ambient-motion-paused \.female-mvp-matching__comet/,
   );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.radar-container::before\s*\{[\s\S]*opacity:\s*0\.42;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.tag-flash\s*\{[\s\S]*animation:\s*flash\s+2\.6s\s+cubic-bezier\(0\.4,\s*0,\s*0\.6,\s*1\)\s+infinite;/,
-  );
-});
-
-test("matching page knowledge fragments stay readable over the loading backdrop", () => {
-  const fieldSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/components/FloatingKnowledgeField.tsx"),
-    "utf8",
-  );
-  const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
-
-  assert.match(fieldSource, /isMobileLayer\s*\?\s*0\.74\s*:\s*0\.86/);
-  assert.match(fieldSource, /isMobileLayer\s*\?\s*0\.62\s*:\s*0\.7/);
-  assert.match(
-    cssSource,
-    /\.floating-knowledge-field-matching \.floating-knowledge-capsule\s*\{[\s\S]*color:\s*rgba\(248,\s*250,\s*252,\s*0\.86\);/,
-  );
-  assert.match(
-    cssSource,
-    /\.floating-knowledge-field-matching \.floating-knowledge-capsule::before\s*\{[\s\S]*rgba\(15,\s*23,\s*42,\s*0\.46\)/,
-  );
-});
-
-test("matching page keeps the mobile loading shell tighter while centering the fragment field", () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/MatchingPage.tsx"),
-    "utf8",
-  );
-  const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
-
-  assert.match(
-    source,
-    /min-h-\[calc\(100vh-1\.25rem\)\] w-full flex-col items-center justify-center overflow-visible px-4 py-10 sm:min-h-\[calc\(100vh-3rem\)\] sm:py-12 md:min-h-\[calc\(100vh-4rem\)\]/,
-  );
-  assert.match(source, /radar-container relative z-10 mb-9 sm:mb-12/);
-  assert.match(
-    source,
-    /relative z-10 min-h-\[11\.25rem\] w-full max-w-\[19rem\] space-y-3 text-center/,
-  );
-  assert.match(source, /sm:min-h-\[11rem\] sm:max-w-md sm:space-y-4/);
-  assert.match(
-    cssSource,
-    /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-field\s*\{[\s\S]*inset:\s*0 auto 0 50%;[\s\S]*width:\s*min\(calc\(100% - 1\.25rem\),\s*25rem\);[\s\S]*transform:\s*translateX\(-50%\);/,
-  );
-  assert.match(
-    cssSource,
-    /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-capsule\s*\{[\s\S]*max-width:\s*min\(150px,\s*40vw\);[\s\S]*min-width:\s*108px;[\s\S]*padding:\s*6px 8px;[\s\S]*opacity:\s*0\.68;/,
-  );
-  assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-slot-matching-5\s*\{/);
-  assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-slot-matching-6\s*\{/);
-  assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-slot-matching-7\s*\{/);
-  assert.match(cssSource, /@media \(max-width: 640px\) \{[\s\S]*\.floating-knowledge-slot-matching-8\s*\{/);
 });

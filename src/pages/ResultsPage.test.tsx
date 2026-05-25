@@ -90,6 +90,57 @@ test("results page shows confidence, fit reasons, and caveats for the primary re
   assert.match(html, /防水表现达到 IPX7/);
 });
 
+test("female MVP results hide heavy secondary modules", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["女性向", "新手友好"] }}
+      topProducts={[
+        makeProduct({
+          id: "female-good",
+          gender: "female",
+          reason: "适合女性向新手外部探索。",
+        }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      bodyPersonaState={{
+        sessionId: "persona-session-1",
+        status: "completed_free",
+        freeSummary: {
+          title: "星幕型·隐秘安全感者",
+          blurb: "你更在意低压力进入。",
+          why: "你在隐私与慢热维度更高。",
+          hints: ["优先低存在感路线"],
+        },
+        fullReport: null,
+      }}
+      isBodyPersonaQuizOpen
+      isBodyPersonaFullReportOpen
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /female-mvp-results/);
+  assert.match(html, /这颗小星球可以先看/);
+  assert.match(html, /先看主推荐和购买前检查/);
+  assert.doesNotMatch(html, /身体人格/);
+  assert.doesNotMatch(html, /知识星云/);
+  assert.doesNotMatch(html, /去知识星云/);
+  assert.doesNotMatch(html, /完整星系人格/);
+});
+
 test("results page shows a short brand brief for the primary recommendation", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
@@ -149,7 +200,7 @@ test("results page shows the original natural language request when matched from
   assert.match(html, /你这次最该先确认/);
 });
 
-test("results page mounts the body persona entry and free summary block", () => {
+test("female MVP hides the body persona entry and free summary block", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -194,16 +245,16 @@ test("results page mounts the body persona entry and free summary block", () => 
     />,
   );
 
-  assert.match(html, /身体人格测试/);
-  assert.match(html, /解锁你的身体人格画像/);
-  assert.match(html, /星幕型·隐秘安全感者/);
-  assert.match(html, /完整星系人格档案已锁定/);
-  assert.match(html, /登录后可解锁完整星系人格档案/);
-  assert.match(html, /0\.5 元一次解锁，可随时回看/);
-  assert.match(html, /登录并解锁完整档案|0.5 元解锁完整档案/);
+  assert.doesNotMatch(html, /身体人格测试/);
+  assert.doesNotMatch(html, /解锁你的身体人格画像/);
+  assert.doesNotMatch(html, /星幕型·隐秘安全感者/);
+  assert.doesNotMatch(html, /完整星系人格档案已锁定/);
+  assert.doesNotMatch(html, /登录后可解锁完整星系人格档案/);
+  assert.doesNotMatch(html, /0\.5 元一次解锁，可随时回看/);
+  assert.match(html, /female-mvp-results/);
 });
 
-test("results page shows a reopen entry once the body persona full report is unlocked", () => {
+test("female MVP hides the body persona reopen entry even when the report is unlocked", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -286,8 +337,9 @@ test("results page shows a reopen entry once the body persona full report is unl
     />,
   );
 
-  assert.match(html, /完整星系人格档案已解锁/);
-  assert.match(html, /再次查看完整档案/);
+  assert.doesNotMatch(html, /完整星系人格档案已解锁/);
+  assert.doesNotMatch(html, /再次查看完整档案/);
+  assert.match(html, /female-mvp-results/);
 });
 
 test("results page shows a lightweight status while AI enhancement is still running", () => {
@@ -565,8 +617,8 @@ test("results page prioritizes the primary recommendation before secondary contr
   );
 
   assert.match(html, /results-report-shell/);
-  assert.match(html, /匹配结果/);
-  assert.match(html, /这次更贴近你的，是这条路线/);
+  assert.match(html, /LUNA RESULT/);
+  assert.match(html, /这颗小星球可以先看/);
   assert.match(html, /本轮最贴合/);
   assert.match(html, /登录后可加密保存/);
   assert.doesNotMatch(html, /用户名/);
@@ -574,10 +626,7 @@ test("results page prioritizes the primary recommendation before secondary contr
     html.indexOf("本轮最贴合") < html.indexOf("登录后可加密保存"),
     "primary recommendation should be rendered before save/login controls",
   );
-  assert.ok(
-    html.indexOf("快速微调结果") < html.indexOf("身体人格测试"),
-    "quick tuning should stay in the decision layer before body persona upsell",
-  );
+  assert.doesNotMatch(html, /身体人格测试/);
   assert.doesNotMatch(html, /算法最匹配（第 1 推荐）/);
 });
 
@@ -614,10 +663,7 @@ test("results page groups comparison, alternatives, tuning, and regeneration int
     />,
   );
 
-  assert.ok(
-    html.indexOf("身体人格测试") < html.indexOf("主推荐横向对比"),
-    "body persona should appear before detailed comparison",
-  );
+  assert.doesNotMatch(html, /身体人格测试/);
   assert.ok(
     html.indexOf("快速微调结果") < html.indexOf("主推荐横向对比"),
     "quick tuning should stay in the first decision layer before deeper comparison",
@@ -738,22 +784,12 @@ test("results page groups formal candidates together before adjustment actions a
     />,
   );
 
-  assert.ok(
-    html.indexOf("快速微调结果") < html.indexOf("身体人格测试"),
-    "quick tuning should stay above the body persona upgrade layer",
-  );
+  assert.doesNotMatch(html, /身体人格测试/);
   assert.ok(
     html.indexOf("购买前再确认这几件事") < html.indexOf("购买前最终自检"),
     "final self-check should close the page after the action-oriented next steps",
   );
-  assert.ok(
-    html.indexOf("这 3 个参数，和你这次更相关") < html.indexOf("购买前再确认这几件事"),
-    "parameter interpretation should stay ahead of the final purchase guidance block",
-  );
-  assert.ok(
-    html.indexOf("身体人格测试") < html.indexOf("主推荐横向对比"),
-    "body persona should sit before the comparison layer",
-  );
+  assert.doesNotMatch(html, /这 3 个参数，和你这次更相关/);
 });
 
 test("results page shows tuning feedback and disables already applied tuning modes", () => {
@@ -1098,7 +1134,7 @@ test("results page closes the decision loop with route summary and structured ne
   assert.match(html, /第一次开始时/);
 });
 
-test("results page shows lightweight parameter explanation entry near metric chips", () => {
+test("female MVP hides the parameter explanation entry near metric chips", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1121,15 +1157,15 @@ test("results page shows lightweight parameter explanation entry near metric chi
     />,
   );
 
-  assert.match(html, /了解参数怎么看/);
-  assert.match(html, /噪音 &lt; 42dB/);
-  assert.match(html, /防水 IPX7/);
-  assert.match(html, /看静音与场景/);
-  assert.match(html, /看清洁与护理/);
-  assert.match(html, /看参数原理/);
+  assert.doesNotMatch(html, /了解参数怎么看/);
+  assert.doesNotMatch(html, /噪音 &lt; 42dB/);
+  assert.doesNotMatch(html, /防水 IPX7/);
+  assert.doesNotMatch(html, /看静音与场景/);
+  assert.doesNotMatch(html, /看清洁与护理/);
+  assert.doesNotMatch(html, /看参数原理/);
 });
 
-test("results page renders metric chips as direct knowledge entry points", () => {
+test("female MVP hides metric chips as direct knowledge entry points", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1152,14 +1188,14 @@ test("results page renders metric chips as direct knowledge entry points", () =>
     />,
   );
 
-  assert.match(html, /了解这个参数/);
-  assert.match(html, /cursor-pointer/);
-  assert.match(html, /噪音 &lt; 42dB/);
-  assert.match(html, /防水 IPX7/);
-  assert.match(html, /温柔电机/);
+  assert.doesNotMatch(html, /了解这个参数/);
+  assert.doesNotMatch(html, /cursor-pointer/);
+  assert.doesNotMatch(html, /噪音 &lt; 42dB/);
+  assert.doesNotMatch(html, /防水 IPX7/);
+  assert.doesNotMatch(html, /温柔电机/);
 });
 
-test("results page includes an inline parameter preview layer for chip explanations", () => {
+test("female MVP hides the inline parameter preview layer for chip explanations", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1182,12 +1218,12 @@ test("results page includes an inline parameter preview layer for chip explanati
     />,
   );
 
-  assert.match(html, /看懂这次推荐，不用把参数全背下来/);
-  assert.match(html, /先看一眼核心判断/);
-  assert.match(html, /去知识星云深读/);
+  assert.doesNotMatch(html, /看懂这次推荐，不用把参数全背下来/);
+  assert.doesNotMatch(html, /先看一眼核心判断/);
+  assert.doesNotMatch(html, /去知识星云深读/);
 });
 
-test("results page prioritizes parameter previews that match the user's current constraints", () => {
+test("female MVP keeps parameter preview code recoverable but hidden from output", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1213,18 +1249,19 @@ test("results page prioritizes parameter previews that match the user's current 
       onReset={() => {}}
     />,
   );
+  const source = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/ResultsPage.tsx"),
+    "utf8",
+  );
 
-  assert.ok(
-    html.indexOf("静音参数") < html.indexOf("电机体感"),
-    "quietness-sensitive users should see quietness guidance earlier",
-  );
-  assert.ok(
-    html.indexOf("防水边界") < html.indexOf("电机体感"),
-    "cleanup-sensitive users should see waterproof guidance earlier",
-  );
+  assert.doesNotMatch(html, /静音参数/);
+  assert.doesNotMatch(html, /防水边界/);
+  assert.doesNotMatch(html, /电机体感/);
+  assert.match(source, /ResultsParameterEducationSection/);
+  assert.match(source, /getSortedParameterPreviewItems/);
 });
 
-test("results page can prioritize motor guidance when the user's current concern is more about body feedback", () => {
+test("female MVP hides motor guidance even when the user's current concern is body feedback", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1251,10 +1288,8 @@ test("results page can prioritize motor guidance when the user's current concern
     />,
   );
 
-  assert.ok(
-    html.indexOf("电机体感") < html.indexOf("静音参数"),
-    "body-feedback-sensitive users should see motor guidance before quietness",
-  );
+  assert.doesNotMatch(html, /电机体感/);
+  assert.doesNotMatch(html, /静音参数/);
 });
 
 test("results page hides model selection details and only exposes a regenerate recommendation entry", () => {

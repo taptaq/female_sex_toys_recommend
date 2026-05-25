@@ -59,6 +59,7 @@ import {
 } from "../lib/recommendation-reroll.ts";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
 import { buildKnowledgeNebulaPath } from "../lib/knowledge-nebula-route.ts";
+import { shouldUseFemaleMvp } from "../lib/app-mode.ts";
 import type { QuizAnswerPathEntry } from "../lib/recommendation-session.ts";
 
 type ResultsBackupProduct = BackupCandidate;
@@ -422,6 +423,7 @@ export function ResultsPage({
   favoriteProductIds = new Set(),
   onToggleFavorite,
 }: ResultsPageProps) {
+  const isFemaleMvp = shouldUseFemaleMvp();
   const [isRecalibrationPanelOpen, setIsRecalibrationPanelOpen] = useState(false);
   const [isBackupPanelOpen, setIsBackupPanelOpen] = useState(false);
   const [isComparisonPanelOpen, setIsComparisonPanelOpen] = useState(false);
@@ -564,17 +566,30 @@ export function ResultsPage({
       initial="initial"
       animate="in"
       exit="out"
-      className="results-report-shell relative isolate w-full space-y-6 overflow-x-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4"
+      className={[
+        "results-report-shell relative isolate w-full space-y-6 overflow-x-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4",
+        isFemaleMvp ? "female-mvp-results" : "",
+      ].join(" ")}
     >
       <div className="pointer-events-none absolute inset-x-[-12vw] top-[-8rem] -z-10 h-[30rem] bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.12),transparent_42%),radial-gradient(circle_at_12%_48%,rgba(59,130,246,0.09),transparent_34%),radial-gradient(circle_at_88%_58%,rgba(99,102,241,0.11),transparent_36%)]" />
       <div className="results-report-grid pointer-events-none absolute inset-0 -z-10 opacity-45" />
 
       <div className="relative z-10 mb-6 text-center">
-        <p className="mb-3 font-mono text-[10px] tracking-[0.34em] text-cyan-200/50">
-          匹配结果
+        <p
+          className={[
+            "mb-3 text-[10px] font-bold tracking-[0.24em]",
+            isFemaleMvp ? "text-rose-500" : "font-mono text-cyan-200/50",
+          ].join(" ")}
+        >
+          {isFemaleMvp ? "LUNA RESULT" : "匹配结果"}
         </p>
-        <h2 className="mb-2 text-2xl font-light text-white">
-          这次更贴近你的，是这条路线
+        <h2
+          className={[
+            "mb-2 text-2xl",
+            isFemaleMvp ? "font-black text-[#342936]" : "font-light text-white",
+          ].join(" ")}
+        >
+          {isFemaleMvp ? "这颗小星球可以先看" : "这次更贴近你的，是这条路线"}
         </h2>
         <div className="mx-auto mb-4 flex max-w-xl flex-wrap justify-center gap-1.5">
           {visibleResultTags.map((tag, index) => (
@@ -595,7 +610,9 @@ export function ResultsPage({
           {resultLeadCopy}
         </p>
         <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-slate-500">
-          先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。
+          {isFemaleMvp
+            ? "先看主推荐和购买前检查；如果想换个方向，可以用下面的轻量微调。"
+            : "先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。"}
         </p>
         {isNaturalLanguageResult ? (
           <div className="mx-auto mt-4 max-w-3xl rounded-2xl border border-violet-300/14 bg-violet-300/[0.06] px-4 py-3 text-left shadow-[0_14px_40px_rgba(67,56,202,0.12)]">
@@ -641,10 +658,11 @@ export function ResultsPage({
           renderClickableHint={renderClickableHint}
           isFavorited={favoriteProductIds.has(topProducts[0].originalId || topProducts[0].id)}
           onToggleFavorite={onToggleFavorite}
+          isFemaleMvp={isFemaleMvp}
         />
       ) : null}
 
-      {isBodyPersonaQuizOpen ? (
+      {!isFemaleMvp && isBodyPersonaQuizOpen ? (
         <BodyPersonaQuizDialog
           questions={bodyPersonaQuestions}
           answers={bodyPersonaDraftAnswers}
@@ -657,11 +675,13 @@ export function ResultsPage({
         />
       ) : null}
 
-      <BodyPersonaFullReportDialog
-        isOpen={isBodyPersonaFullReportOpen}
-        report={normalizedBodyPersonaFullReport}
-        onClose={onCloseBodyPersonaFullReport ?? (() => undefined)}
-      />
+      {!isFemaleMvp ? (
+        <BodyPersonaFullReportDialog
+          isOpen={isBodyPersonaFullReportOpen}
+          report={normalizedBodyPersonaFullReport}
+          onClose={onCloseBodyPersonaFullReport ?? (() => undefined)}
+        />
+      ) : null}
 
       {topProducts.length > 0 && (
         <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
@@ -759,29 +779,33 @@ export function ResultsPage({
         />
       )}
 
-      <BodyPersonaUnlockCard
-        onStart={onStartBodyPersona ?? (() => undefined)}
-        isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
-        freeSummary={
-          bodyPersonaState?.freeSummary
-            ? {
-                title: bodyPersonaState.freeSummary.title,
-                blurb: bodyPersonaState.freeSummary.blurb,
-              }
-            : null
-        }
-      />
+      {!isFemaleMvp ? (
+        <>
+          <BodyPersonaUnlockCard
+            onStart={onStartBodyPersona ?? (() => undefined)}
+            isBusy={isStartingBodyPersona || isSubmittingBodyPersonaQuiz}
+            freeSummary={
+              bodyPersonaState?.freeSummary
+                ? {
+                    title: bodyPersonaState.freeSummary.title,
+                    blurb: bodyPersonaState.freeSummary.blurb,
+                  }
+                : null
+            }
+          />
 
-      {bodyPersonaState ? (
-        <BodyPersonaResultPanel
-          status={bodyPersonaState.status}
-          freeSummary={bodyPersonaState.freeSummary}
-          fullReport={normalizedBodyPersonaFullReport}
-          onUnlock={onUnlockBodyPersona ?? (() => undefined)}
-          onOpenFullReport={onOpenBodyPersonaFullReport}
-          isUnlocking={isUnlockingBodyPersona}
-          requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
-        />
+          {bodyPersonaState ? (
+            <BodyPersonaResultPanel
+              status={bodyPersonaState.status}
+              freeSummary={bodyPersonaState.freeSummary}
+              fullReport={normalizedBodyPersonaFullReport}
+              onUnlock={onUnlockBodyPersona ?? (() => undefined)}
+              onOpenFullReport={onOpenBodyPersonaFullReport}
+              isUnlocking={isUnlockingBodyPersona}
+              requiresLoginBeforeUnlock={bodyPersonaUnlockNeedsLogin}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {topProducts.length > 0 ? (
@@ -935,7 +959,7 @@ export function ResultsPage({
         </section>
       )}
 
-      {topProducts[0] && (
+      {!isFemaleMvp && topProducts[0] ? (
         <ResultsParameterEducationSection
           isGuideOpen={isParameterGuideOpen}
           onToggleGuide={() => setIsParameterGuideOpen((isOpen) => !isOpen)}
@@ -943,7 +967,7 @@ export function ResultsPage({
           previewItems={sortedParameterPreviewItems}
           metricChips={getMetricChips(topProducts[0])}
         />
-      )}
+      ) : null}
 
       <ResultsNextStepsPanel nextStepGroups={nextStepGroupsWithNaturalLanguageLead} />
 

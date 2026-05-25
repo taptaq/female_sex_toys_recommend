@@ -1,7 +1,9 @@
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
 import { motion } from "motion/react";
-import { Orbit } from "lucide-react";
-import { FloatingKnowledgeField } from "../components/FloatingKnowledgeField.tsx";
-import { getLoadingFunFacts } from "../lib/loading-fun-facts.ts";
+import { RotateCcw, Sparkles } from "lucide-react";
+import { CuteAstronaut } from "../components/CuteAstronaut.tsx";
+import { getGsapDuration } from "../lib/gsap-motion.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 export function MatchingPage({
@@ -17,31 +19,47 @@ export function MatchingPage({
   isAiMatching: boolean;
   tags: string[];
 }) {
-  const { repeat, shouldAnimate } = usePagePerformanceState();
+  const { shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
+  const ritualRef = useRef<HTMLDivElement | null>(null);
   const loadingText = [
-    "正在初始化神经链路...",
-    "正在连接星港数据库...",
-    "正在解码量子晶体...",
-    "正在统一分析环境...",
+    "正在整理你的偏好小星星...",
+    "正在为 Luna 打开推荐舱...",
+    "正在校准舒适度和隐私感...",
+    "正在生成第一版星球清单...",
   ];
   const isLoadingMode = mode === "loading";
-  const matchingFunFacts = getLoadingFunFacts(isLoadingMode ? "loading" : "matching", {
-    preferredTags: tags,
-    preferredThemes: isLoadingMode
-      ? ["care", "decision", "experience"]
-      : ["decision", "care", "experience"],
-  });
   const statusText =
     isLoadingMode
       ? loadingStep === -1
-        ? "链路通信中断"
-        : loadingText[loadingStep] || "载入中"
+        ? "星球信号暂时断开"
+        : loadingText[loadingStep] || "正在准备推荐舱"
       : isAiMatching
-      ? "AI 专家深度匹配中..."
-      : "解析物理标签中...";
+        ? "Luna 正在认真匹配..."
+        : "正在把偏好变成推荐路线...";
   const helperText = isLoadingMode
-    ? "正在统一分析环境..."
-    : "正在把你的偏好转译成可比较的装备信号...";
+    ? "先休息一下，马上回来。"
+    : "我们只筛选女性向候选，再按你的偏好轻轻排序。";
+
+  useEffect(() => {
+    if (!ritualRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".female-mvp-matching__reveal",
+        { autoAlpha: 0, y: 18, scale: 0.97 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: getGsapDuration(0.48, { shouldAnimate, prefersReducedMotion }),
+          ease: "back.out(1.35)",
+          stagger: getGsapDuration(0.08, { shouldAnimate, prefersReducedMotion }),
+        },
+      );
+    }, ritualRef);
+
+    return () => ctx.revert();
+  }, [statusText, shouldAnimate, prefersReducedMotion]);
 
   return (
     <motion.div
@@ -51,72 +69,69 @@ export function MatchingPage({
       animate="in"
       exit="out"
       className={[
-        "relative flex min-h-[calc(100vh-1.25rem)] w-full flex-col items-center justify-center overflow-visible px-4 py-10 sm:min-h-[calc(100vh-3rem)] sm:py-12 md:min-h-[calc(100vh-4rem)]",
+        "female-mvp-matching relative left-1/2 flex min-h-[100svh] w-screen -translate-x-1/2 flex-col items-center justify-center overflow-hidden px-4 py-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
         shouldAnimate ? "" : "ambient-motion-paused",
       ].join(" ")}
     >
-      <FloatingKnowledgeField
-        facts={matchingFunFacts}
-        variant={isLoadingMode ? "loading" : "matching"}
-      />
+      <div className="female-mvp-matching__stars" aria-hidden="true" />
+      <div className="female-mvp-matching__orb female-mvp-matching__orb-rose" aria-hidden="true" />
+      <div className="female-mvp-matching__orb female-mvp-matching__orb-blue" aria-hidden="true" />
 
-      <div className="radar-container relative z-10 mb-9 sm:mb-12">
-        <div className="radar-sweep"></div>
-        <Orbit className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-cyan-500/50" />
-      </div>
-
-      <div className="relative z-10 min-h-[11.25rem] w-full max-w-[19rem] space-y-3 text-center sm:min-h-[11rem] sm:max-w-md sm:space-y-4">
-        <h2 className="text-lg font-light tracking-[0.18em] text-white sm:text-xl">
-          链路解析中
+      <div
+        ref={ritualRef}
+        className="relative z-10 mx-auto flex w-full max-w-[24rem] flex-col items-center text-center"
+      >
+        <div className="female-mvp-matching__reveal relative">
+          <div className="female-mvp-matching__halo" aria-hidden="true" />
+          <CuteAstronaut label="Luna 正在匹配你的推荐星球" className="female-mvp-matching__astronaut" />
+        </div>
+        <span className="female-mvp-matching__reveal mt-7 inline-flex items-center gap-2 rounded-full border border-white/76 bg-white/66 px-4 py-2 text-xs font-black tracking-[0.12em] text-rose-500 shadow-[0_14px_34px_rgba(244,114,182,0.16)] backdrop-blur-md">
+          <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+          LUNA 星球校准中
+        </span>
+        <h2 className="female-mvp-matching__reveal mt-5 text-2xl font-black leading-tight tracking-normal text-slate-900">
+          正在为你挑一颗舒服的小星球
         </h2>
-        <p className="text-xs font-mono text-cyan-500/70 tracking-widest">
+        <p className="female-mvp-matching__reveal mt-3 text-sm font-semibold leading-7 tracking-normal text-slate-600">
           {statusText}
         </p>
         {!isLoadingMode && isAiMatching ? (
-          <p className="mx-auto max-w-[16rem] text-[10px] font-mono leading-relaxed tracking-[0.18em] text-cyan-100/48 sm:max-w-sm">
-            AI 模型分析预计需要 1-2 分钟，请保持页面开启
+          <p className="female-mvp-matching__reveal mt-2 max-w-[18rem] text-xs leading-6 tracking-normal text-slate-500">
+            大概需要 1-2 分钟，请先别关闭页面。
           </p>
         ) : null}
+        <div className="female-mvp-matching__reveal mt-7 w-full rounded-[1.75rem] border border-white/78 bg-white/64 p-4 shadow-[0_20px_58px_rgba(196,124,146,0.16)] backdrop-blur-xl">
+          <div className="female-mvp-matching__track" aria-hidden="true">
+            <div className="female-mvp-matching__comet" />
+          </div>
+          <p className="mt-4 text-[12px] leading-6 tracking-normal text-slate-600">
+            {helperText}
+          </p>
+        </div>
         {loadingStep === -1 && isLoadingMode ? (
           <button
             onClick={() => window.location.reload()}
-            className="text-xs text-red-400 font-mono underline cursor-pointer"
+            className="female-mvp-matching__reveal mt-5 inline-flex items-center gap-2 rounded-full border border-rose-100/90 bg-white/72 px-4 py-2 text-xs font-black tracking-normal text-rose-500 shadow-[0_12px_30px_rgba(244,114,182,0.14)]"
           >
-            重试链接
+            <RotateCcw className="h-3.5 w-3.5" />
+            重新连接
           </button>
         ) : tags.length > 0 && !isLoadingMode ? (
-          tags.slice(0, 3).map((tag, index) => (
-            <motion.div
+          <div className="female-mvp-matching__reveal mt-5 flex flex-wrap justify-center gap-2">
+            {tags.slice(0, 3).map((tag, index) => (
+              <motion.span
               key={tag}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.8 }}
-              className="text-lg font-light text-white tag-flash"
+                transition={{ delay: shouldAnimate ? index * 0.24 : 0 }}
+                className="tag-flash rounded-full border border-white/76 bg-white/68 px-3 py-1.5 text-xs font-bold tracking-normal text-sky-600 shadow-[0_10px_24px_rgba(117,181,214,0.14)]"
             >
               {tag}
-            </motion.div>
-          ))
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-48 h-[1px] bg-white/10 relative overflow-hidden">
-              <motion.div
-                initial={{ left: "-100%" }}
-                animate={{ left: "100%" }}
-                transition={{
-                  duration: shouldAnimate ? 1.5 : 0.2,
-                  repeat,
-                  ease: "linear",
-                }}
-                className="absolute top-0 bottom-0 w-1/3 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"
-              />
-            </div>
-            <p className="text-[10px] font-mono text-cyan-200/45 tracking-[0.22em] leading-none">
-              {helperText}
-            </p>
+              </motion.span>
+            ))}
           </div>
-        )}
+        ) : null}
       </div>
-
     </motion.div>
   );
 }

@@ -5,10 +5,12 @@ export function BrandBriefCard({
   brief,
   title = "当前品牌",
   compact = false,
+  showKnowledgeLink = true,
 }: {
   brief: BrandBrief | null | undefined;
   title?: string;
   compact?: boolean;
+  showKnowledgeLink?: boolean;
 }) {
   if (!brief) return null;
   const href = buildKnowledgeNebulaPath("brand", brief.brandSlug);
@@ -27,7 +29,7 @@ export function BrandBriefCard({
       </h3>
       <p className="mt-2 text-sm leading-6 text-cyan-50/82">{brief.positioning}</p>
       <p className="mt-2 text-xs leading-5 text-cyan-100/68">{brief.styleSummary}</p>
-      {href ? (
+      {showKnowledgeLink && href ? (
         <a
           href={href}
           className="mt-3 inline-flex items-center rounded-full border border-cyan-300/18 bg-cyan-300/10 px-3 py-1.5 text-[11px] text-cyan-50 transition-colors hover:border-cyan-200/35 hover:bg-cyan-300/16"

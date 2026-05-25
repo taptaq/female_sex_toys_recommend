@@ -47,31 +47,49 @@ const multiStepQuestions: Question[] = [
   } as Question,
 ];
 
-test("quiz page renders a differentiated deep-space scanning cockpit", () => {
+test("quiz page uses mobile female MVP presentation", () => {
+  const femaleMvpQuestions: Question[] = [
+    {
+      id: "stimulation-path",
+      title: "刺激路径",
+      subtitle: "你更期待哪种身体反馈路线？",
+      field: "physicalForm",
+      options: [{ label: "外部温柔唤醒", value: "external", tag: "外部唤醒" }],
+    } as Question,
+  ];
+
   const html = renderToStaticMarkup(
     <QuizPage
       pageVariants={{}}
       step={0}
-      activeQuestions={questions}
+      activeQuestions={femaleMvpQuestions}
       onSelectOption={() => {}}
       onBackQuestion={() => {}}
       onBackHome={() => {}}
     />,
   );
 
-  assert.match(html, /quiz-scan-shell/);
-  assert.match(html, /isolate/);
-  assert.match(html, /quiz-starfield/);
-  assert.match(html, /SCAN PHASE 01/);
-  assert.match(html, /SIGNAL CHANNEL 01/);
-  assert.match(html, /偏好校准/);
-  assert.doesNotMatch(html, /glass-panel rounded-3xl/);
-  assert.doesNotMatch(html, /glass-button rounded-2xl/);
+  assert.match(html, /female-mvp-quiz/);
+  assert.match(html, /overflow-y-auto/);
+  assert.match(html, /Luna 正在帮你校准/);
+  assert.match(html, /刺激路径/);
+  assert.doesNotMatch(html, /SCAN PHASE/);
+  assert.doesNotMatch(html, /SIGNAL CHANNEL/);
 });
 
-test("quiz scan background is sized to cover the full viewport", () => {
+test("female MVP quiz shell aligns to the top so short mobile viewports can scroll", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+
+  assert.match(source, /effectiveShellRoute === "\/quiz" && isFemaleMvp\s*\?\s*"overflow-y-auto overflow-x-hidden"/);
+  assert.match(source, /const shellAlignmentClassName =[\s\S]*effectiveShellRoute === "\/quiz" && isFemaleMvp[\s\S]*\? "justify-start"[\s\S]*: "justify-center";/);
+  assert.doesNotMatch(
+    source,
+    /"theme-synced-page relative flex flex-col items-center justify-center"/,
+  );
+});
+
+test("quiz female MVP background is scoped to the quiz shell", () => {
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
-  const appSource = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
   const pageMarkup = renderToStaticMarkup(
     <QuizPage
       pageVariants={{}}
@@ -83,28 +101,21 @@ test("quiz scan background is sized to cover the full viewport", () => {
     />,
   );
 
-  assert.match(source, /\.quiz-scan-shell/);
-  assert.match(source, /min-height: 100dvh/);
-  assert.doesNotMatch(source, /\.quiz-starfield\s*{[^}]*animation:/s);
-  assert.match(source, /\.quiz-starfield::before/);
-  assert.match(source, /@keyframes quiz-starfield-drift/);
-  assert.match(appSource, /effectiveShellRoute === "\/quiz"/);
-  assert.match(appSource, /"h-dvh min-h-dvh p-0"/);
-  assert.match(pageMarkup, /flex/);
-  assert.match(pageMarkup, /justify-center/);
+  assert.match(source, /\.female-mvp-quiz\s*\{/);
+  assert.match(source, /\.female-mvp-quiz__stars/);
+  assert.match(source, /\.female-mvp-option/);
+  assert.match(pageMarkup, /female-mvp-quiz/);
+  assert.match(pageMarkup, /min-h-\[100svh\]/);
+  assert.doesNotMatch(pageMarkup, /quiz-scan-shell/);
 });
 
-test("quiz page reduces starfield drift density on small screens", () => {
+test("quiz female MVP ambient elements pause when animation is disabled", () => {
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.quiz-starfield::before\s*\{[\s\S]*opacity:\s*0\.48;/,
-  );
-  assert.match(
-    source,
-    /@media \(max-width: 640px\) \{[\s\S]*\.quiz-starfield::before\s*\{[\s\S]*background-size:\s*240px 280px,\s*340px 360px,\s*460px 500px;/,
-  );
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__stars/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__figure/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__bubble/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__star/);
 });
 
 test("quiz page reassures undecided users that the system can guide them forward", () => {

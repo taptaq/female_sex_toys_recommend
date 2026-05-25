@@ -4,7 +4,6 @@ import path from "node:path";
 import test from "node:test";
 import { isValidElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { APP_THEME_OPTIONS } from "../lib/app-theme.ts";
 
 import {
   HomeAuthOverlay,
@@ -56,43 +55,38 @@ function collectElements(node: unknown): any[] {
   return [node, ...collectElements(children)];
 }
 
-test("home page prioritizes matching and demotes library and knowledge nebula entries", () => {
+test("female MVP home exposes one clear mobile matching path", () => {
   const html = renderHomePage();
 
+  assert.match(html, /Luna 小宇航员/);
+  assert.match(html, /找到适合你的第一颗小星球/);
   assert.match(html, /开始匹配/);
-  assert.match(html, /还没准备开始，也可以先快速看看/);
-  assert.match(html, /装备库/);
-  assert.match(html, /知识星云/);
-  assert.match(html, /意见反馈/);
-  assert.match(html, /拿到推荐方向后，再回来横向比较同类和价位/);
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("还没准备开始，也可以先快速看看"));
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("装备库"));
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("知识星云"));
-  assert.ok(html.indexOf("开始匹配") < html.indexOf("意见反馈"));
-  assert.doesNotMatch(html, /先随便看看装备库/);
-  assert.doesNotMatch(html, /看看知识星云/);
-  assert.doesNotMatch(html, /浏览全息装备库/);
-  assert.doesNotMatch(html, /进入知识星云/);
+  assert.match(html, /3 分钟轻问答/);
+  assert.match(html, /女性向/);
+  assert.doesNotMatch(html, /还没准备开始，也可以先快速看看/);
+  assert.doesNotMatch(html, /装备库/);
+  assert.doesNotMatch(html, /知识星云/);
+  assert.doesNotMatch(html, /匹配档案/);
+  assert.doesNotMatch(html, /SELECTION GUIDE/);
 });
 
-test("home page consolidates privacy reassurance into the auth entry", () => {
+test("female MVP home keeps privacy reassurance without login pressure", () => {
   const html = renderHomePage();
 
-  assert.match(html, /登录后可加密保存推荐档案，支持多端同步，也可随时删除/);
-  assert.doesNotMatch(html, /home-privacy-status/);
-  assert.doesNotMatch(html, /登录后多端同步/);
-  assert.doesNotMatch(html, /敏感偏好加密保存/);
-  assert.doesNotMatch(html, /可随时删除推荐记录/);
-  assert.doesNotMatch(html, /无需登录/);
-  assert.doesNotMatch(html, /问卷进度保存在本机/);
+  assert.match(html, /本地先体验/);
+  assert.match(html, /隐私友好/);
+  assert.doesNotMatch(html, /登录后可加密保存推荐档案，支持多端同步，也可随时删除/);
+  assert.doesNotMatch(html, /登录 \/ 注册/);
+  assert.doesNotMatch(html, /placeholder="用户名"/);
+  assert.doesNotMatch(html, /placeholder="密码"/);
 });
 
-test("home page keeps authentication as a lightweight entry instead of an inline form", () => {
+test("female MVP home does not render heavyweight account entry points", () => {
   const html = renderHomePage();
 
-  assert.match(html, /home-auth-entry/);
-  assert.match(html, /登录 \/ 注册/);
-  assert.match(html, /完成匹配后可加密保存/);
+  assert.doesNotMatch(html, /home-auth-entry/);
+  assert.doesNotMatch(html, /完成匹配后可加密保存/);
+  assert.doesNotMatch(html, /登录 \/ 注册/);
   assert.doesNotMatch(html, /placeholder="用户名"/);
   assert.doesNotMatch(html, /placeholder="密码"/);
   assert.doesNotMatch(html, /登录后保存推荐档案/);
@@ -178,35 +172,43 @@ test("home auth overlay focus restore helper safely restores when possible", () 
   assert.equal(restoreHomeAuthOverlayFocus({}), false);
 });
 
-test("home page renders an animated inner-space entry atmosphere", () => {
+test("female MVP home renders a mobile-first astronaut atmosphere", () => {
   const html = renderHomePage();
 
-  assert.match(html, /home-space-depth/);
-  assert.match(html, /home-orbit-core/);
-  assert.match(html, /home-primary-ignition/);
-  assert.match(html, /home-secondary-node/);
-  assert.match(html, /w-\[112vw\]/);
-  assert.doesNotMatch(html, /overflow-hidden rounded-\[2rem\]/);
+  assert.match(html, /female-mvp-home/);
+  assert.match(html, /female-mvp-stars/);
+  assert.match(html, /female-mvp-astronaut/);
+  assert.match(html, /cute-astronaut/);
+  assert.match(html, /female-mvp-primary-button/);
+  assert.doesNotMatch(html, /home-space-depth/);
+  assert.doesNotMatch(html, /home-primary-ignition/);
+  assert.doesNotMatch(html, /home-secondary-node/);
 });
 
-test("home page background orbits render as refined trace lines instead of heavy plates", () => {
-  const html = renderHomePage();
+test("legacy home background orbits remain available as refined trace lines", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
     "utf8",
   );
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
 
-  assert.match(html, /home-space-orbit-a/);
-  assert.match(html, /home-space-orbit-b/);
+  assert.match(homePageSource, /home-space-orbit-a/);
+  assert.match(homePageSource, /home-space-orbit-b/);
   assert.match(cssSource, /\.home-space-orbit::before/);
   assert.match(cssSource, /mask-image: linear-gradient/);
   assert.doesNotMatch(cssSource, /inset 0 34px 80px var\(--theme-glow\)/);
 });
 
-test("home page background now uses a real-space photo layer instead of only synthetic haze", () => {
-  const html = renderHomePage();
+test("legacy home background keeps the real-space photo layer available", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
+    "utf8",
+  );
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
     "utf8",
   );
   const themeSource = fs.readFileSync(
@@ -214,9 +216,9 @@ test("home page background now uses a real-space photo layer instead of only syn
     "utf8",
   );
 
-  assert.match(html, /home-space-photo/);
-  assert.match(html, /src="\/assets\/home-cosmos\/inner-space-spiral\.jpg"/);
-  assert.match(html, /home-space-photo-veil/);
+  assert.match(homePageSource, /home-space-photo/);
+  assert.match(homePageSource, /APP_THEME_HOME_COSMOS_IMAGE_BY_ID/);
+  assert.match(homePageSource, /home-space-photo-veil/);
   assert.match(cssSource, /\.home-space-photo/);
   assert.match(themeSource, /\/assets\/home-cosmos\/inner-space-spiral\.jpg/);
   assert.match(themeSource, /\/assets\/home-cosmos\/soft-signal-rosette\.jpg/);
@@ -439,36 +441,27 @@ test("home page secondary entry buttons do not render oversized hover halos", ()
 test("home page keeps ambient layers grouped behind stable semantic anchor nodes", () => {
   const html = renderHomePage();
 
-  assert.equal(countMatches(html, /home-space-stars-a/g), 1);
-  assert.equal(countMatches(html, /home-space-stars-b/g), 1);
-  assert.equal(countMatches(html, /class="home-space-photo-image /g), 1);
-  assert.equal(countMatches(html, /home-space-photo-image-inner-space/g), 1);
-  assert.equal(countMatches(html, /home-space-photo-image-soft-signal/g), 0);
-  assert.equal(countMatches(html, /home-space-photo-image-sync-field/g), 0);
-  assert.equal(countMatches(html, /home-space-nebula-flow-a/g), 1);
-  assert.equal(countMatches(html, /home-space-nebula-flow-b/g), 1);
-  assert.equal(countMatches(html, /home-space-galaxy-disk/g), 1);
-  assert.equal(countMatches(html, /home-space-galaxy-stream/g), 1);
-  assert.equal(countMatches(html, /class="home-space-photo"/g), 1);
-  assert.equal(countMatches(html, /home-space-orbit-offset/g), 1);
+  assert.equal(countMatches(html, /female-mvp-home/g), 1);
+  assert.equal(countMatches(html, /female-mvp-stars/g), 1);
+  assert.equal(countMatches(html, /female-mvp-primary-button/g), 1);
+  assert.equal(countMatches(html, /cute-astronaut__figure/g), 1);
+  assert.equal(countMatches(html, /home-space-photo/g), 0);
   assert.equal(countMatches(html, /home-space-comet/g), 0);
   assert.equal(countMatches(html, /home-panel-scan/g), 0);
-  assert.equal(countMatches(html, /home-primary-ignition/g), 1);
+  assert.equal(countMatches(html, /home-primary-ignition/g), 0);
 });
 
-test("home page keeps a focused hero shell with a single primary action and compact orbit scene", () => {
+test("female MVP home keeps a focused hero shell with a single primary action", () => {
   const html = renderHomePage();
 
-  assert.equal(countMatches(html, /home-orbit-core/g), 1);
-  assert.equal(countMatches(html, /home-primary-ignition/g), 1);
-  assert.equal(countMatches(html, /glass-panel/g), 2);
-  assert.match(html, /内太空装备智能选品向导/);
-  assert.match(html, /SELECTION GUIDE/);
+  assert.equal(countMatches(html, /female-mvp-primary-button/g), 1);
+  assert.equal(countMatches(html, />开始匹配</g), 1);
+  assert.match(html, /女性向 · 萌系宇航员推荐舱/);
+  assert.match(html, /找到适合你的第一颗小星球/);
   assert.match(html, /开始匹配/);
-  assert.ok(countMatches(html, /<button/g) >= 4);
 });
 
-test("home page keeps secondary entry navigation and auth actions structurally distinct", () => {
+test("female MVP home hides secondary navigation and auth actions even when signed in", () => {
   const signedOutHtml = renderHomePage();
   const signedInHtml = renderToStaticMarkup(
     <HomePage
@@ -484,30 +477,26 @@ test("home page keeps secondary entry navigation and auth actions structurally d
     />,
   );
 
-  assert.equal(countMatches(signedOutHtml, /home-secondary-node/g), 3);
-  assert.equal(countMatches(signedOutHtml, /home-auth-entry/g), 1);
-  assert.match(signedOutHtml, /登录 \/ 注册/);
+  assert.equal(countMatches(signedOutHtml, /home-secondary-node/g), 0);
+  assert.equal(countMatches(signedOutHtml, /home-auth-entry/g), 0);
+  assert.doesNotMatch(signedOutHtml, /登录 \/ 注册/);
   assert.doesNotMatch(signedOutHtml, /匹配档案/);
   assert.doesNotMatch(signedOutHtml, />退出</);
 
-  assert.equal(countMatches(signedInHtml, /home-secondary-node/g), 3);
-  assert.equal(countMatches(signedInHtml, /home-auth-entry/g), 1);
-  assert.match(signedInHtml, /匹配档案/);
-  assert.match(signedInHtml, />退出</);
-  assert.match(signedInHtml, /taptaq/);
+  assert.equal(countMatches(signedInHtml, /home-secondary-node/g), 0);
+  assert.equal(countMatches(signedInHtml, /home-auth-entry/g), 0);
+  assert.doesNotMatch(signedInHtml, /匹配档案/);
+  assert.doesNotMatch(signedInHtml, />退出</);
+  assert.doesNotMatch(signedInHtml, /taptaq/);
 });
 
-test("home page exposes three audience-aware theme options and marks the active one", () => {
+test("female MVP home does not expose theme switching by default", () => {
   const html = renderHomePage();
 
-  assert.match(html, /主题/);
-  assert.match(html, /home-theme-track/);
-  assert.match(html, /home-theme-track-list/);
-  for (const option of APP_THEME_OPTIONS) {
-    assert.match(html, new RegExp(option.shortLabel));
-  }
-  assert.match(html, /aria-pressed="true"[^>]*>[\s\S]*深空/);
-  assert.doesNotMatch(html, /mt-0\.5 block truncate text-\[10px\] opacity-70/);
+  assert.doesNotMatch(html, /主题/);
+  assert.doesNotMatch(html, /home-theme-track/);
+  assert.doesNotMatch(html, /home-theme-track-list/);
+  assert.doesNotMatch(html, /aria-pressed="true"/);
 });
 
 test("home page feedback screenshot planning respects reserved capacity and reports validation issues", () => {
@@ -539,10 +528,15 @@ test("home page feedback screenshot planning blocks additions when capacity is a
   assert.equal(planned.hasOverflowError, true);
 });
 
-test("home page keeps feedback entry rendered without mounting the modal content by default", () => {
+test("female MVP home keeps feedback modal mounted without rendering a feedback entry button", () => {
   const html = renderHomePage();
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
 
-  assert.match(html, /意见反馈/);
+  assert.match(homePageSource, /<HomeFeedbackModal/);
+  assert.doesNotMatch(html, /意见反馈/);
   assert.doesNotMatch(html, /反馈内容/);
   assert.doesNotMatch(html, /截图上传（可选，最多 3 张）/);
 });

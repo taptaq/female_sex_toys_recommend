@@ -79,3 +79,68 @@ test("buildLocalRecommendationRanking keeps natural language evidence in the vis
     )}`,
   );
 });
+
+test("buildLocalResultComputation filters male-only products before ranking in female MVP mode", async () => {
+  const { buildLocalResultComputation } = await import("./app-result-flow.ts");
+  const answers: AnswerState = {
+    gender: "female",
+    physicalForm: "external",
+    motorType: "gentle",
+    maxDb: 50,
+    waterproof: 7,
+    budget: [100, 300],
+    appearance: "normal",
+    tags: ["女性向"],
+  };
+
+  const result = buildLocalResultComputation(answers, [
+    makeProduct({
+      id: "female-good",
+      name: "Female Good",
+      rawDescription: "女性外部震动，温和安静。",
+      tags: ["女性向"],
+    }),
+    makeProduct({
+      id: "male-explicit",
+      name: "Explicit Male Product",
+      gender: "male",
+      rawDescription: "男性飞机杯体验。",
+      tags: ["男性向"],
+    }),
+    makeProduct({
+      id: "male-coded-unisex",
+      name: "Male Coded Unisex Product",
+      gender: "unisex",
+      rawDescription: "男性飞机杯体验，强调阴茎包裹感。",
+      tags: ["男性向"],
+    }),
+  ]);
+
+  assert.deepEqual(
+    result.rankedCandidates.map((product) => product.id),
+    ["female-good"],
+  );
+});
+
+test("buildLocalResultComputation uses female MVP fallback products when the source is empty", async () => {
+  const { buildLocalResultComputation } = await import("./app-result-flow.ts");
+  const answers: AnswerState = {
+    gender: "female",
+    physicalForm: "external",
+    motorType: "gentle",
+    maxDb: 50,
+    waterproof: 7,
+    budget: [100, 300],
+    appearance: "normal",
+    tags: ["女性向", "外部震动/吮吸", "温柔慢热"],
+  };
+
+  const result = buildLocalResultComputation(answers, []);
+
+  assert.ok(result.rankedCandidates.length > 0);
+  assert.ok(result.fallbackTopProducts.length > 0);
+  assert.ok(
+    result.rankedCandidates.every((product) => product.gender === "female"),
+    "fallback candidates should stay female-only",
+  );
+});

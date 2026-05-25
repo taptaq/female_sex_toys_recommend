@@ -10,6 +10,10 @@ import {
   buildLocalRecommendationRanking,
   type StructuredRankedProduct,
 } from "./recommendation-local-ranking.ts";
+import {
+  filterFemaleMvpProducts,
+  shouldUseFemaleMvp,
+} from "./app-mode.ts";
 
 export const AI_RERANK_POOL_SIZE = 10;
 export const FINAL_SELECTION_COUNT = 3;
@@ -68,9 +72,12 @@ export function buildLocalResultComputation(
   productsData: Product[],
   context?: LocalResultComputationContext,
 ): LocalResultComputation {
+  const eligibleProducts = shouldUseFemaleMvp()
+    ? filterFemaleMvpProducts(productsData)
+    : productsData;
   const localRanking = buildLocalRecommendationRanking(
     currentAnswers,
-    productsData,
+    eligibleProducts,
     {
       rerankPoolSize: AI_RERANK_POOL_SIZE,
       finalSelectionCount: FINAL_SELECTION_COUNT,
