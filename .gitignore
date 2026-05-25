@@ -11,3 +11,4 @@ src/data/*
 !src/data/mock.ts
 !src/data/mock.test.ts
 .worktrees/
+.superpowers/
