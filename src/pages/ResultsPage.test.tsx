@@ -133,12 +133,31 @@ test("female MVP results hide heavy secondary modules", () => {
   );
 
   assert.match(html, /female-mvp-results/);
-  assert.match(html, /这颗小星球可以先看/);
+  assert.match(html, /min-h-\[100svh\]/);
+  assert.match(html, /这套装备可以先看/);
   assert.match(html, /先看主推荐和购买前检查/);
   assert.doesNotMatch(html, /身体人格/);
   assert.doesNotMatch(html, /知识星云/);
   assert.doesNotMatch(html, /去知识星云/);
   assert.doesNotMatch(html, /完整星系人格/);
+});
+
+test("female MVP results claim the full mobile canvas instead of sitting inside a dark shell", () => {
+  const appSource = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+  const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+  const resultsPageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/ResultsPage.tsx"),
+    "utf8",
+  );
+
+  assert.match(appSource, /const isFemaleMvpResultsRoute = effectiveShellRoute === "\/results" && isFemaleMvp;/);
+  assert.match(appSource, /isFemaleMvpResultsRoute[\s\S]*\? "max-w-none"/);
+  assert.match(appSource, /isFemaleMvpResultsRoute[\s\S]*\? "min-h-screen p-0"/);
+  assert.match(appSource, /&& !isFemaleMvpResultsRoute/);
+  assert.match(appSource, /isFemaleMvpResultsRoute \? "female-mvp-results-route" : ""/);
+  assert.match(cssSource, /\.female-mvp-results-route \{[\s\S]*linear-gradient\(165deg, #fff8ea 0%, #ffe9f1 46%, #dff3ff 100%\);/);
+  assert.doesNotMatch(resultsPageSource, /bg-black/);
+  assert.doesNotMatch(resultsPageSource, /text-slate-200 transition-colors hover:border-cyan-300\/24 hover:bg-cyan-300/);
 });
 
 test("results page shows a short brand brief for the primary recommendation", () => {
@@ -618,7 +637,7 @@ test("results page prioritizes the primary recommendation before secondary contr
 
   assert.match(html, /results-report-shell/);
   assert.match(html, /LUNA RESULT/);
-  assert.match(html, /这颗小星球可以先看/);
+  assert.match(html, /这套装备可以先看/);
   assert.match(html, /本轮最贴合/);
   assert.match(html, /登录后可加密保存/);
   assert.doesNotMatch(html, /用户名/);

@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import gsap from "gsap";
 import {
   useEffect,
   useLayoutEffect,
@@ -20,7 +21,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
-import { CuteAstronaut } from "../components/CuteAstronaut.tsx";
 import { HomeFeedbackModal } from "../components/HomeFeedbackModal.tsx";
 import { canShowMvpEntry, shouldUseFemaleMvp } from "../lib/app-mode.ts";
 import {
@@ -30,6 +30,7 @@ import {
 } from "../lib/app-theme.ts";
 import { submitHomeFeedback } from "../lib/home-feedback.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
+import { getGsapDuration, shouldRunGsapMotion } from "../lib/gsap-motion.ts";
 
 const HOME_FEEDBACK_ALLOWED_IMAGE_TYPES = new Set([
   "image/png",
@@ -38,6 +39,49 @@ const HOME_FEEDBACK_ALLOWED_IMAGE_TYPES = new Set([
 ]);
 const HOME_FEEDBACK_MAX_SCREENSHOTS = 3;
 const HOME_SPACE_PHOTO_CROSSFADE_MS = 900;
+const FEMALE_MVP_HOME_PLANETS = [
+  {
+    id: "privacy",
+    label: "隐私星",
+    shortLabel: "隐私",
+    src: "/assets/luna-planets/privacy.png",
+    className: "female-mvp-orbit-planet-privacy",
+  },
+  {
+    id: "comfort",
+    label: "舒适星",
+    shortLabel: "舒适",
+    src: "/assets/luna-planets/comfort.png",
+    className: "female-mvp-orbit-planet-comfort",
+  },
+  {
+    id: "beginner",
+    label: "新手星",
+    shortLabel: "新手",
+    src: "/assets/luna-planets/beginner.png",
+    className: "female-mvp-orbit-planet-beginner",
+  },
+  {
+    id: "care",
+    label: "清洁星",
+    shortLabel: "清洁",
+    src: "/assets/luna-planets/care.png",
+    className: "female-mvp-orbit-planet-care",
+  },
+] as const;
+type FemaleMvpHomePlanetId = (typeof FEMALE_MVP_HOME_PLANETS)[number]["id"];
+const FEMALE_MVP_FINAL_PLANET_POSITION: Record<
+  FemaleMvpHomePlanetId,
+  { left: number; top: number }
+> = {
+  privacy: { left: 21, top: 38 },
+  comfort: { left: 79, top: 33 },
+  beginner: { left: 78, top: 63 },
+  care: { left: 21, top: 66 },
+};
+const FEMALE_MVP_ORBIT_PATH = "M230 182 C 64 24, 360 10, 388 76 S 64 206, 82 312 S 388 302, 376 348 S 86 348, 230 182";
+const FEMALE_MVP_LAUNCH_EXIT_MS = 680;
+
 const HOME_AUTH_OVERLAY_FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -276,21 +320,29 @@ export function HomeAuthOverlay({
   onClose,
   onKeyDown,
   dialogRef,
+  variant = "default",
 }: {
   children: ReactNode;
   onClose: () => void;
   onKeyDown?: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
   dialogRef?: Ref<HTMLDivElement>;
+  variant?: "default" | "femaleMvp";
 }) {
+  const isFemaleMvpVariant = variant === "femaleMvp";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 px-4 py-8 backdrop-blur-xl"
+      className={
+        isFemaleMvpVariant
+          ? "female-mvp-auth-overlay fixed inset-0 z-50 flex items-end justify-center bg-slate-950/28 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8 backdrop-blur-md"
+          : "fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 px-4 py-8 backdrop-blur-xl"
+      }
       onClick={onClose}
       role="presentation"
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-md"
+        className={isFemaleMvpVariant ? "female-mvp-auth-dialog w-full max-w-md" : "w-full max-w-md"}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={onKeyDown}
         role="dialog"
@@ -463,6 +515,37 @@ function HomeAuthEntry({
   );
 }
 
+function FemaleMvpAuthEntry({
+  authPanel,
+  buttonRef,
+  onOpenAuthPanel,
+}: {
+  authPanel: {
+    isConfigured: boolean;
+    userLabel: string | null;
+    statusMessage: string | null;
+    isSubmitting: boolean;
+    onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+    onSignOut: () => Promise<void>;
+  };
+  buttonRef: Ref<HTMLButtonElement>;
+  onOpenAuthPanel: () => void;
+}) {
+  const entryLabel = authPanel.userLabel || "登录";
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={onOpenAuthPanel}
+      className="female-mvp-auth-entry"
+      aria-label={authPanel.userLabel ? "打开账户面板" : "登录或注册"}
+    >
+      {entryLabel}
+    </button>
+  );
+}
+
 function HomeThemeSwitcher({
   themeId,
   onThemeChange,
@@ -491,7 +574,7 @@ function HomeThemeSwitcher({
                 "home-theme-option min-w-0 flex-1 rounded-full border px-2.5 py-2 text-center text-[11px] font-medium tracking-[0.16em] transition-colors",
                 isActive
                   ? "home-theme-option-active border-cyan-300/32 bg-cyan-300/12 text-cyan-50"
-                  : "border-white/8 bg-white/[0.025] text-slate-300 hover:border-cyan-300/22 hover:bg-cyan-300/[0.07] hover:text-white",
+                  : "border-white/8 bg-white/[0.025] text-cyan-50/72 hover:border-cyan-300/22 hover:bg-cyan-300/[0.07] hover:text-white",
               ].join(" ")}
             >
               <span className="block truncate">{option.shortLabel}</span>
@@ -531,7 +614,7 @@ export function HomePage({
     onSignOut: () => Promise<void>;
   };
 }) {
-  const { repeat, shouldAnimate } = usePagePerformanceState();
+  const { repeat, shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackScreenshots, setFeedbackScreenshots] = useState<string[]>([]);
@@ -539,20 +622,34 @@ export function HomePage({
   const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
   const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null);
   const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState<string | null>(null);
+  const [isFemaleMvpLaunching, setIsFemaleMvpLaunching] = useState(false);
   const [photoLayers, setPhotoLayers] = useState<HomeSpacePhotoLayer[]>([
     { themeId, state: "active" },
   ]);
   const feedbackCloseTimeoutRef = useRef<number | null>(null);
+  const femaleMvpLaunchTimeoutRef = useRef<number | null>(null);
   const feedbackScreenshotCountRef = useRef(0);
   const feedbackPendingScreenshotReservationsRef = useRef(0);
   const previousPhotoThemeIdRef = useRef(themeId);
   const photoTransitionFrameRef = useRef<number | null>(null);
   const photoTransitionTimeoutRef = useRef<number | null>(null);
+  const femaleMvpHomeRef = useRef<HTMLElement | null>(null);
+  const [isFemaleMvpAuthPanelOpen, setIsFemaleMvpAuthPanelOpen] = useState(false);
+  const femaleMvpAuthEntryButtonRef = useRef<HTMLButtonElement | null>(null);
+  const femaleMvpAuthDialogRef = useRef<HTMLDivElement | null>(null);
+  const wasFemaleMvpAuthPanelOpenRef = useRef(false);
+  const femaleMvpPreviouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const shouldHideFemaleMvpCopy =
+    shouldUseFemaleMvp() &&
+    shouldRunGsapMotion({ shouldAnimate, prefersReducedMotion });
 
   useEffect(() => {
     return () => {
       if (feedbackCloseTimeoutRef.current !== null) {
         window.clearTimeout(feedbackCloseTimeoutRef.current);
+      }
+      if (femaleMvpLaunchTimeoutRef.current !== null) {
+        window.clearTimeout(femaleMvpLaunchTimeoutRef.current);
       }
       if (photoTransitionFrameRef.current !== null) {
         window.cancelAnimationFrame(photoTransitionFrameRef.current);
@@ -562,6 +659,235 @@ export function HomePage({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!shouldUseFemaleMvp()) return;
+    if (!femaleMvpHomeRef.current) return;
+
+    const motionState = {
+      shouldAnimate,
+      prefersReducedMotion,
+    };
+
+    if (!shouldRunGsapMotion(motionState)) {
+      femaleMvpHomeRef.current
+        .querySelectorAll<HTMLElement>(
+          [
+            ".female-mvp-astronaut-image",
+            ".female-mvp-astronaut-shimmer",
+            ".female-mvp-astronaut-thruster",
+            ".female-mvp-copy-reveal",
+            ".female-mvp-nav-reveal",
+            ".female-mvp-orbit-planet",
+            ".female-mvp-game-lobby-stage",
+            ".female-mvp-display-plinth",
+            ".female-mvp-lens-ribbon",
+            ".female-mvp-holo-grid",
+            ".female-mvp-stage-backdrop",
+            ".female-mvp-orbit-path",
+          ].join(", "),
+        )
+        .forEach((element) => {
+          element.dataset.introHidden = "false";
+          element.style.opacity = "1";
+          element.style.visibility = "visible";
+          element.style.transform = element.classList.contains("female-mvp-game-lobby-stage")
+            ? "translateY(-0.9rem)"
+            : "none";
+        });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const timeline = gsap.timeline({
+        defaults: { ease: "sine.out" },
+        onComplete: () => {
+          femaleMvpHomeRef.current
+            ?.querySelectorAll<HTMLElement>(".female-mvp-copy-reveal, .female-mvp-nav-reveal")
+            .forEach((element) => {
+              element.dataset.introHidden = "false";
+            });
+        },
+      });
+
+      // Phase 1: Planets appear at their final positions
+      timeline
+        .set(".female-mvp-nav-reveal", { autoAlpha: 0, y: -10 })
+        .set(".female-mvp-copy-reveal", { autoAlpha: 0, y: 10 })
+        .set(".female-mvp-orbit-planet", { autoAlpha: 0, scale: 0.92, xPercent: -50, yPercent: -50 })
+        .set(".female-mvp-planet-label", { autoAlpha: 0 })
+        .set(".female-mvp-route-spark", { autoAlpha: 0 })
+        .set(".female-mvp-stage-backdrop", { autoAlpha: 0, scale: 0.98 })
+        .set(".female-mvp-orbit-path", { autoAlpha: 0, strokeDasharray: 720, strokeDashoffset: 720 })
+        .set(".female-mvp-game-lobby-stage", { autoAlpha: 1, y: -14 })
+        .set(".female-mvp-display-plinth", { autoAlpha: 0.34 })
+        .set(".female-mvp-holo-grid", { autoAlpha: 0 })
+        .set(".female-mvp-lens-ribbon", { autoAlpha: 0.18 })
+        .set(".female-mvp-mission-node", { autoAlpha: 0, y: 6, scale: 0.98 })
+        .set(".female-mvp-cabin-orbit-rail", { scaleX: 0.35, autoAlpha: 0 })
+        .set(".female-mvp-astronaut-image", { autoAlpha: 0, scale: 0.96, y: 12 })
+        .to(".female-mvp-stage-backdrop", {
+          autoAlpha: 1,
+          scale: 1,
+          duration: getGsapDuration(0.6, motionState),
+        })
+        .to(
+          ".female-mvp-orbit-path",
+          {
+            autoAlpha: 0.16,
+            strokeDashoffset: 0,
+            duration: getGsapDuration(0.55, motionState),
+            ease: "sine.inOut",
+          },
+          "<0.1",
+        )
+        .to(
+          ".female-mvp-orbit-planet",
+          {
+            autoAlpha: 0.86,
+            scale: 1,
+            stagger: getGsapDuration(0.1, motionState),
+            duration: getGsapDuration(0.55, motionState),
+          },
+          "<",
+        )
+        .to(
+          ".female-mvp-planet-label",
+          {
+            autoAlpha: 0.74,
+            stagger: getGsapDuration(0.1, motionState),
+            duration: getGsapDuration(0.45, motionState),
+          },
+          "<0.12",
+        );
+
+      // Phase 2: Astronaut drifts in gently
+      timeline.to(
+        ".female-mvp-astronaut-image",
+        {
+          autoAlpha: 1,
+          scale: 1,
+          y: 0,
+          duration: getGsapDuration(0.52, motionState),
+        },
+        "<0.05",
+      );
+
+      // Phase 3: CTA and navigation fade in
+      timeline
+        .to(
+          ".female-mvp-nav-reveal",
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: getGsapDuration(0.34, motionState),
+          },
+          "<0.08",
+        )
+        .to(
+          ".female-mvp-cabin-orbit-rail",
+          {
+            autoAlpha: 1,
+            scaleX: 1,
+            duration: getGsapDuration(0.34, motionState),
+          },
+          "<0.08",
+        )
+        .to(
+          ".female-mvp-copy-reveal",
+          {
+            autoAlpha: 1,
+            y: 0,
+            stagger: getGsapDuration(0.08, motionState),
+            duration: getGsapDuration(0.42, motionState),
+          },
+          "<0.08",
+        )
+        .to(
+          ".female-mvp-mission-node",
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            stagger: getGsapDuration(0.06, motionState),
+            duration: getGsapDuration(0.36, motionState),
+          },
+          "-=0.26",
+        );
+    }, femaleMvpHomeRef);
+
+    return () => ctx.revert();
+  }, [prefersReducedMotion, shouldAnimate]);
+
+  const handleFemaleMvpStart = () => {
+    if (isFemaleMvpLaunching) return;
+
+    if (!shouldRunGsapMotion({ shouldAnimate, prefersReducedMotion })) {
+      onStart();
+      return;
+    }
+
+    setIsFemaleMvpLaunching(true);
+    femaleMvpLaunchTimeoutRef.current = window.setTimeout(() => {
+      onStart();
+      femaleMvpLaunchTimeoutRef.current = null;
+    }, FEMALE_MVP_LAUNCH_EXIT_MS);
+  };
+
+  useEffect(() => {
+    if (isFemaleMvpAuthPanelOpen) {
+      femaleMvpPreviouslyFocusedElementRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      femaleMvpAuthDialogRef.current?.focus();
+    } else if (wasFemaleMvpAuthPanelOpenRef.current) {
+      const restored = restoreHomeAuthOverlayFocus(
+        femaleMvpPreviouslyFocusedElementRef.current,
+      );
+      if (!restored) {
+        femaleMvpAuthEntryButtonRef.current?.focus();
+      }
+      femaleMvpPreviouslyFocusedElementRef.current = null;
+    }
+
+    wasFemaleMvpAuthPanelOpenRef.current = isFemaleMvpAuthPanelOpen;
+  }, [isFemaleMvpAuthPanelOpen]);
+
+  function closeFemaleMvpAuthOverlay() {
+    setIsFemaleMvpAuthPanelOpen(false);
+  }
+
+  function handleFemaleMvpAuthOverlayKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeFemaleMvpAuthOverlay();
+      return;
+    }
+
+    if (event.key !== "Tab" || !femaleMvpAuthDialogRef.current) {
+      return;
+    }
+
+    const focusableElements = getHomeAuthOverlayFocusableElements(
+      femaleMvpAuthDialogRef.current,
+    );
+    const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+    const trapTargetIndex = getHomeAuthOverlayFocusTrapTarget({
+      focusableCount: focusableElements.length,
+      currentIndex,
+      isShiftKey: event.shiftKey,
+    });
+
+    if (trapTargetIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    focusableElements[trapTargetIndex]?.focus();
+    if (!focusableElements[trapTargetIndex]) {
+      femaleMvpAuthDialogRef.current.focus();
+    }
+  }
 
   useHomePhotoTransitionEffect(() => {
     const previousThemeId = previousPhotoThemeIdRef.current;
@@ -737,60 +1063,158 @@ export function HomePage({
     return (
       <>
         <main
+          ref={femaleMvpHomeRef}
           className={[
-            "female-mvp-home relative isolate flex min-h-[calc(100svh-7rem)] w-full flex-col overflow-hidden rounded-[2rem] px-5 py-5 text-slate-800 shadow-[0_24px_80px_rgba(196,124,146,0.18)] sm:min-h-[620px] sm:rounded-[2.4rem] sm:px-8 sm:py-7",
+            "female-mvp-home relative isolate flex h-[100dvh] max-h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden px-4 py-[calc(0.75rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] text-slate-800 sm:px-8 sm:py-8",
             shouldAnimate ? "" : "ambient-motion-paused",
+            isFemaleMvpLaunching ? "female-mvp-home-launching" : "",
           ].join(" ")}
+          aria-busy={isFemaleMvpLaunching}
         >
           <div className="female-mvp-stars" aria-hidden="true" />
-          <div className="relative z-10 flex items-center justify-between gap-3">
-            <span className="inline-flex items-center rounded-full border border-white/70 bg-white/62 px-3.5 py-1.5 text-xs font-semibold tracking-[0.16em] text-rose-500 shadow-[0_10px_30px_rgba(255,153,184,0.18)]">
-              Luna 小宇航员
+          <div
+            data-intro-hidden={shouldHideFemaleMvpCopy ? "true" : "false"}
+            className="female-mvp-nav-reveal relative z-10 flex items-center justify-between gap-3"
+          >
+            <span className="female-mvp-brand-mark">
+              <span className="female-mvp-brand-mark__signal" aria-hidden="true" />
+              <span>
+                <strong>Luna</strong>
+                <em>女性向私密匹配</em>
+              </span>
             </span>
-            {canShowMvpEntry("favorites") ? (
-              <button
-                type="button"
-                onClick={onOpenFavorites}
-                className="rounded-full border border-sky-100/80 bg-white/58 px-3 py-1.5 text-xs font-medium text-sky-600 shadow-[0_10px_26px_rgba(117,181,214,0.16)] transition-colors hover:bg-white/82 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/80"
-              >
-                收藏
-              </button>
-            ) : null}
+            <FemaleMvpAuthEntry
+              authPanel={authPanel}
+              buttonRef={femaleMvpAuthEntryButtonRef}
+              onOpenAuthPanel={() => setIsFemaleMvpAuthPanelOpen(true)}
+            />
           </div>
 
-          <section className="relative z-10 mx-auto flex w-full max-w-[25rem] flex-1 flex-col items-center justify-center pb-5 pt-8 text-center sm:max-w-[31rem]">
-            <CuteAstronaut
-              label="Luna 小宇航员"
-              className="female-mvp-astronaut"
-            />
-            <p className="mt-7 text-[11px] font-bold tracking-[0.22em] text-sky-500">
-              女性向 · 萌系宇航员推荐舱
-            </p>
-            <h1 className="mt-3 text-[2.35rem] font-black leading-[1.08] tracking-normal text-slate-900 sm:text-5xl">
-              找到适合你的第一颗小星球
-            </h1>
-            <p className="mt-5 max-w-[21rem] text-[15px] leading-7 text-slate-600 sm:max-w-md sm:text-base">
-              用 3 分钟轻问答，先从感受、场景和新手友好度出发，帮你避开参数焦虑，找到更安心的女性向推荐。
-            </p>
+          <section className="female-mvp-starmap-shell relative z-10 mx-auto grid min-h-0 w-full max-w-[30rem] flex-1 pb-0 pt-3 text-center sm:max-w-[34rem]">
+            <div className="female-mvp-intro-stage female-mvp-launch-shell" aria-hidden="true">
+              <span className="female-mvp-stage-backdrop" />
+              <span className="female-mvp-depth-wash" />
+              <div className="female-mvp-game-lobby-stage">
+                <span className="female-mvp-holo-grid" />
+                <span className="female-mvp-display-plinth" />
+                <span className="female-mvp-lens-ribbon" />
+                <span className="female-mvp-carousel-aperture" />
+                <span className="female-mvp-planet-continuity" />
+                <span className="female-mvp-portal-flare" />
+                <span className="female-mvp-luna-backdrop" />
+                <svg className="female-mvp-orbit-map" viewBox="0 0 460 360" focusable="false">
+                  <path
+                    className="female-mvp-orbit-path"
+                    d={FEMALE_MVP_ORBIT_PATH}
+                  />
+                </svg>
+                {FEMALE_MVP_HOME_PLANETS.map((planet) => {
+                  const pos = FEMALE_MVP_FINAL_PLANET_POSITION[planet.id];
+                  return (
+                    <span
+                      key={`${planet.id}-spark`}
+                      className={[
+                        "female-mvp-route-spark",
+                        `female-mvp-route-spark-${planet.id}`,
+                      ].join(" ")}
+                      style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+                    />
+                  );
+                })}
+                {FEMALE_MVP_HOME_PLANETS.map((planet) => {
+                  const pos = FEMALE_MVP_FINAL_PLANET_POSITION[planet.id];
+                  return (
+                    <span
+                      key={`${planet.id}-label`}
+                      className={[
+                        "female-mvp-planet-label",
+                        `female-mvp-planet-label-${planet.id}`,
+                      ].join(" ")}
+                      style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+                    >
+                      {planet.shortLabel}
+                    </span>
+                  );
+                })}
+                {FEMALE_MVP_HOME_PLANETS.map((planet) => {
+                  const pos = FEMALE_MVP_FINAL_PLANET_POSITION[planet.id];
+                  return (
+                    <span
+                      key={planet.id}
+                      aria-label={planet.label}
+                      className={[
+                        "female-mvp-orbit-planet",
+                        planet.className,
+                      ].join(" ")}
+                      style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
+                    >
+                      <img
+                        src={planet.src}
+                        alt=""
+                        className="female-mvp-orbit-planet-image"
+                      />
+                    </span>
+                  );
+                })}
+                <div className="female-mvp-astronaut">
+                  <span className="female-mvp-astronaut-thruster" aria-hidden="true" />
+                  <span className="female-mvp-astronaut-shimmer" aria-hidden="true" />
+                  <img
+                    src="/assets/luna-astronaut/yeah.png"
+                    alt="Luna 小宇航员"
+                    className="female-mvp-astronaut-image"
+                  />
+                </div>
+              </div>
+            </div>
 
-            <div className="mt-6 flex flex-wrap justify-center gap-2">
-              {["本地先体验", "隐私友好", "女性向"].map((chip) => (
-                <span
-                  key={chip}
-                  className="rounded-full border border-white/72 bg-white/64 px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-[0_8px_24px_rgba(148,163,184,0.12)]"
-                >
-                  {chip}
-                </span>
-              ))}
+            <div
+              data-intro-hidden={shouldHideFemaleMvpCopy ? "true" : "false"}
+              className="female-mvp-copy-reveal female-mvp-mission-card female-mvp-equipment-cabin"
+            >
+              <span className="female-mvp-cabin-orbit-rail" aria-hidden="true" />
+              <p className="female-mvp-briefing-line">
+                <span>女性向 · 私密匹配</span>
+              </p>
+              <h1 className="mt-2 text-[1.9rem] font-black leading-[1.03] tracking-[-0.04em] text-slate-950 sm:text-5xl">
+                找到适合你的装备
+              </h1>
+              <p className="female-mvp-copy-line mx-auto mt-3 max-w-[20rem] text-[13px] leading-6 text-slate-600 sm:max-w-md sm:text-base">
+                <span>按感受、场景和偏好</span>
+                <span>问答、直说，或抽一份小幸运</span>
+              </p>
+
+              <div className="female-mvp-mode-dock female-mvp-mission-nodes mt-4">
+                {[
+                  "问答",
+                  "直说",
+                  "幸运",
+                ].map((mode) => (
+                  <span
+                    key={mode}
+                    className="female-mvp-mission-node"
+                  >
+                    {mode}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <button
               type="button"
-              onClick={onStart}
-              className="female-mvp-primary-button mt-8 inline-flex w-full items-center justify-center rounded-[1.35rem] px-5 py-4 text-base font-black tracking-[0.1em] text-white shadow-[0_18px_42px_rgba(244,114,182,0.34)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/90 sm:max-w-[20rem]"
+              onClick={handleFemaleMvpStart}
+              disabled={isFemaleMvpLaunching}
+              data-intro-hidden={shouldHideFemaleMvpCopy ? "true" : "false"}
+              className="female-mvp-copy-reveal female-mvp-primary-button mt-2 inline-flex w-full items-center justify-center rounded-[1.35rem] px-5 py-3.5 text-base font-black tracking-[0.1em] text-white shadow-[0_18px_42px_rgba(244,114,182,0.34)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/90 sm:max-w-[20rem]"
             >
-              开始匹配
+              让 Luna 帮我看看
             </button>
+            <p
+              data-intro-hidden={shouldHideFemaleMvpCopy ? "true" : "false"}
+              className="female-mvp-copy-reveal female-mvp-trust-strip"
+            >
+              隐私友好 · 本地体验
+            </p>
           </section>
         </main>
 
@@ -812,6 +1236,41 @@ export function HomePage({
           onClose={closeFeedbackModal}
           onSubmit={handleFeedbackSubmit}
         />
+
+        {isFemaleMvpAuthPanelOpen ? (
+          <HomeAuthOverlay
+            variant="femaleMvp"
+            onClose={closeFemaleMvpAuthOverlay}
+            dialogRef={femaleMvpAuthDialogRef}
+            onKeyDown={handleFemaleMvpAuthOverlayKeyDown}
+          >
+            <div className="female-mvp-auth-modal-shell">
+              <span className="female-mvp-auth-orbit-glow" aria-hidden="true" />
+              <div className="female-mvp-auth-modal-header">
+                <span> Luna 私密舱 </span>
+                <p>{authPanel.userLabel ? "同步你的探索记录" : "登录后再保存也不迟"}</p>
+              </div>
+              <AuthPanel {...authPanel} surface="modal" />
+              {authPanel.userLabel ? (
+                <div className="female-mvp-auth-modal-actions">
+                  <button type="button" onClick={onOpenProfiles}>
+                    匹配档案
+                  </button>
+                  <button type="button" onClick={onOpenFavorites}>
+                    我的收藏
+                  </button>
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={closeFemaleMvpAuthOverlay}
+                className="female-mvp-auth-modal-close"
+              >
+                暂时不用
+              </button>
+            </div>
+          </HomeAuthOverlay>
+        ) : null}
       </>
     );
   }

@@ -1,81 +1,245 @@
+import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, MessageSquareText, ScrollText } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+
+const MATCH_MODE_OPTIONS = [
+  {
+    id: "quiz",
+    eyebrow: "轻问",
+    title: "轻问答",
+    description: "用几个温柔问题校准感受、场景和边界，适合第一次认真了解自己。",
+    meta: "新手友好 · 约 2 分钟",
+    guide: "慢慢来，我会陪你校准。",
+    cta: "开始轻问答",
+    asset: "/assets/luna-planets/modes/quiz.png",
+  },
+  {
+    id: "natural-language",
+    eyebrow: "直说",
+    title: "直接说",
+    description: "把感受、场景或限制直接说出来，Luna 会帮你整理成可匹配的线索。",
+    meta: "更自由 · 适合有想法时",
+    guide: "你说，我来整理。",
+    cta: "直接告诉 Luna",
+    asset: "/assets/luna-planets/modes/talk.png",
+  },
+  {
+    id: "lucky",
+    eyebrow: "今日",
+    title: "幸运抽取",
+    description: "不想分析时，把选择交给今日幸运色，抽一份轻松的探索灵感。",
+    meta: "随机灵感 · 轻松开始",
+    guide: "今天交给一点直觉。",
+    cta: "抽取今日幸运",
+    asset: "/assets/luna-planets/modes/lucky.png",
+  },
+] as const;
+
+type MatchModeId = (typeof MATCH_MODE_OPTIONS)[number]["id"];
+
+function getOrbitSlot(index: number, activeIndex: number) {
+  const total = MATCH_MODE_OPTIONS.length;
+  const diff = (index - activeIndex + total) % total;
+
+  if (diff === 0) return "active";
+  if (diff === 1) return "next";
+  return "prev";
+}
 
 export function MatchModePage({
   pageVariants,
   onSelectQuizMode,
   onSelectNaturalLanguageMode,
+  onSelectLuckyMode,
   onBackHome,
 }: {
   pageVariants: any;
   onSelectQuizMode: () => void;
   onSelectNaturalLanguageMode: () => void;
+  onSelectLuckyMode: () => void;
   onBackHome: () => void;
 }) {
+  const [activeModeId, setActiveModeId] = useState<MatchModeId>("quiz");
+  const [launchingModeId, setLaunchingModeId] = useState<MatchModeId | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const activeIndex = MATCH_MODE_OPTIONS.findIndex((mode) => mode.id === activeModeId);
+  const activeMode = MATCH_MODE_OPTIONS[activeIndex] ?? MATCH_MODE_OPTIONS[0];
+  const isLaunching = launchingModeId === activeMode.id;
+  const handlers = {
+    quiz: onSelectQuizMode,
+    "natural-language": onSelectNaturalLanguageMode,
+    lucky: onSelectLuckyMode,
+  } satisfies Record<MatchModeId, () => void>;
+
+  const rotateMode = (direction: -1 | 1) => {
+    if (launchingModeId) return;
+    const nextIndex =
+      (activeIndex + direction + MATCH_MODE_OPTIONS.length) % MATCH_MODE_OPTIONS.length;
+    setActiveModeId(MATCH_MODE_OPTIONS[nextIndex].id);
+  };
+
+  const startActiveMode = () => {
+    if (launchingModeId) return;
+    setLaunchingModeId(activeMode.id);
+    window.setTimeout(() => {
+      handlers[activeMode.id]();
+    }, 980);
+  };
+
   return (
-    <motion.div
+    <motion.main
       key="match-mode"
       variants={pageVariants}
       initial="initial"
       animate="in"
       exit="out"
-      className="relative min-h-screen w-full px-4 py-8 sm:px-6 md:px-8"
+      aria-busy={isLaunching}
+      className={[
+        "female-mvp-mode-page relative left-1/2 min-h-[100svh] w-screen -translate-x-1/2 overflow-hidden px-4 pb-[calc(1.15rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-slate-900",
+        isLaunching ? "female-mvp-mode-page-launching" : "",
+      ].join(" ")}
     >
-      <div className="mx-auto w-full max-w-4xl">
+      <div className="female-mvp-mode-stars" aria-hidden="true" />
+
+      <div className="relative z-10 mx-auto flex min-h-[calc(100svh-2.2rem)] w-full max-w-[28rem] flex-col">
         <button
           type="button"
           onClick={onBackHome}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+          className="female-mvp-mode-back inline-flex w-fit items-center gap-2 rounded-full px-4 py-2 text-xs font-black tracking-[0.1em] text-sky-500"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          返回首页
+          返回
         </button>
 
-        <div className="mb-8 text-center">
-          <p className="mb-2 font-mono text-[10px] tracking-[0.3em] text-cyan-200/48">
-            MATCH MODE
+        <section className="female-mvp-mode-hero mt-7">
+          <p className="female-mvp-mode-kicker">LUNA MATCH</p>
+          <h1 className="female-mvp-mode-title">选择探索方式</h1>
+          <p className="female-mvp-mode-subcopy">
+            按你的状态，进入一条更舒服的匹配路线。
           </p>
-          <h1 className="text-2xl font-light tracking-wide text-white sm:text-3xl">
-            开始匹配
-          </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-            你可以通过结构化答题，也可以直接用自然语言描述需求，我们都会在现有装备库中帮你匹配。
-          </p>
-        </div>
+        </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <section
+          className="female-mvp-mode-orbit-stage"
+          aria-label="选择匹配模式"
+          onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+          onTouchEnd={(event) => {
+            if (touchStartX == null) return;
+            const deltaX = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+            if (Math.abs(deltaX) > 34) {
+              rotateMode(deltaX < 0 ? 1 : -1);
+            }
+            setTouchStartX(null);
+          }}
+        >
+          <span className="female-mvp-mode-orbit-ring" aria-hidden="true" />
+          <span className="female-mvp-mode-orbit-ring female-mvp-mode-orbit-ring-soft" aria-hidden="true" />
           <button
             type="button"
-            onClick={onSelectQuizMode}
-            className="rounded-[1.6rem] border border-cyan-300/18 bg-cyan-400/[0.05] p-6 text-left transition-all hover:-translate-y-0.5 hover:border-cyan-300/35 hover:bg-cyan-300/[0.08]"
+            className="female-mvp-mode-orbit-control female-mvp-mode-orbit-control-prev"
+            onClick={() => rotateMode(-1)}
+            aria-label="切换到上一个模式"
           >
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-100">
-              <ScrollText className="h-5 w-5" />
-            </div>
-            <h2 className="text-lg font-medium text-white">答题匹配</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              逐步回答场景、静音、预算和刺激路线等问题，得到更结构化的匹配结果。
-            </p>
+            <ChevronLeft className="h-4 w-4" />
           </button>
-
           <button
             type="button"
-            onClick={onSelectNaturalLanguageMode}
-            className="rounded-[1.6rem] border border-violet-300/18 bg-violet-400/[0.05] p-6 text-left transition-all hover:-translate-y-0.5 hover:border-violet-300/35 hover:bg-violet-300/[0.08]"
+            className="female-mvp-mode-orbit-control female-mvp-mode-orbit-control-next"
+            onClick={() => rotateMode(1)}
+            aria-label="切换到下一个模式"
           >
-            <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-full border border-violet-300/20 bg-violet-300/10 text-violet-100">
-              <MessageSquareText className="h-5 w-5" />
-            </div>
-            <h2 className="text-lg font-medium text-white">自然语言匹配</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              直接描述你想要的感觉、场景或限制条件，我们会从现有装备库里帮你匹配。
-            </p>
-            <p className="mt-4 text-xs leading-5 text-slate-500">
-              你可以从这些方向来描述：想要的感觉、使用场景、预算静音、防水便携、经验状态。
-            </p>
+            <ChevronRight className="h-4 w-4" />
           </button>
-        </div>
+
+          {MATCH_MODE_OPTIONS.map((mode, index) => {
+            const slot = getOrbitSlot(index, activeIndex);
+            const isActive = slot === "active";
+
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => {
+                  if (!launchingModeId) setActiveModeId(mode.id);
+                }}
+                className={[
+                  "female-mvp-mode-planet-button",
+                  `female-mvp-mode-planet-button-${mode.id}`,
+                  `female-mvp-mode-planet-button-${slot}`,
+                ].join(" ")}
+              >
+                <span className="female-mvp-mode-planet-aura" aria-hidden="true" />
+                <img src={mode.asset} alt="" className="female-mvp-mode-planet-image" />
+                <span className="female-mvp-mode-planet-label">
+                  <span>{mode.eyebrow}</span>
+                  <strong>{mode.title}</strong>
+                </span>
+              </button>
+            );
+          })}
+
+          <span
+            className={[
+              "female-mvp-mode-portal",
+              isLaunching ? "female-mvp-mode-portal-active" : "",
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            <img src="/assets/luna-astronaut/mode-portal.png" alt="" />
+          </span>
+
+          <span
+            className={[
+              "female-mvp-mode-launch-warp",
+              isLaunching ? "female-mvp-mode-launch-warp-active" : "",
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            <span className="female-mvp-mode-launch-speedline female-mvp-mode-launch-speedline-one" />
+            <span className="female-mvp-mode-launch-speedline female-mvp-mode-launch-speedline-two" />
+            <span className="female-mvp-mode-launch-speedline female-mvp-mode-launch-speedline-three" />
+            <span className="female-mvp-mode-launch-iris" />
+          </span>
+
+          <div
+            className={[
+              "female-mvp-mode-luna-guide",
+              `female-mvp-mode-luna-guide-${activeMode.id}`,
+              isLaunching ? "female-mvp-mode-luna-guide-launching" : "",
+            ].join(" ")}
+          >
+            <span className="female-mvp-mode-luna-bubble">{activeMode.guide}</span>
+            <img
+              src="/assets/luna-astronaut/mode-guide.png"
+              alt=""
+              className="female-mvp-mode-luna-image female-mvp-mode-luna-image-guide"
+            />
+            <img
+              src="/assets/luna-astronaut/mode-dive.png"
+              alt=""
+              className="female-mvp-mode-luna-image female-mvp-mode-luna-image-dive"
+            />
+          </div>
+        </section>
+
+        <section className="female-mvp-mode-selected-panel" aria-live="polite">
+          <p className="female-mvp-mode-selected-meta">{activeMode.meta}</p>
+          <p className="female-mvp-mode-selected-summary">{activeMode.description}</p>
+          <button
+            type="button"
+            onClick={startActiveMode}
+            disabled={Boolean(launchingModeId)}
+            className="female-mvp-mode-start-button"
+          >
+            {activeMode.cta}
+          </button>
+        </section>
+
+        <p className="mt-auto pt-4 text-center text-xs font-bold tracking-[0.08em] text-slate-400">
+          隐私友好 · 本地体验 · 可随时返回
+        </p>
       </div>
-    </motion.div>
+    </motion.main>
   );
 }

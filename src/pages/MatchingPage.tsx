@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { motion } from "motion/react";
 import { RotateCcw, Sparkles } from "lucide-react";
-import { CuteAstronaut } from "../components/CuteAstronaut.tsx";
 import { getGsapDuration } from "../lib/gsap-motion.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
 
@@ -25,13 +24,13 @@ export function MatchingPage({
     "正在整理你的偏好小星星...",
     "正在为 Luna 打开推荐舱...",
     "正在校准舒适度和隐私感...",
-    "正在生成第一版星球清单...",
+    "正在生成第一版装备清单...",
   ];
   const isLoadingMode = mode === "loading";
   const statusText =
     isLoadingMode
       ? loadingStep === -1
-        ? "星球信号暂时断开"
+        ? "装备信号暂时断开"
         : loadingText[loadingStep] || "正在准备推荐舱"
       : isAiMatching
         ? "Luna 正在认真匹配..."
@@ -83,14 +82,40 @@ export function MatchingPage({
       >
         <div className="female-mvp-matching__reveal relative">
           <div className="female-mvp-matching__halo" aria-hidden="true" />
-          <CuteAstronaut label="Luna 正在匹配你的推荐星球" className="female-mvp-matching__astronaut" />
+          <span
+            className="female-mvp-matching__planet female-mvp-matching__planet-safety"
+            aria-label="安心星"
+          >
+            <img
+              src="/assets/luna-planets/safety.png"
+              alt=""
+              className="female-mvp-matching__planet-image"
+            />
+          </span>
+          <span
+            className="female-mvp-matching__planet female-mvp-matching__planet-explore"
+            aria-label="探索星"
+          >
+            <img
+              src="/assets/luna-planets/explore.png"
+              alt=""
+              className="female-mvp-matching__planet-image"
+            />
+          </span>
+          <div className="female-mvp-matching__astronaut" role="img" aria-label="Luna 正在匹配你的推荐装备">
+            <img
+              src="/assets/luna-astronaut/yeah.png"
+              alt=""
+              className="female-mvp-matching__astronaut-image"
+            />
+          </div>
         </div>
         <span className="female-mvp-matching__reveal mt-7 inline-flex items-center gap-2 rounded-full border border-white/76 bg-white/66 px-4 py-2 text-xs font-black tracking-[0.12em] text-rose-500 shadow-[0_14px_34px_rgba(244,114,182,0.16)] backdrop-blur-md">
           <Sparkles className="h-3.5 w-3.5 text-sky-500" />
-          LUNA 星球校准中
+          LUNA 装备校准中
         </span>
         <h2 className="female-mvp-matching__reveal mt-5 text-2xl font-black leading-tight tracking-normal text-slate-900">
-          正在为你挑一颗舒服的小星球
+          正在为你挑一件舒服的装备
         </h2>
         <p className="female-mvp-matching__reveal mt-3 text-sm font-semibold leading-7 tracking-normal text-slate-600">
           {statusText}

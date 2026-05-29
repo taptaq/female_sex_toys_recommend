@@ -568,6 +568,9 @@ export function ResultsPage({
       exit="out"
       className={[
         "results-report-shell relative isolate w-full space-y-6 overflow-x-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4",
+        isFemaleMvp
+          ? "min-h-[100svh] px-4 pt-[calc(1.25rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-7"
+          : "",
         isFemaleMvp ? "female-mvp-results" : "",
       ].join(" ")}
     >
@@ -589,7 +592,7 @@ export function ResultsPage({
             isFemaleMvp ? "font-black text-[#342936]" : "font-light text-white",
           ].join(" ")}
         >
-          {isFemaleMvp ? "这颗小星球可以先看" : "这次更贴近你的，是这条路线"}
+          {isFemaleMvp ? "这套装备可以先看" : "这次更贴近你的，是这条路线"}
         </h2>
         <div className="mx-auto mb-4 flex max-w-xl flex-wrap justify-center gap-1.5">
           {visibleResultTags.map((tag, index) => (
@@ -753,7 +756,7 @@ export function ResultsPage({
                         onClick={() =>
                           onEditQuizCondition(condition as ResultEditableCondition)
                         }
-                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-200 transition-colors hover:border-cyan-300/24 hover:bg-cyan-300/[0.08] hover:text-white"
+                        className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-sky-50 transition-colors hover:border-sky-200/40 hover:bg-sky-100/[0.12] hover:text-white"
                       >
                         {label}
                       </button>
@@ -896,7 +899,7 @@ export function ResultsPage({
                         {comparisonRows.map((row) => (
                           <div
                             key={`mobile-${product.id}-${row.id}`}
-                            className="rounded-xl border border-white/8 bg-black/10 px-3 py-2.5"
+                            className="rounded-xl border border-white/10 bg-slate-900/10 px-3 py-2.5"
                           >
                             <p className="text-[10px] text-slate-500">{row.label}</p>
                             <p className="mt-1 text-[11px] leading-5 text-slate-200">

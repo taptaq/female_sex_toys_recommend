@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { motion } from "motion/react";
 import { ArrowLeft, CircleDashed, Hexagon, Sparkles, Triangle } from "lucide-react";
-import { CuteAstronaut } from "../components/CuteAstronaut.tsx";
 import type { AnswerState, Question } from "../data/mock.ts";
 import { getGsapDuration } from "../lib/gsap-motion.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
@@ -80,7 +79,7 @@ export function QuizPage({
             className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/62 px-3 py-1.5 text-xs font-semibold tracking-normal text-slate-600 shadow-[0_10px_26px_rgba(196,124,146,0.14)] backdrop-blur-md transition-colors hover:bg-white/86 hover:text-rose-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200/90"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>返回首页</span>
+            <span>返回</span>
           </button>
           {onBackResults ? (
             <button
@@ -145,10 +144,13 @@ export function QuizPage({
         <div className="pointer-events-none absolute -bottom-16 -left-14 h-44 w-44 rounded-full bg-rose-200/46 blur-3xl" />
         <div className="relative z-10">
           <div className="flex flex-col items-center text-center">
-            <CuteAstronaut
-              label="Luna 正在帮你校准"
-              className="female-mvp-quiz__astronaut"
-            />
+            <div className="female-mvp-quiz__astronaut" role="img" aria-label="Luna 正在帮你校准">
+              <img
+                src="/assets/luna-astronaut/yeah.png"
+                alt=""
+                className="female-mvp-quiz__astronaut-image"
+              />
+            </div>
             <span className="mt-5 inline-flex items-center rounded-full border border-white/76 bg-white/64 px-3.5 py-1.5 text-xs font-bold tracking-[0.12em] text-rose-500 shadow-[0_10px_26px_rgba(244,114,182,0.14)]">
               Luna 正在帮你校准
             </span>

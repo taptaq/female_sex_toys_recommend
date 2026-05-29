@@ -617,7 +617,7 @@ export default function App() {
     setNaturalLanguagePrompt("");
     setNaturalLanguageQuery("");
     setNaturalLanguageError(null);
-    navigateTo(isFemaleMvp ? "/quiz" : "/match-mode");
+    navigateTo("/match-mode");
   };
 
   const handleStartQuizMode = () => {
@@ -632,6 +632,38 @@ export default function App() {
     setMatchInputMode("natural-language");
     setNaturalLanguageError(null);
     navigateTo("/match-text");
+  };
+
+  const handleStartLuckyMode = () => {
+    const luckyAnswers = withFemaleMvpDefaults({
+      tags: ["幸运抽取", "轻松探索", "女性向"],
+      budget: [100, 500],
+      maxDb: 45,
+      appearance: "high_disguise",
+      experienceLevel: "balanced",
+    });
+    const targetQuestions = isFemaleMvp
+      ? femaleMvpQuestionFlow
+      : getActiveQuestions(luckyAnswers.gender);
+
+    setMatchInputMode("quiz");
+    setNaturalLanguagePrompt("");
+    setNaturalLanguageQuery("");
+    setNaturalLanguageError(null);
+    setAnswers(luckyAnswers);
+    setAnswerPath([]);
+    setStep(targetQuestions.length);
+    setIsAiMatching(false);
+
+    if (!hasFetched) {
+      fetchProducts().then((data) =>
+        calculateResults(luckyAnswers, targetQuestions, data, []),
+      );
+    } else {
+      calculateResults(luckyAnswers, targetQuestions, allProducts, []);
+    }
+
+    navigateTo("/quiz");
   };
 
   const handleSubmitNaturalLanguageMatch = async () => {
@@ -2183,7 +2215,7 @@ ${JSON.stringify(context.backupCandidates)}
     setShoppingGuidance(clearedState.shoppingGuidance);
     setResultRecalibrationError(null);
     setIsRecalibratingResults(false);
-    navigateTo("/");
+    navigateTo("/match-mode");
   };
 
   const handleBackFromProfiles = () => {
@@ -2251,6 +2283,7 @@ ${JSON.stringify(context.backupCandidates)}
             pageVariants={pageVariants}
             onSelectQuizMode={handleStartQuizMode}
             onSelectNaturalLanguageMode={handleStartNaturalLanguageMode}
+            onSelectLuckyMode={handleStartLuckyMode}
             onBackHome={() => navigateTo("/")}
           />
         </div>
@@ -2355,6 +2388,8 @@ ${JSON.stringify(context.backupCandidates)}
     effectiveShellRoute === "/knowledge" && effectiveShellKnowledgeTopicSlug != null;
   const isKnowledgeHubRoute =
     effectiveShellRoute === "/knowledge" && effectiveShellKnowledgeTopicSlug == null;
+  const isFemaleMvpHomeRoute = effectiveShellRoute === "/" && isFemaleMvp;
+  const isFemaleMvpResultsRoute = effectiveShellRoute === "/results" && isFemaleMvp;
   const authPanel = {
     isConfigured: isSupabaseAuthConfigured(),
     userLabel:
@@ -2367,7 +2402,11 @@ ${JSON.stringify(context.backupCandidates)}
     onSignOut: handleSignOut,
   };
   const shellContainerClassName =
-    isKnowledgeHubRoute
+    isFemaleMvpHomeRoute
+      ? "max-w-none"
+      : isFemaleMvpResultsRoute
+      ? "max-w-none"
+      : isKnowledgeHubRoute
       ? "max-w-none"
       : isShellKnowledgeDetailRoute
         ? "max-w-none"
@@ -2401,6 +2440,10 @@ ${JSON.stringify(context.backupCandidates)}
       ? "h-dvh min-h-dvh p-0"
     : effectiveShellRoute === "/quiz"
       ? "h-dvh min-h-dvh p-0"
+    : isFemaleMvpResultsRoute
+      ? "min-h-screen p-0"
+    : isFemaleMvpHomeRoute
+      ? "h-dvh min-h-dvh p-0"
     : "min-h-screen p-4 sm:p-6 md:p-8";
   const themeCosmosVariant: ThemeCosmosVariant =
     shellRoute === "/"
@@ -2418,7 +2461,8 @@ ${JSON.stringify(context.backupCandidates)}
       : shellRoute === "/knowledge"
         ? "knowledge-hub"
       : "home";
-  const shouldRenderThemeCosmosLayer = currentRoute !== "/" && shellRoute !== "/";
+  const shouldRenderThemeCosmosLayer =
+    currentRoute !== "/" && shellRoute !== "/" && !isFemaleMvpResultsRoute;
 
   return (
     <div
@@ -2426,6 +2470,8 @@ ${JSON.stringify(context.backupCandidates)}
         "theme-synced-page relative flex flex-col items-center",
         shellAlignmentClassName,
         effectiveShellRoute === "/" ? "theme-home-route" : "",
+        isFemaleMvpHomeRoute ? "female-mvp-home-route" : "",
+        isFemaleMvpResultsRoute ? "female-mvp-results-route" : "",
         shellViewportClassName,
         shellOverflowClassName,
       ].filter(Boolean).join(" ")}

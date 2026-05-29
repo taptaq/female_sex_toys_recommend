@@ -72,9 +72,38 @@ test("quiz page uses mobile female MVP presentation", () => {
   assert.match(html, /female-mvp-quiz/);
   assert.match(html, /overflow-y-auto/);
   assert.match(html, /Luna 正在帮你校准/);
+  assert.match(html, /female-mvp-quiz__astronaut-image/);
+  assert.match(html, /\/assets\/luna-astronaut\/yeah\.png/);
+  assert.doesNotMatch(html, /cute-astronaut__figure/);
   assert.match(html, /刺激路径/);
   assert.doesNotMatch(html, /SCAN PHASE/);
   assert.doesNotMatch(html, /SIGNAL CHANNEL/);
+});
+
+test("quiz page primary back action returns to the previous layer label", () => {
+  const html = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={0}
+      activeQuestions={questions}
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.match(html, />返回<\/span>/);
+  assert.doesNotMatch(html, /返回首页/);
+});
+
+test("quiz page primary back action routes to the match mode layer", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+  const [, backHandler] = source.match(
+    /const handleBackHomeFromQuiz = \(\) => \{([\s\S]*?)\n  \};/,
+  ) ?? ["", ""];
+
+  assert.match(backHandler, /navigateTo\("\/match-mode"\)/);
+  assert.doesNotMatch(backHandler, /navigateTo\("\/"\)/);
 });
 
 test("female MVP quiz shell aligns to the top so short mobile viewports can scroll", () => {
@@ -113,9 +142,7 @@ test("quiz female MVP ambient elements pause when animation is disabled", () => 
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
   assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__stars/);
-  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__figure/);
-  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__bubble/);
-  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut \.cute-astronaut__star/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut-image/);
 });
 
 test("quiz page reassures undecided users that the system can guide them forward", () => {
