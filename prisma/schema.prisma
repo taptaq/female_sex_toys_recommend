@@ -718,6 +718,34 @@ model recommender_toys {
   @@schema("public")
 }
 
+model female_recommender_toys {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  original_id   String?   @db.Uuid
+  name          String
+  safe_display_name String?
+  price         Decimal?  @db.Decimal(10, 2)
+  max_db        Int?
+  waterproof    Int?
+  appearance    String?
+  physical_form String?
+  motor_type    String?
+  gender        String?
+  brand         String?
+  material      String?
+  image_url     String?
+  raw_description String? @db.Text
+  type_code     String?
+  subtype_code  String?
+  recommendation_features Json? @db.JsonB
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)], map: "idx_female_recommender_toys_created_at")
+  @@index([original_id], map: "idx_female_recommender_toys_original_id")
+  @@index([gender, type_code, subtype_code], map: "idx_female_recommender_toys_filter_codes")
+  @@schema("public")
+}
+
 model knowledge_nebula_topics {
   slug        String                   @id @db.Text
   title       String                   @db.Text

@@ -42,6 +42,7 @@ function createMockResponse() {
 
 test("createListRecommenderToysHandler caches the normalized library payload and sets CDN-friendly headers", async () => {
   let queryCount = 0;
+  let capturedSql = "";
   let now = 1000;
 
   const handler = createListRecommenderToysHandler({
@@ -49,8 +50,9 @@ test("createListRecommenderToysHandler caches the normalized library payload and
     now: () => now,
     cacheTtlMs: 60_000,
     pool: {
-      query: async () => {
+      query: async (sql: string) => {
         queryCount += 1;
+        capturedSql = sql;
         return {
           rows: [
             {
@@ -93,6 +95,8 @@ test("createListRecommenderToysHandler caches the normalized library payload and
   await handler({} as never, first.response as never, (() => {}) as never);
 
   assert.equal(queryCount, 1);
+  assert.match(capturedSql, /public\.female_recommender_toys/i);
+  assert.doesNotMatch(capturedSql, /FROM public\.recommender_toys/i);
   assert.equal(first.readStatusCode(), 200);
   assert.equal(
     first.readHeader("cache-control"),

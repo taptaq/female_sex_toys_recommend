@@ -570,8 +570,9 @@ app.delete(
 );
 
 export function ensureServerReady() {
-  return Promise.resolve().then(() => {
+  return Promise.resolve().then(async () => {
     ensureDatabaseConfigured();
+    await ensureRecommenderItemsSchema(pool);
     console.log("🪐 [Server] 后端运行时配置已就绪");
   });
 }

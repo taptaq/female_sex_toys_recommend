@@ -21,6 +21,8 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
       image_url TEXT,
       raw_description TEXT,
       type_code TEXT,
+      subtype_code TEXT,
+      recommendation_features JSONB,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )
@@ -37,6 +39,11 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
   `);
 
   await pool.query(`
+    ALTER TABLE public.recommender_toys
+    ADD COLUMN IF NOT EXISTS recommendation_features JSONB
+  `);
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_recommender_toys_created_at
     ON public.recommender_toys(created_at DESC)
   `);
@@ -50,5 +57,38 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_recommender_toys_filter_codes
     ON public.recommender_toys(gender, type_code, subtype_code)
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS public.female_recommender_toys (
+      LIKE public.recommender_toys INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES
+    )
+  `);
+
+  await pool.query(`
+    TRUNCATE TABLE public.female_recommender_toys
+  `);
+
+  await pool.query(`
+    INSERT INTO public.female_recommender_toys
+    SELECT *
+    FROM public.recommender_toys
+    WHERE gender = 'female'
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_female_recommender_toys_created_at
+    ON public.female_recommender_toys(created_at DESC)
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_female_recommender_toys_original_id
+    ON public.female_recommender_toys(original_id)
+    WHERE original_id IS NOT NULL
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_female_recommender_toys_filter_codes
+    ON public.female_recommender_toys(gender, type_code, subtype_code)
   `);
 }

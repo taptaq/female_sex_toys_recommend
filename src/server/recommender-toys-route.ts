@@ -270,7 +270,7 @@ export function createListRecommenderToysHandler({
           c.focus AS competitor_focus,
           c.philosophy AS competitor_philosophy,
           c.major_user_group_profile AS competitor_major_user_group_profile
-        FROM public.recommender_toys t
+        FROM public.female_recommender_toys t
         LEFT JOIN public.products p ON t.original_id = p.id
         LEFT JOIN public.competitors c ON p.competitor_id = c.id
         ORDER BY t.created_at DESC
