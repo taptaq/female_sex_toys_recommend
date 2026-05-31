@@ -445,6 +445,7 @@ export default function App() {
   const [themeId, setThemeId] = useState<AppThemeId>(() => readStoredAppTheme());
   const themeSwitchRunRef = useRef(0);
   const themeSwitchStabilizeTimeoutRef = useRef<number | null>(null);
+  const [shouldPlayQuizLanding, setShouldPlayQuizLanding] = useState(false);
 
   const activeQuestions: Question[] = isFemaleMvp
     ? femaleMvpQuestionFlow
@@ -504,6 +505,9 @@ export default function App() {
   const navigateTo = (route: AppRoute, replace = false) => {
     pushAppRoute(route, replace);
     setCurrentRoute(route);
+    if (route !== "/quiz") {
+      setShouldPlayQuizLanding(false);
+    }
     if (route !== "/knowledge") {
       setSelectedKnowledgeTopicSlug(undefined);
       setSelectedKnowledgeSectionId(undefined);
@@ -625,6 +629,8 @@ export default function App() {
     setNaturalLanguagePrompt("");
     setNaturalLanguageQuery("");
     setNaturalLanguageError(null);
+    setStep(0);
+    setShouldPlayQuizLanding(true);
     navigateTo("/quiz");
   };
 
@@ -2276,8 +2282,7 @@ ${JSON.stringify(context.backupCandidates)}
 
   if (currentRoute === "/match-mode") {
     return (
-      <div className="theme-synced-page relative min-h-screen overflow-hidden">
-        <ThemeCosmosLayer variant="quiz" />
+      <div className="theme-synced-page female-mvp-soft-shell relative min-h-screen overflow-hidden">
         <div className="relative z-10">
           <MatchModePage
             pageVariants={pageVariants}
@@ -2293,8 +2298,7 @@ ${JSON.stringify(context.backupCandidates)}
 
   if (currentRoute === "/match-text") {
     return (
-      <div className="theme-synced-page relative min-h-screen overflow-hidden">
-        <ThemeCosmosLayer variant="quiz" />
+      <div className="theme-synced-page female-mvp-soft-shell relative min-h-screen overflow-hidden">
         <div className="relative z-10">
           <NaturalLanguageMatchPage
             pageVariants={pageVariants}
@@ -2389,7 +2393,11 @@ ${JSON.stringify(context.backupCandidates)}
   const isKnowledgeHubRoute =
     effectiveShellRoute === "/knowledge" && effectiveShellKnowledgeTopicSlug == null;
   const isFemaleMvpHomeRoute = effectiveShellRoute === "/" && isFemaleMvp;
+  const isFemaleMvpQuizRoute =
+    currentRoute === "/quiz" && step < activeQuestions.length && isFemaleMvp;
   const isFemaleMvpResultsRoute = effectiveShellRoute === "/results" && isFemaleMvp;
+  const isFemaleMvpSoftShellRoute =
+    isFemaleMvpHomeRoute || isFemaleMvpQuizRoute || isFemaleMvpResultsRoute;
   const authPanel = {
     isConfigured: isSupabaseAuthConfigured(),
     userLabel:
@@ -2462,7 +2470,10 @@ ${JSON.stringify(context.backupCandidates)}
         ? "knowledge-hub"
       : "home";
   const shouldRenderThemeCosmosLayer =
-    currentRoute !== "/" && shellRoute !== "/" && !isFemaleMvpResultsRoute;
+    currentRoute !== "/" &&
+    shellRoute !== "/" &&
+    !isFemaleMvpQuizRoute &&
+    !isFemaleMvpResultsRoute;
 
   return (
     <div
@@ -2470,6 +2481,7 @@ ${JSON.stringify(context.backupCandidates)}
         "theme-synced-page relative flex flex-col items-center",
         shellAlignmentClassName,
         effectiveShellRoute === "/" ? "theme-home-route" : "",
+        isFemaleMvpSoftShellRoute ? "female-mvp-soft-shell" : "",
         isFemaleMvpHomeRoute ? "female-mvp-home-route" : "",
         isFemaleMvpResultsRoute ? "female-mvp-results-route" : "",
         shellViewportClassName,
@@ -2558,6 +2570,7 @@ ${JSON.stringify(context.backupCandidates)}
           onReset={resetQuiz}
           matchInputMode={matchInputMode}
           naturalLanguageQuery={naturalLanguageQuery}
+          shouldPlayQuizLanding={shouldPlayQuizLanding && step === 0}
           favoriteProductIds={favoriteProductIds}
           onToggleFavorite={handleToggleFavorite}
         />

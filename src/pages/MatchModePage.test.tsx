@@ -6,6 +6,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { MatchModePage } from "./MatchModePage.tsx";
 
+function getCssBlock(source: string, selector: string) {
+  return source.match(new RegExp(`^${selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{[^}]*\\}`, "m"))?.[0] ?? "";
+}
+
 test("match mode page renders quiz and natural language entry options", () => {
   const html = renderToStaticMarkup(
     <MatchModePage
@@ -66,7 +70,7 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(source, /\.female-mvp-mode-luna-bubble\s*\{[\s\S]*?max-width: 5\.05rem;/);
   const launchingGuideBlock = source.match(/\.female-mvp-mode-luna-guide-launching\s*\{[^}]*\}/)?.[0] ?? "";
   assert.doesNotMatch(launchingGuideBlock, /transform: translate3d/);
-  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: female-mvp-mode-luna-guide-handoff 180ms/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: female-mvp-mode-luna-guide-handoff 260ms/);
   assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-dive\s*\{[\s\S]*?animation: female-mvp-mode-luna-dive 960ms/);
   assert.doesNotMatch(source, /female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active\s*\{[\s\S]*?animation: female-mvp-mode-launch-pulse/);
   assert.match(pageSource, /window\.setTimeout\(\(\) => \{[\s\S]*?\}, 980\);/);
@@ -81,7 +85,68 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(source, /\.female-mvp-mode-planet-button-lucky\[aria-pressed="true"\] \.female-mvp-mode-planet-aura\s*\{[\s\S]*?animation: female-mvp-mode-lucky-spark/);
   assert.match(source, /\.female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active \.female-mvp-mode-planet-image\s*\{[\s\S]*?animation: female-mvp-mode-active-planet-warp 960ms/);
   assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-speedline\s*\{[\s\S]*?animation: female-mvp-mode-launch-speedline-flight 720ms/);
-  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-iris\s*\{[\s\S]*?animation: female-mvp-mode-launch-iris-warp 920ms/);
-  assert.match(source, /44%\s*\{[\s\S]*?transform: translate3d\(4\.65rem, -1\.55rem, 0\) rotate\(22deg\) scale\(0\.56\);/);
-  assert.match(source, /100%\s*\{[\s\S]*?transform: translate3d\(7\.35rem, -0\.2rem, 0\) rotate\(34deg\) scale\(0\.07\);/);
+  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-iris\s*\{[\s\S]*?animation: female-mvp-mode-launch-iris-warp 960ms/);
+  assert.match(source, /46%\s*\{[\s\S]*?transform: translate3d\(4\.5rem, -1\.4rem, 0\) rotate\(20deg\) scale\(0\.62\);/);
+  assert.match(source, /72%\s*\{[\s\S]*?transform: translate3d\(6\.28rem, -0\.74rem, 0\) rotate\(26deg\) scale\(0\.3\);/);
+  assert.match(source, /100%\s*\{[\s\S]*?transform: translate3d\(7\.2rem, -0\.08rem, 0\) rotate\(30deg\) scale\(0\.1\);/);
+});
+
+test("match mode planet switching eases between orbit slots without delaying clicks", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+  const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
+  const planetButtonBlock = getCssBlock(source, ".female-mvp-mode-planet-button");
+  const planetImageBlock = getCssBlock(source, ".female-mvp-mode-planet-image");
+
+  assert.match(planetButtonBlock, /opacity 520ms ease/);
+  assert.match(planetButtonBlock, /transform 680ms cubic-bezier\(0\.18, 0\.86, 0\.2, 1\)/);
+  assert.match(planetImageBlock, /will-change: transform;/);
+  assert.doesNotMatch(pageSource, /setTimeout\(\(\) => \{\s*setActiveModeId/);
+});
+
+test("match mode selected panel sits lower below the active planet", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+
+  assert.match(source, /\.female-mvp-mode-selected-panel\s*\{[\s\S]*?margin-top: 1\.5rem;/);
+});
+
+test("match mode touch tracking does not trigger extra React renders", () => {
+  const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
+
+  assert.match(pageSource, /import \{ useRef, useState \} from "react";/);
+  assert.match(pageSource, /const touchStartXRef = useRef<number \| null>\(null\);/);
+  assert.doesNotMatch(pageSource, /const \[touchStartX/);
+  assert.doesNotMatch(pageSource, /setTouchStartX/);
+});
+
+test("match mode animations avoid repaint-heavy animated properties", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+  const planetButtonBlock = getCssBlock(source, ".female-mvp-mode-planet-button");
+  const quizCalibrateKeyframes = source.slice(
+    source.indexOf("@keyframes female-mvp-mode-quiz-calibrate"),
+    source.indexOf("@keyframes female-mvp-mode-talk-signal"),
+  );
+  const luckySparkKeyframes = source.slice(
+    source.indexOf("@keyframes female-mvp-mode-lucky-spark"),
+    source.indexOf("@keyframes female-mvp-mode-luna-float"),
+  );
+  const activePlanetWarpKeyframes = source.slice(
+    source.indexOf("@keyframes female-mvp-mode-active-planet-warp"),
+    source.indexOf("@keyframes female-mvp-speed-pulse"),
+  );
+
+  assert.doesNotMatch(quizCalibrateKeyframes, /box-shadow:/);
+  assert.doesNotMatch(luckySparkKeyframes, /filter:/);
+  assert.doesNotMatch(activePlanetWarpKeyframes, /filter:/);
+  assert.match(planetButtonBlock, /will-change: transform, opacity;/);
+  assert.doesNotMatch(planetButtonBlock, /transition:[\s\S]*filter/);
+});
+
+test("match mode does not mount a duplicate cosmos background behind its own starfield", () => {
+  const appSource = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+  const matchModeRouteBlock =
+    appSource.match(/if \(currentRoute === "\/match-mode"\) \{[\s\S]*?\n  \}/)?.[0] ?? "";
+
+  assert.match(matchModeRouteBlock, /<MatchModePage/);
+  assert.match(matchModeRouteBlock, /female-mvp-soft-shell/);
+  assert.doesNotMatch(matchModeRouteBlock, /<ThemeCosmosLayer/);
 });

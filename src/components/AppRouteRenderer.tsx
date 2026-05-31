@@ -113,6 +113,7 @@ type AppRouteRendererProps = {
   onReset: () => void;
   matchInputMode?: "quiz" | "natural-language";
   naturalLanguageQuery?: string;
+  shouldPlayQuizLanding?: boolean;
   favoriteProductIds: Set<string>;
   onToggleFavorite: (product: Product) => void | Promise<void>;
 };
@@ -183,6 +184,7 @@ export function AppRouteRenderer({
   onReset,
   matchInputMode = "quiz",
   naturalLanguageQuery = "",
+  shouldPlayQuizLanding = false,
   favoriteProductIds,
   onToggleFavorite,
 }: AppRouteRendererProps) {
@@ -211,6 +213,7 @@ export function AppRouteRenderer({
             pageVariants={pageVariants}
             step={step}
             activeQuestions={activeQuestions}
+            shouldPlayLanding={shouldPlayQuizLanding}
             onSelectOption={onSelectOption}
             onBackQuestion={onBackQuestion}
             onBackHome={onBackHome}

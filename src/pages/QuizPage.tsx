@@ -6,6 +6,12 @@ import type { AnswerState, Question } from "../data/mock.ts";
 import { getGsapDuration } from "../lib/gsap-motion.ts";
 import { usePagePerformanceState } from "../lib/page-performance.ts";
 
+const QUIZ_PROMPT_ART = [
+  "/assets/quiz-art/prompt-orbit.png",
+  "/assets/quiz-art/prompt-star.png",
+  "/assets/quiz-art/prompt-cloud.png",
+] as const;
+
 export function QuizPage({
   pageVariants,
   step,
@@ -15,10 +21,12 @@ export function QuizPage({
   onBackHome,
   onBackResults,
   onJumpToQuestion,
+  shouldPlayLanding = false,
 }: {
   pageVariants: any;
   step: number;
   activeQuestions: Question[];
+  shouldPlayLanding?: boolean;
   onSelectOption: (
     field: keyof AnswerState,
     value: AnswerState[keyof AnswerState],
@@ -32,6 +40,7 @@ export function QuizPage({
   onJumpToQuestion?: (questionIndex: number) => void;
 }) {
   const currentQuestion = activeQuestions[step];
+  const promptArtSrc = QUIZ_PROMPT_ART[step % QUIZ_PROMPT_ART.length];
   const { shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -137,16 +146,34 @@ export function QuizPage({
 
       <div
         ref={cardRef}
-        className="relative z-10 mx-auto mt-4 w-full max-w-xl shrink-0 overflow-hidden rounded-[2rem] border border-white/78 bg-white/70 p-5 text-slate-800 shadow-[0_24px_80px_rgba(196,124,146,0.2)] backdrop-blur-xl sm:mt-6 sm:rounded-[2.4rem] sm:p-8"
+        className="female-mvp-quiz-card relative z-10 mx-auto mt-4 w-full max-w-xl shrink-0 rounded-[2rem] border border-white/78 bg-white/70 p-5 text-slate-800 shadow-[0_24px_80px_rgba(196,124,146,0.2)] backdrop-blur-xl sm:mt-6 sm:rounded-[2.4rem] sm:p-8"
       >
+        <div className="female-mvp-quiz-card__clip" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent" />
         <div className="pointer-events-none absolute -right-14 -top-16 h-40 w-40 rounded-full bg-sky-200/42 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-14 h-44 w-44 rounded-full bg-rose-200/46 blur-3xl" />
+        <div className="female-mvp-quiz__prompt-art" aria-hidden="true">
+          <img
+            src={promptArtSrc}
+            alt=""
+            className="female-mvp-quiz__prompt-art-image"
+          />
+        </div>
         <div className="relative z-10">
           <div className="flex flex-col items-center text-center">
-            <div className="female-mvp-quiz__astronaut" role="img" aria-label="Luna 正在帮你校准">
+            <div
+              className={[
+                "female-mvp-quiz__astronaut",
+                shouldPlayLanding ? "female-mvp-quiz__astronaut-landing" : "",
+              ].join(" ")}
+              role="img"
+              aria-label="Luna 正在帮你校准"
+            >
+              {shouldPlayLanding ? (
+                <span className="female-mvp-quiz__entry-glow" aria-hidden="true" />
+              ) : null}
               <img
-                src="/assets/luna-astronaut/yeah.png"
+                src="/assets/quiz-art/luna.png"
                 alt=""
                 className="female-mvp-quiz__astronaut-image"
               />

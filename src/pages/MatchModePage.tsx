@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -61,7 +61,7 @@ export function MatchModePage({
 }) {
   const [activeModeId, setActiveModeId] = useState<MatchModeId>("quiz");
   const [launchingModeId, setLaunchingModeId] = useState<MatchModeId | null>(null);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
   const activeIndex = MATCH_MODE_OPTIONS.findIndex((mode) => mode.id === activeModeId);
   const activeMode = MATCH_MODE_OPTIONS[activeIndex] ?? MATCH_MODE_OPTIONS[0];
   const isLaunching = launchingModeId === activeMode.id;
@@ -122,14 +122,17 @@ export function MatchModePage({
         <section
           className="female-mvp-mode-orbit-stage"
           aria-label="选择匹配模式"
-          onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
+          onTouchStart={(event) => {
+            touchStartXRef.current = event.touches[0]?.clientX ?? null;
+          }}
           onTouchEnd={(event) => {
+            const touchStartX = touchStartXRef.current;
             if (touchStartX == null) return;
             const deltaX = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
             if (Math.abs(deltaX) > 34) {
               rotateMode(deltaX < 0 ? 1 : -1);
             }
-            setTouchStartX(null);
+            touchStartXRef.current = null;
           }}
         >
           <span className="female-mvp-mode-orbit-ring" aria-hidden="true" />

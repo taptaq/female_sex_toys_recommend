@@ -504,6 +504,10 @@ test("female MVP home gives Luna only low-frequency gentle idle details", () => 
   assert.match(html, /female-mvp-astronaut-thruster/);
   assert.match(cssSource, /@keyframes female-mvp-astronaut-shimmer/);
   assert.match(cssSource, /@keyframes female-mvp-thruster-breathe/);
+  assert.match(cssSource, /--astronaut-bob-y: -0\.46rem;/);
+  assert.match(cssSource, /--astronaut-bob-x: 0\.1rem;/);
+  assert.match(cssSource, /--astronaut-bob-rotate-end: 1\.6deg;/);
+  assert.match(cssSource, /translate3d\(var\(--astronaut-bob-x, 0\), var\(--astronaut-bob-y, -0\.28rem\), var\(--astronaut-depth-z, 0px\)\)/);
   assert.match(cssSource, /\.female-mvp-astronaut-image \{[\s\S]*animation: female-mvp-astronaut-bob 7\.2s ease-in-out infinite;/);
   assert.match(cssSource, /\.female-mvp-astronaut-shimmer \{[\s\S]*animation: female-mvp-astronaut-shimmer 6\.8s ease-in-out infinite;/);
   assert.match(cssSource, /\.female-mvp-astronaut-thruster \{[\s\S]*animation: female-mvp-thruster-breathe 8\.4s ease-in-out infinite;/);
@@ -688,7 +692,7 @@ test("home page freezes ambient motion while preserving theme crossfade during a
   assert.doesNotMatch(cssSource, /transition-duration: 0ms !important;/);
   assert.match(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(180deg, #040713, #070b18 48%, #050816\);/);
   assert.match(appSource, /effectiveShellRoute === "\/" \? "theme-home-route" : ""/);
-  assert.match(appSource, /const shouldRenderThemeCosmosLayer =[\s\S]*currentRoute !== "\/" && shellRoute !== "\/" && !isFemaleMvpResultsRoute;/);
+  assert.match(appSource, /const shouldRenderThemeCosmosLayer =[\s\S]*currentRoute !== "\/"[\s\S]*shellRoute !== "\/"[\s\S]*!isFemaleMvpQuizRoute[\s\S]*!isFemaleMvpResultsRoute;/);
   assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
   assert.match(appSource, /ROUTE_SHELL_EXIT_STABILIZE_MS = 480/);
   assert.match(appSource, /shellRouteStateRef\.current\.route === "\/knowledge" && currentRoute === "\/"/);
@@ -705,7 +709,7 @@ test("returning from knowledge to home does not keep the knowledge cosmos layer 
     "utf8",
   );
 
-  assert.match(appSource, /const shouldRenderThemeCosmosLayer =[\s\S]*currentRoute !== "\/" && shellRoute !== "\/" && !isFemaleMvpResultsRoute;/);
+  assert.match(appSource, /const shouldRenderThemeCosmosLayer =[\s\S]*currentRoute !== "\/"[\s\S]*shellRoute !== "\/"[\s\S]*!isFemaleMvpQuizRoute[\s\S]*!isFemaleMvpResultsRoute;/);
   assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
 });
 

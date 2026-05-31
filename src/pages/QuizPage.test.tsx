@@ -63,6 +63,7 @@ test("quiz page uses mobile female MVP presentation", () => {
       pageVariants={{}}
       step={0}
       activeQuestions={femaleMvpQuestions}
+      shouldPlayLanding
       onSelectOption={() => {}}
       onBackQuestion={() => {}}
       onBackHome={() => {}}
@@ -73,11 +74,37 @@ test("quiz page uses mobile female MVP presentation", () => {
   assert.match(html, /overflow-y-auto/);
   assert.match(html, /Luna 正在帮你校准/);
   assert.match(html, /female-mvp-quiz__astronaut-image/);
-  assert.match(html, /\/assets\/luna-astronaut\/yeah\.png/);
+  assert.match(html, /female-mvp-quiz__astronaut-landing/);
+  assert.match(html, /female-mvp-quiz__entry-glow/);
+  assert.match(html, /\/assets\/quiz-art\/luna\.png/);
+  assert.match(html, /female-mvp-quiz__prompt-art/);
+  assert.match(html, /\/assets\/quiz-art\/prompt-orbit\.png/);
   assert.doesNotMatch(html, /cute-astronaut__figure/);
   assert.match(html, /刺激路径/);
   assert.doesNotMatch(html, /SCAN PHASE/);
   assert.doesNotMatch(html, /SIGNAL CHANNEL/);
+});
+
+test("quiz page keeps a small rotating prompt art set for later questions", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/pages/QuizPage.tsx"), "utf8");
+  const html = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={2}
+      activeQuestions={multiStepQuestions}
+      shouldPlayLanding={false}
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.match(source, /\/assets\/quiz-art\/prompt-orbit\.png/);
+  assert.match(source, /\/assets\/quiz-art\/prompt-star\.png/);
+  assert.match(source, /\/assets\/quiz-art\/prompt-cloud\.png/);
+  assert.match(html, /\/assets\/quiz-art\/prompt-cloud\.png/);
+  assert.doesNotMatch(html, /female-mvp-quiz__astronaut-landing/);
+  assert.doesNotMatch(html, /female-mvp-quiz__entry-glow/);
 });
 
 test("quiz page primary back action returns to the previous layer label", () => {
@@ -94,6 +121,38 @@ test("quiz page primary back action returns to the previous layer label", () => 
 
   assert.match(html, />返回<\/span>/);
   assert.doesNotMatch(html, /返回首页/);
+});
+
+test("quiz Luna landing animation only plays when the route entrance requests it", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/pages/QuizPage.tsx"), "utf8");
+  const rendererSource = fs.readFileSync(path.resolve(process.cwd(), "src/components/AppRouteRenderer.tsx"), "utf8");
+  const staticFirstQuestion = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={0}
+      activeQuestions={questions}
+      shouldPlayLanding={false}
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+  const enteringFirstQuestion = renderToStaticMarkup(
+    <QuizPage
+      pageVariants={{}}
+      step={0}
+      activeQuestions={questions}
+      shouldPlayLanding
+      onSelectOption={() => {}}
+      onBackQuestion={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.doesNotMatch(source, /const shouldPlayLanding = step === 0;/);
+  assert.match(rendererSource, /shouldPlayLanding=\{shouldPlayQuizLanding\}/);
+  assert.doesNotMatch(staticFirstQuestion, /female-mvp-quiz__astronaut-landing/);
+  assert.match(enteringFirstQuestion, /female-mvp-quiz__astronaut-landing/);
 });
 
 test("quiz page primary back action routes to the match mode layer", () => {
@@ -133,6 +192,18 @@ test("quiz female MVP background is scoped to the quiz shell", () => {
   assert.match(source, /\.female-mvp-quiz\s*\{/);
   assert.match(source, /\.female-mvp-quiz__stars/);
   assert.match(source, /\.female-mvp-option/);
+  assert.match(source, /\.female-mvp-quiz__prompt-art/);
+  assert.match(source, /\.female-mvp-quiz__prompt-art-image/);
+  assert.match(source, /@keyframes female-mvp-quiz-luna-drop-in/);
+  assert.match(source, /translate3d\(0\.9rem, -72svh, 0\) rotate\(18deg\) scale\(0\.54\);/);
+  assert.match(source, /translate3d\(-0\.7rem, -0\.72rem, 0\) rotate\(-9deg\) scale\(1\.02\);/);
+  assert.match(source, /translate3d\(0\.36rem, 0\.2rem, 0\) rotate\(5deg\) scale\(0\.985\);/);
+  assert.match(source, /@keyframes female-mvp-quiz-entry-glow/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-landing\s*\{[\s\S]*?animation: female-mvp-quiz-luna-drop-in 1120ms/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__entry-glow\s*\{[\s\S]*?animation-delay: 460ms;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?animation: female-mvp-astronaut-bob 4\.8s ease-in-out 1120ms infinite;/);
+  assert.match(pageMarkup, /female-mvp-quiz-card/);
+  assert.doesNotMatch(pageMarkup, /female-mvp-quiz-card[^"]*overflow-hidden/);
   assert.match(pageMarkup, /female-mvp-quiz/);
   assert.match(pageMarkup, /min-h-\[100svh\]/);
   assert.doesNotMatch(pageMarkup, /quiz-scan-shell/);
@@ -143,6 +214,24 @@ test("quiz female MVP ambient elements pause when animation is disabled", () => 
 
   assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__stars/);
   assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut-image/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__prompt-art-image/);
+});
+
+test("quiz animated art layers are isolated for smoother compositing", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+
+  assert.match(source, /\.female-mvp-quiz__stars\s*\{[\s\S]*?will-change: transform;/);
+  assert.match(source, /\.female-mvp-quiz__prompt-art-image\s*\{[\s\S]*?will-change: transform;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?will-change: transform, opacity;/);
+  assert.match(source, /\.female-mvp-quiz-card\s*\{[\s\S]*?contain: paint;/);
+});
+
+test("female MVP quiz uses one local background layer instead of duplicating the shell cosmos", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+
+  assert.match(source, /currentRoute === "\/quiz" && step < activeQuestions\.length && isFemaleMvp/);
+  assert.match(source, /const shouldRenderThemeCosmosLayer =[\s\S]*!isFemaleMvpQuizRoute/);
+  assert.match(source, /isFemaleMvpSoftShellRoute \? "female-mvp-soft-shell" : ""/);
 });
 
 test("quiz page reassures undecided users that the system can guide them forward", () => {
