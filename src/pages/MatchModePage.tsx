@@ -36,6 +36,7 @@ const MATCH_MODE_OPTIONS = [
 ] as const;
 
 type MatchModeId = (typeof MATCH_MODE_OPTIONS)[number]["id"];
+export type MatchModeEntrance = "home" | "planet";
 
 function getOrbitSlot(index: number, activeIndex: number) {
   const total = MATCH_MODE_OPTIONS.length;
@@ -48,12 +49,14 @@ function getOrbitSlot(index: number, activeIndex: number) {
 
 export function MatchModePage({
   pageVariants,
+  entrance = "home",
   onSelectQuizMode,
   onSelectNaturalLanguageMode,
   onSelectLuckyMode,
   onBackHome,
 }: {
   pageVariants: any;
+  entrance?: MatchModeEntrance;
   onSelectQuizMode: () => void;
   onSelectNaturalLanguageMode: () => void;
   onSelectLuckyMode: () => void;
@@ -96,6 +99,7 @@ export function MatchModePage({
       aria-busy={isLaunching}
       className={[
         "female-mvp-mode-page relative left-1/2 min-h-[100svh] w-screen -translate-x-1/2 overflow-hidden px-4 pb-[calc(1.15rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-slate-900",
+        entrance === "planet" ? "female-mvp-mode-page-from-planet" : "",
         isLaunching ? "female-mvp-mode-page-launching" : "",
       ].join(" ")}
     >
@@ -208,6 +212,9 @@ export function MatchModePage({
           <div
             className={[
               "female-mvp-mode-luna-guide",
+              entrance === "planet"
+                ? "female-mvp-mode-luna-guide-from-planet"
+                : "female-mvp-mode-luna-guide-from-home",
               `female-mvp-mode-luna-guide-${activeMode.id}`,
               isLaunching ? "female-mvp-mode-luna-guide-launching" : "",
             ].join(" ")}

@@ -697,6 +697,40 @@ test("results page groups comparison, alternatives, tuning, and regeneration int
   );
 });
 
+test("results page shows relaxation tips when strict matching finds no products", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{
+        tags: ["高伪装", "≥ IPX7 防水"],
+        appearance: "high_disguise",
+        waterproof: 7,
+      }}
+      topProducts={[]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[
+        "如果可接受 IPX6 或基础防水，能解锁更多仍然好清洁的选择。",
+      ]}
+      isRecalibratingResults={false}
+      resultRecalibrationError={null}
+      onRecalibrateResults={() => {}}
+      onTuneResults={() => {}}
+      onSaveRecommendationProfile={async () => {}}
+      onOpenRecommendationProfiles={() => {}}
+      onOpenKnowledgeNebula={() => {}}
+      isSavingRecommendationProfile={false}
+      saveRecommendationProfileMessage={null}
+      authPanel={authPanel}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /当前没有完全符合条件的玩具/);
+  assert.match(html, /可以尝试放宽/);
+  assert.match(html, /IPX6 或基础防水/);
+});
+
 test("results page adds a same-category library bridge for horizontal comparison after recommendation", () => {
   const html = renderToStaticMarkup(
     <ResultsPage

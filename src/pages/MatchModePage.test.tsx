@@ -39,6 +39,7 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /female-mvp-mode-orbit-ring/);
   assert.match(html, /female-mvp-mode-planet-button/);
   assert.match(html, /female-mvp-mode-luna-guide/);
+  assert.match(html, /female-mvp-mode-luna-guide-from-home/);
   assert.match(html, /female-mvp-mode-portal/);
   assert.match(html, /female-mvp-mode-launch-warp/);
   assert.match(html, /female-mvp-mode-launch-speedline/);
@@ -66,8 +67,37 @@ test("match mode Luna guide docks left and dives into the active planet center",
 
   assert.match(source, /\.female-mvp-mode-portal\s*\{[\s\S]*?top: 38%;/);
   assert.match(source, /\.female-mvp-mode-luna-guide\s*\{[\s\S]*?transform: translate3d\(-7rem, -3\.1rem, 0\);/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-enter-left/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-home\s*\{[\s\S]*?animation: female-mvp-mode-luna-enter-left 1880ms linear backwards;/);
+  assert.match(source, /0%\s*\{[\s\S]*?transform: translate3d\(calc\(var\(--luna-guide-x, -7rem\) - 9rem\), calc\(var\(--luna-guide-y, -3\.1rem\) - 0\.38rem\), 0\) rotate\(-9deg\) scale\(0\.78\);/);
+  assert.match(source, /34%\s*\{[\s\S]*?transform: translate3d\(calc\(var\(--luna-guide-x, -7rem\) - 5\.6rem\), calc\(var\(--luna-guide-y, -3\.1rem\) - 0\.28rem\), 0\) rotate\(-6deg\) scale\(0\.86\);/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-bubble-reveal/);
+  assert.match(source, /\.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: female-mvp-mode-luna-float 5\.2s ease-in-out 1980ms infinite;/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-exit-planet/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet\s*\{[\s\S]*?animation: female-mvp-mode-luna-exit-planet 1280ms cubic-bezier\(0\.2, 0\.86, 0\.18, 1\) backwards;/);
+  assert.match(source, /0%\s*\{[\s\S]*?transform: translate3d\(-0\.35rem, -0\.1rem, 0\) rotate\(-34deg\) scale\(0\.14\);/);
+  assert.match(source, /24%\s*\{[\s\S]*?transform: translate3d\(-2\.8rem, -1\.58rem, 0\) rotate\(-26deg\) scale\(0\.52\);/);
+  assert.match(source, /54%\s*\{[\s\S]*?transform: translate3d\(calc\(var\(--luna-guide-x, -7rem\) \+ 0\.72rem\), calc\(var\(--luna-guide-y, -3\.1rem\) - 0\.68rem\), 0\) rotate\(-12deg\) scale\(1\.08\);/);
+  assert.match(source, /@keyframes female-mvp-mode-planet-return-burst/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-return-trail/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-return-dive-facing/);
+  assert.match(source, /@keyframes female-mvp-mode-luna-return-guide-reveal/);
+  assert.match(source, /\.female-mvp-mode-page-from-planet \.female-mvp-mode-planet-button-active::before\s*\{[\s\S]*?animation: female-mvp-mode-planet-return-burst 1040ms ease-out both;/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet::after\s*\{[\s\S]*?animation: female-mvp-mode-luna-return-trail 1180ms ease-out both;/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet::after\s*\{[\s\S]*?right: 72%;[\s\S]*?width: 4\.2rem;/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet::after\s*\{[\s\S]*?radial-gradient\(ellipse at 92% 50%/);
+  assert.match(source, /\.female-mvp-mode-luna-image\s*\{[\s\S]*?position: relative;[\s\S]*?z-index: 1;/);
+  assert.doesNotMatch(source, /\.female-mvp-mode-luna-guide-from-planet::before/);
+  assert.doesNotMatch(source, /\.female-mvp-mode-page-from-planet \.female-mvp-mode-planet-button-active::after/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?female-mvp-mode-luna-return-guide-reveal 1280ms ease-out both/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-planet \.female-mvp-mode-luna-image-dive\s*\{[\s\S]*?animation: female-mvp-mode-luna-return-dive-facing 1280ms ease-out both;/);
+  assert.match(source, /0%,\s*42%\s*\{[\s\S]*?opacity: 1;/);
+  assert.match(source, /0%,\s*76%\s*\{[\s\S]*?opacity: 0;/);
+  assert.match(source, /transform: scaleX\(-1\) rotate\(10deg\) scale\(1\.02\);/);
+  assert.match(source, /100%\s*\{[\s\S]*?transform: translate3d\(var\(--luna-guide-x, -7rem\), var\(--luna-guide-y, -3\.1rem\), 0\) rotate\(0deg\) scale\(1\);/);
   assert.match(source, /\.female-mvp-mode-luna-bubble\s*\{[\s\S]*?right: calc\(100% \+ 0\.08rem\);/);
   assert.match(source, /\.female-mvp-mode-luna-bubble\s*\{[\s\S]*?max-width: 5\.05rem;/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-from-home \.female-mvp-mode-luna-bubble\s*\{[\s\S]*?animation: female-mvp-mode-luna-bubble-reveal 520ms ease-out 1540ms both;/);
   const launchingGuideBlock = source.match(/\.female-mvp-mode-luna-guide-launching\s*\{[^}]*\}/)?.[0] ?? "";
   assert.doesNotMatch(launchingGuideBlock, /transform: translate3d/);
   assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: female-mvp-mode-luna-guide-handoff 260ms/);
@@ -89,6 +119,23 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(source, /46%\s*\{[\s\S]*?transform: translate3d\(4\.5rem, -1\.4rem, 0\) rotate\(20deg\) scale\(0\.62\);/);
   assert.match(source, /72%\s*\{[\s\S]*?transform: translate3d\(6\.28rem, -0\.74rem, 0\) rotate\(26deg\) scale\(0\.3\);/);
   assert.match(source, /100%\s*\{[\s\S]*?transform: translate3d\(7\.2rem, -0\.08rem, 0\) rotate\(30deg\) scale\(0\.1\);/);
+});
+
+test("match mode Luna can enter from the active planet when returning from an inner mode", () => {
+  const html = renderToStaticMarkup(
+    <MatchModePage
+      pageVariants={{}}
+      entrance="planet"
+      onSelectQuizMode={() => {}}
+      onSelectNaturalLanguageMode={() => {}}
+      onSelectLuckyMode={() => {}}
+      onBackHome={() => {}}
+    />,
+  );
+
+  assert.match(html, /female-mvp-mode-luna-guide-from-planet/);
+  assert.match(html, /female-mvp-mode-page-from-planet/);
+  assert.doesNotMatch(html, /female-mvp-mode-luna-guide-from-home/);
 });
 
 test("match mode planet switching eases between orbit slots without delaying clicks", () => {

@@ -10,13 +10,13 @@ import { QuizPage } from "./QuizPage.tsx";
 const questions: Question[] = [
   {
     id: "scenario",
-    title: "你更接近哪种使用场景？",
-    subtitle: "先校准环境，再判断推荐方向。",
-    field: "gender",
+    title: "你更期待哪种刺激路径？",
+    subtitle: "先校准方向，再判断推荐组合。",
+    field: "physicalForm",
     options: [
-      { label: "独处放松", value: "female", tag: "独处" },
-      { label: "同住环境", value: "male", tag: "同住" },
-      { label: "情侣共玩", value: "unisex", tag: "情侣" },
+      { label: "外部轻刺激", value: "external", tag: "外部震动/吮吸" },
+      { label: "想试一点入体感", value: "internal", tag: "纯入体" },
+      { label: "内外一起", value: "composite", tag: "复合机型" },
     ],
   } as Question,
 ];
@@ -74,9 +74,12 @@ test("quiz page uses mobile female MVP presentation", () => {
   assert.match(html, /overflow-y-auto/);
   assert.match(html, /Luna 正在帮你校准/);
   assert.match(html, /female-mvp-quiz__astronaut-image/);
+  assert.match(html, /female-mvp-quiz__astronaut-figure/);
   assert.match(html, /female-mvp-quiz__astronaut-landing/);
   assert.match(html, /female-mvp-quiz__entry-glow/);
   assert.match(html, /\/assets\/quiz-art\/luna\.png/);
+  assert.match(html, /female-mvp-quiz__astronaut-blink-patch/);
+  assert.match(html, /\/assets\/quiz-art\/luna-eyes-closed\.png/);
   assert.match(html, /female-mvp-quiz__prompt-art/);
   assert.match(html, /\/assets\/quiz-art\/prompt-orbit\.png/);
   assert.doesNotMatch(html, /cute-astronaut__figure/);
@@ -162,6 +165,7 @@ test("quiz page primary back action routes to the match mode layer", () => {
   ) ?? ["", ""];
 
   assert.match(backHandler, /navigateTo\("\/match-mode"\)/);
+  assert.match(backHandler, /setMatchModeEntrance\("planet"\)/);
   assert.doesNotMatch(backHandler, /navigateTo\("\/"\)/);
 });
 
@@ -199,9 +203,13 @@ test("quiz female MVP background is scoped to the quiz shell", () => {
   assert.match(source, /translate3d\(-0\.7rem, -0\.72rem, 0\) rotate\(-9deg\) scale\(1\.02\);/);
   assert.match(source, /translate3d\(0\.36rem, 0\.2rem, 0\) rotate\(5deg\) scale\(0\.985\);/);
   assert.match(source, /@keyframes female-mvp-quiz-entry-glow/);
+  assert.match(source, /@keyframes female-mvp-quiz-luna-blink/);
   assert.match(source, /\.female-mvp-quiz__astronaut-landing\s*\{[\s\S]*?animation: female-mvp-quiz-luna-drop-in 1120ms/);
   assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__entry-glow\s*\{[\s\S]*?animation-delay: 460ms;/);
-  assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?animation: female-mvp-astronaut-bob 4\.8s ease-in-out 1120ms infinite;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-figure\s*\{[\s\S]*?animation: female-mvp-astronaut-bob 4\.8s ease-in-out infinite;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__astronaut-figure\s*\{[\s\S]*?animation-delay: 1120ms;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-blink-patch\s*\{[\s\S]*?clip-path: ellipse\(28% 13% at 50% 37%\);[\s\S]*?animation: female-mvp-quiz-luna-blink 5\.8s ease-in-out 1\.4s infinite;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-landing \.female-mvp-quiz__astronaut-blink-patch\s*\{[\s\S]*?animation: female-mvp-quiz-luna-blink 5\.8s ease-in-out infinite;[\s\S]*?animation-delay: 2\.05s;/);
   assert.match(pageMarkup, /female-mvp-quiz-card/);
   assert.doesNotMatch(pageMarkup, /female-mvp-quiz-card[^"]*overflow-hidden/);
   assert.match(pageMarkup, /female-mvp-quiz/);
@@ -213,7 +221,8 @@ test("quiz female MVP ambient elements pause when animation is disabled", () => 
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
   assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__stars/);
-  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut-image/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut-figure/);
+  assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__astronaut-blink-patch/);
   assert.match(source, /\.ambient-motion-paused \.female-mvp-quiz__prompt-art-image/);
 });
 
@@ -222,7 +231,9 @@ test("quiz animated art layers are isolated for smoother compositing", () => {
 
   assert.match(source, /\.female-mvp-quiz__stars\s*\{[\s\S]*?will-change: transform;/);
   assert.match(source, /\.female-mvp-quiz__prompt-art-image\s*\{[\s\S]*?will-change: transform;/);
-  assert.match(source, /\.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?will-change: transform, opacity;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-figure\s*\{[\s\S]*?will-change: transform;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?will-change: opacity;/);
+  assert.match(source, /\.female-mvp-quiz__astronaut-blink-patch\s*\{[\s\S]*?will-change: opacity;/);
   assert.match(source, /\.female-mvp-quiz-card\s*\{[\s\S]*?contain: paint;/);
 });
 

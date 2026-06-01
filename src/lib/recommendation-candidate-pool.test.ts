@@ -40,54 +40,28 @@ function makeProduct(overrides: Partial<Product>): Product {
   };
 }
 
-test("opening with strict filters still keeps recommendation candidates inside the selected male toy pool", () => {
+test("strict filters do not fall back to relaxed candidates when nothing fully matches", () => {
   const answers: AnswerState = {
-    gender: "male",
+    gender: "female",
     budget: [100, 150],
     maxDb: 40,
     appearance: "high_disguise",
+    waterproof: 7,
     tags: [],
   };
 
   const pool = buildRecommendationCandidatePool(answers, [
     makeProduct({
-      id: "male-toy-1",
-      name: "Male Toy 1",
-      gender: "male",
-      typeCode: "masturbator",
-      subtypeCode: "manual_masturbator",
-      price: 299,
-      maxDb: 55,
-      appearance: "normal",
-    }),
-    makeProduct({
-      id: "male-toy-2",
-      name: "Male Toy 2",
-      gender: "male",
-      typeCode: "prostate",
-      subtypeCode: "prostate_vibe",
-      price: 259,
-      maxDb: 48,
-      appearance: "normal",
-    }),
-    makeProduct({
-      id: "unisex-toy-1",
-      name: "Unisex Toy 1",
-      gender: "unisex",
-      typeCode: "cock_ring",
-      subtypeCode: "vibrating_cock_ring",
-      price: 239,
-      maxDb: 52,
-      appearance: "normal",
-    }),
-    makeProduct({
-      id: "female-toy-1",
-      name: "Female Toy 1",
+      id: "budget-miss",
+      name: "Budget Miss",
       gender: "female",
       typeCode: "suction",
-      subtypeCode: "suction_pure",
-      price: 199,
+      subtypeCode: "clitoral_suction",
+      price: 299,
       physicalForm: "external",
+      maxDb: 39,
+      appearance: "high_disguise",
+      waterproof: 7,
     }),
     makeProduct({
       id: "care-1",
@@ -104,12 +78,9 @@ test("opening with strict filters still keeps recommendation candidates inside t
   assert.equal(pool.filteredProducts.length, 0);
   assert.deepEqual(
     pool.relaxedProducts.map((product) => product.id),
-    ["male-toy-1", "male-toy-2", "unisex-toy-1"],
+    ["budget-miss"],
   );
-  assert.deepEqual(
-    pool.rankedInputProducts.map((product) => product.id),
-    ["male-toy-1", "male-toy-2", "unisex-toy-1"],
-  );
+  assert.deepEqual(pool.rankedInputProducts, []);
 });
 
 test("recommendation eligibility excludes care accessory products even when their stored type is missing", () => {

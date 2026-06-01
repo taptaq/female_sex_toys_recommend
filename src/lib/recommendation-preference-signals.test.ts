@@ -67,11 +67,21 @@ test("selected answer options produce concrete matching signals instead of displ
     physicalForm: "composite",
     experienceLevel: "intense",
     motorType: "strong",
+    temperaturePreference: "want",
     maxDb: 40,
     waterproof: 7,
     budget: [300, 10000],
     appearance: "high_disguise",
-    tags: ["女性向", "复合机型", "强刺激偏好", "< 40dB", "≥ IPX7 防水", "旗舰级", "高伪装"],
+    tags: [
+      "女性向",
+      "复合机型",
+      "强刺激偏好",
+      "想要温热",
+      "< 40dB",
+      "≥ IPX7 防水",
+      "旗舰级",
+      "高伪装",
+    ],
   };
 
   const signals = buildRecommendationPreferenceSignals(femaleAnswers);
@@ -79,6 +89,7 @@ test("selected answer options produce concrete matching signals instead of displ
   assert.ok(signals.some((signal) => signal.id === "audience.female"));
   assert.ok(signals.some((signal) => signal.id === "stimulation.composite"));
   assert.ok(signals.some((signal) => signal.id === "intensity.strong"));
+  assert.ok(signals.some((signal) => signal.id === "temperature.want"));
   assert.ok(signals.some((signal) => signal.id === "noise.strict"));
   assert.ok(signals.some((signal) => signal.id === "maintenance.easy"));
   assert.ok(signals.some((signal) => signal.id === "budget.premium"));
@@ -86,21 +97,21 @@ test("selected answer options produce concrete matching signals instead of displ
 });
 
 test("balanced options actively reward stable middle-ground products", () => {
-  const balancedOption = questionFlows.male
-    .find((question) => question.id === "male-channel")
+  const balancedOption = questionFlows.female
+    .find((question) => question.id === "female-experience")
     ?.options.find((option) => option.value === "balanced");
   assert.ok(balancedOption);
 
-  const answers = applyOptionToAnswers("channelFeel", balancedOption);
+  const answers = applyOptionToAnswers("experienceLevel", balancedOption);
   const adjustment = getPreferenceSignalAdjustment(
     makeProduct({
-      gender: "male",
-      typeCode: "masturbator",
-      subtypeCode: "manual_masturbator",
+      gender: "female",
+      typeCode: "suction",
+      subtypeCode: "clitoral_suction",
       price: 229,
       maxDb: 48,
       waterproof: 7,
-      rawDescription: "平衡真实，刺激稳定，适合日常耐玩。",
+      rawDescription: "平衡进阶，刺激稳定，适合日常耐玩。",
       tags: ["平衡", "耐玩"],
     }),
     answers,
@@ -110,129 +121,32 @@ test("balanced options actively reward stable middle-ground products", () => {
   assert.match(adjustment.summary.join(" "), /平衡|稳定|耐玩/);
 });
 
-test("couple sync, guided, and playful choices all influence product scoring", () => {
-  const syncAdjustment = getPreferenceSignalAdjustment(
-    makeProduct({
-      rawDescription: "双人同步共振，适合双方同时进入状态。",
-      tags: ["同步", "共振", "双人"],
-    }),
-    { interactionMode: "sync", tags: ["同步共振"] },
-  );
-  const guidedAdjustment = getPreferenceSignalAdjustment(
-    makeProduct({
-      physicalForm: "composite",
-      rawDescription: "手持切换位置，一方主导引导互动。",
-      tags: ["主导", "引导", "手持"],
-    }),
-    { interactionMode: "guided", fitPreference: "handheld", tags: ["主导互动", "手持灵活"] },
-  );
-  const playfulAdjustment = getPreferenceSignalAdjustment(
-    makeProduct({
-      rawDescription: "APP 远控氛围玩法，互动趣味和新鲜感更明显。",
-      tags: ["远控", "趣味", "氛围"],
-    }),
-    { coupleScene: "playful", interactionMode: "remote", tags: ["氛围尝鲜", "远控氛围"] },
-  );
-
-  assert.ok(syncAdjustment.score > 0);
-  assert.ok(guidedAdjustment.score > 0);
-  assert.ok(playfulAdjustment.score > 0);
-  assert.match(syncAdjustment.summary.join(" "), /同步|共振/);
-  assert.match(guidedAdjustment.summary.join(" "), /主导|手持|引导/);
-  assert.match(playfulAdjustment.summary.join(" "), /趣味|远控|新鲜/);
+test("female-only quiz flow does not expose audience branching", () => {
+  assert.deepEqual(Object.keys(questionFlows), ["female"]);
+  assert.ok(questionFlows.female.length > 0);
+  assert.ok(questionFlows.female.every((question) => question.field !== "gender"));
 });
 
-test("couple flow asks partner composition and maps every option to scoring signals", () => {
-  const question = questionFlows.unisex.find(
-    (item) => item.id === "couple-partner-composition",
-  );
-
-  assert.ok(question, "couple flow should ask interaction partner composition");
-  assert.equal(question.field, "partnerComposition");
-  assert.ok(
-    questionFlows.unisex.findIndex((item) => item.id === "couple-partner-composition") <
-      questionFlows.unisex.findIndex((item) => item.id === "couple-interaction"),
-    "partner composition should be answered before interaction details",
-  );
-
-  const expectedSignalIds = new Set([
-    "couple.partner.mixed",
-    "couple.partner.male_male",
-    "couple.partner.female_female",
-    "couple.partner.open",
-  ]);
-
-  for (const option of question.options) {
-    const signals = getQuestionOptionPreferenceSignals(question, option);
-    assert.ok(
-      signals.some((signal) => expectedSignalIds.has(signal.id)),
-      `${option.label} should map to a partner composition signal`,
-    );
-    assert.ok(
-      signals.some((signal) => signal.impacts.includes("score")),
-      `${option.label} should influence scoring`,
-    );
-  }
-});
-
-test("partner composition answers produce explicit matching signals", () => {
-  const maleMaleSignals = buildRecommendationPreferenceSignals({
-    partnerComposition: "male_male",
-    tags: ["男男搭配"],
-  });
-  const femaleFemaleSignals = buildRecommendationPreferenceSignals({
-    partnerComposition: "female_female",
-    tags: ["女女搭配"],
-  });
-
-  assert.ok(maleMaleSignals.some((signal) => signal.id === "couple.partner.male_male"));
-  assert.ok(femaleFemaleSignals.some((signal) => signal.id === "couple.partner.female_female"));
-});
-
-test("partner composition scoring favors compatible co-play routes", () => {
-  const maleCompatible = getPreferenceSignalAdjustment(
-    makeProduct({
-      gender: "male",
-      typeCode: "prostate",
-      subtypeCode: "prostate_massager",
-      rawDescription: "男性前列腺按摩，适合遥控互动和共玩。",
-      tags: ["男用", "遥控", "共玩"],
-    }),
-    { gender: "unisex", partnerComposition: "male_male", tags: ["男男搭配"] },
-  );
-  const femaleOnly = getPreferenceSignalAdjustment(
+test("temperature preference rewards or relaxes heating signals", () => {
+  const heatedAdjustment = getPreferenceSignalAdjustment(
     makeProduct({
       gender: "female",
-      typeCode: "suction",
-      subtypeCode: "clitoral_suction",
-      rawDescription: "女性吮吸刺激器，偏女性单人外部反馈。",
-      tags: ["女性", "吮吸"],
+      rawDescription: "带恒温加热和温热放松体验。",
+      tags: ["加热", "温热"],
     }),
-    { gender: "unisex", partnerComposition: "male_male", tags: ["男男搭配"] },
+    { temperaturePreference: "want", tags: ["想要温热"] },
   );
-  const femaleCompatible = getPreferenceSignalAdjustment(
+  const roomTempAdjustment = getPreferenceSignalAdjustment(
     makeProduct({
       gender: "female",
-      typeCode: "dual_stimulation",
-      subtypeCode: "dual_wearable_remote",
-      rawDescription: "女性复合刺激，可远控共玩，适合双方互动。",
-      tags: ["女性", "复合", "远控", "共玩"],
+      rawDescription: "基础常温震动体验。",
+      tags: ["常温"],
     }),
-    { gender: "unisex", partnerComposition: "female_female", tags: ["女女搭配"] },
-  );
-  const maleOnly = getPreferenceSignalAdjustment(
-    makeProduct({
-      gender: "male",
-      typeCode: "masturbator",
-      subtypeCode: "manual_masturbator",
-      rawDescription: "男性飞机杯，偏男性单人通道刺激。",
-      tags: ["男用", "飞机杯"],
-    }),
-    { gender: "unisex", partnerComposition: "female_female", tags: ["女女搭配"] },
+    { temperaturePreference: "avoid", tags: ["不要加热"] },
   );
 
-  assert.ok(maleCompatible.score > femaleOnly.score);
-  assert.ok(femaleCompatible.score > maleOnly.score);
-  assert.match(maleCompatible.summary.join(" "), /男男|男性向共玩|前列腺|环/);
-  assert.match(femaleCompatible.summary.join(" "), /女女|女性向共玩|外部|复合|远控/);
+  assert.ok(heatedAdjustment.score > 0);
+  assert.ok(roomTempAdjustment.score > 0);
+  assert.match(heatedAdjustment.summary.join(" "), /温热|放松/);
+  assert.match(roomTempAdjustment.summary.join(" "), /常温/);
 });

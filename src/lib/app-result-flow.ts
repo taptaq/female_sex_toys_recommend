@@ -97,7 +97,10 @@ export function buildLocalResultComputation(
             p.maxDb == null ||
             p.maxDb <= currentAnswers.maxDb) &&
           (currentAnswers.appearance !== "high_disguise" ||
-            p.appearance === "high_disguise");
+            p.appearance === "high_disguise") &&
+          (!currentAnswers.waterproof ||
+            p.waterproof == null ||
+            p.waterproof >= currentAnswers.waterproof);
         return (
           matchOther &&
           (p.price < currentAnswers.budget[0] ||
@@ -117,6 +120,9 @@ export function buildLocalResultComputation(
           (!currentAnswers.maxDb ||
             p.maxDb == null ||
             p.maxDb <= currentAnswers.maxDb) &&
+          (!currentAnswers.waterproof ||
+            p.waterproof == null ||
+            p.waterproof >= currentAnswers.waterproof) &&
           (!currentAnswers.budget ||
             (p.price >= currentAnswers.budget[0] &&
               p.price <= currentAnswers.budget[1]));
@@ -134,6 +140,9 @@ export function buildLocalResultComputation(
         const matchOther =
           (currentAnswers.appearance !== "high_disguise" ||
             p.appearance === "high_disguise") &&
+          (!currentAnswers.waterproof ||
+            p.waterproof == null ||
+            p.waterproof >= currentAnswers.waterproof) &&
           (!currentAnswers.budget ||
             (p.price >= currentAnswers.budget[0] &&
               p.price <= currentAnswers.budget[1]));
@@ -144,6 +153,31 @@ export function buildLocalResultComputation(
       if (potentialByNoise.length > 0) {
         recommendationTips.push(
           "对噪音阈值的微调（如调至 55dB 左右）可能会带给您更细腻的震动体验。",
+        );
+      }
+    }
+
+    if (currentAnswers.waterproof && currentAnswers.waterproof >= 7) {
+      const potentialByWaterproof = relaxedProducts.filter((p) => {
+        const matchOther =
+          (!currentAnswers.maxDb ||
+            p.maxDb == null ||
+            p.maxDb <= currentAnswers.maxDb) &&
+          (currentAnswers.appearance !== "high_disguise" ||
+            p.appearance === "high_disguise") &&
+          (!currentAnswers.budget ||
+            (p.price >= currentAnswers.budget[0] &&
+              p.price <= currentAnswers.budget[1]));
+        return (
+          matchOther &&
+          p.waterproof != null &&
+          p.waterproof < currentAnswers.waterproof &&
+          p.waterproof >= 6
+        );
+      });
+      if (potentialByWaterproof.length > 0) {
+        recommendationTips.push(
+          "如果可接受 IPX6 或基础防水，能解锁更多仍然好清洁的选择。",
         );
       }
     }

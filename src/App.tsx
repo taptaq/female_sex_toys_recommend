@@ -6,7 +6,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
-  getActiveQuestions,
   femaleMvpQuestionFlow,
   AnswerState,
   Product,
@@ -124,6 +123,7 @@ import {
 } from "./lib/recommendation-session";
 import { MatchingPage } from "./pages/MatchingPage";
 import { MatchModePage } from "./pages/MatchModePage";
+import type { MatchModeEntrance } from "./pages/MatchModePage";
 import { NaturalLanguageMatchPage } from "./pages/NaturalLanguageMatchPage";
 import {
   type ResultEditableCondition,
@@ -446,10 +446,10 @@ export default function App() {
   const themeSwitchRunRef = useRef(0);
   const themeSwitchStabilizeTimeoutRef = useRef<number | null>(null);
   const [shouldPlayQuizLanding, setShouldPlayQuizLanding] = useState(false);
+  const [matchModeEntrance, setMatchModeEntrance] =
+    useState<MatchModeEntrance>("home");
 
-  const activeQuestions: Question[] = isFemaleMvp
-    ? femaleMvpQuestionFlow
-    : getActiveQuestions(answers.gender);
+  const activeQuestions: Question[] = femaleMvpQuestionFlow;
 
   const pageVariants: any = {
     initial: { opacity: 0, x: 20, scale: 0.95 },
@@ -621,6 +621,7 @@ export default function App() {
     setNaturalLanguagePrompt("");
     setNaturalLanguageQuery("");
     setNaturalLanguageError(null);
+    setMatchModeEntrance("home");
     navigateTo("/match-mode");
   };
 
@@ -648,9 +649,7 @@ export default function App() {
       appearance: "high_disguise",
       experienceLevel: "balanced",
     });
-    const targetQuestions = isFemaleMvp
-      ? femaleMvpQuestionFlow
-      : getActiveQuestions(luckyAnswers.gender);
+    const targetQuestions = femaleMvpQuestionFlow;
 
     setMatchInputMode("quiz");
     setNaturalLanguagePrompt("");
@@ -684,9 +683,7 @@ export default function App() {
       ...derivedAnswers,
       tags: derivedAnswers.tags ?? [],
     });
-    const targetQuestions = isFemaleMvp
-      ? femaleMvpQuestionFlow
-      : getActiveQuestions(mergedAnswers.gender);
+    const targetQuestions = femaleMvpQuestionFlow;
 
     setMatchInputMode("natural-language");
     setNaturalLanguageQuery(trimmedPrompt);
@@ -1095,9 +1092,7 @@ export default function App() {
     setAnswerPath(nextAnswerPath);
     setAnswers(newAnswers);
 
-    const activeQs = isFemaleMvp
-      ? femaleMvpQuestionFlow
-      : getActiveQuestions(newAnswers.gender);
+    const activeQs = femaleMvpQuestionFlow;
 
     if (step < activeQs.length - 1) {
       setStep(step + 1);
@@ -2221,6 +2216,7 @@ ${JSON.stringify(context.backupCandidates)}
     setShoppingGuidance(clearedState.shoppingGuidance);
     setResultRecalibrationError(null);
     setIsRecalibratingResults(false);
+    setMatchModeEntrance("planet");
     navigateTo("/match-mode");
   };
 
@@ -2286,6 +2282,7 @@ ${JSON.stringify(context.backupCandidates)}
         <div className="relative z-10">
           <MatchModePage
             pageVariants={pageVariants}
+            entrance={matchModeEntrance}
             onSelectQuizMode={handleStartQuizMode}
             onSelectNaturalLanguageMode={handleStartNaturalLanguageMode}
             onSelectLuckyMode={handleStartLuckyMode}
@@ -2307,7 +2304,10 @@ ${JSON.stringify(context.backupCandidates)}
             error={naturalLanguageError}
             onPromptChange={setNaturalLanguagePrompt}
             onSubmit={handleSubmitNaturalLanguageMatch}
-            onBack={() => navigateTo("/match-mode")}
+            onBack={() => {
+              setMatchModeEntrance("planet");
+              navigateTo("/match-mode");
+            }}
             onBackHome={() => navigateTo("/")}
           />
         </div>

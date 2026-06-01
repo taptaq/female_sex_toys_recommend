@@ -172,11 +172,18 @@ export function QuizPage({
               {shouldPlayLanding ? (
                 <span className="female-mvp-quiz__entry-glow" aria-hidden="true" />
               ) : null}
-              <img
-                src="/assets/quiz-art/luna.png"
-                alt=""
-                className="female-mvp-quiz__astronaut-image"
-              />
+              <span className="female-mvp-quiz__astronaut-figure">
+                <img
+                  src="/assets/quiz-art/luna.png"
+                  alt=""
+                  className="female-mvp-quiz__astronaut-image"
+                />
+                <img
+                  src="/assets/quiz-art/luna-eyes-closed.png"
+                  alt=""
+                  className="female-mvp-quiz__astronaut-image female-mvp-quiz__astronaut-blink-patch"
+                />
+              </span>
             </div>
             <span className="mt-5 inline-flex items-center rounded-full border border-white/76 bg-white/64 px-3.5 py-1.5 text-xs font-bold tracking-[0.12em] text-rose-500 shadow-[0_10px_26px_rgba(244,114,182,0.14)]">
               Luna 正在帮你校准

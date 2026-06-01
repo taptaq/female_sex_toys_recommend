@@ -118,6 +118,14 @@ function matchesRecommendationSoftConstraints(
     return false;
   }
 
+  if (
+    answers.waterproof &&
+    product.waterproof != null &&
+    product.waterproof < answers.waterproof
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -136,7 +144,6 @@ export function buildRecommendationCandidatePool(
   return {
     filteredProducts,
     relaxedProducts,
-    rankedInputProducts:
-      filteredProducts.length >= 3 ? filteredProducts : relaxedProducts,
+    rankedInputProducts: filteredProducts,
   };
 }

@@ -144,3 +144,39 @@ test("buildLocalResultComputation uses female MVP fallback products when the sou
     "fallback candidates should stay female-only",
   );
 });
+
+test("buildLocalResultComputation suggests relaxing waterproof instead of auto-filling loose matches", async () => {
+  const { buildLocalResultComputation } = await import("./app-result-flow.ts");
+  const answers: AnswerState = {
+    gender: "female",
+    physicalForm: "external",
+    motorType: "gentle",
+    maxDb: 45,
+    waterproof: 7,
+    budget: [100, 300],
+    appearance: "high_disguise",
+    tags: ["女性向", "外部震动/吮吸", "温柔慢热", "≥ IPX7 防水"],
+  };
+
+  const result = buildLocalResultComputation(answers, [
+    makeProduct({
+      id: "ipx6-good-otherwise",
+      name: "IPX6 Good Otherwise",
+      price: 199,
+      maxDb: 42,
+      waterproof: 6,
+      appearance: "high_disguise",
+      physicalForm: "external",
+      gender: "female",
+      rawDescription: "女性外部震动，温和安静，基础防水。",
+      tags: ["女性向", "静音"],
+    }),
+  ]);
+
+  assert.deepEqual(result.rankedCandidates, []);
+  assert.deepEqual(result.fallbackTopProducts, []);
+  assert.ok(
+    result.recommendationTips.some((tip) => /IPX6|基础防水|防水/.test(tip)),
+    `expected waterproof relaxation tip, got ${JSON.stringify(result.recommendationTips)}`,
+  );
+});

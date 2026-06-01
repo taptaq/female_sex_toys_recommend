@@ -33,6 +33,10 @@ const TAG_SIGNAL_TEMPLATES: Record<string, SignalTemplate[]> = {
   强刺激偏好: [{ id: "intensity.strong", label: "强刺激", weight: 6, impacts: ["score", "explanation"] }],
   敏感度待判断: [{ id: "uncertain.intensity", label: "敏感度待判断", weight: 4, impacts: ["score", "explanation"] }],
 
+  想要温热: [{ id: "temperature.want", label: "想要温热", weight: 4, impacts: ["score", "explanation"] }],
+  不要加热: [{ id: "temperature.avoid", label: "不要加热", weight: 3, impacts: ["score", "explanation"] }],
+  温热不限定: [{ id: "temperature.neutral", label: "温热不限定", weight: 2, impacts: ["score", "explanation"] }],
+
   "< 40dB": [{ id: "noise.strict", label: "极致静音", weight: 6, impacts: ["score", "explanation"] }],
   "< 50dB": [{ id: "noise.moderate", label: "一般静音", weight: 4, impacts: ["score", "explanation"] }],
   无限制分贝: [{ id: "noise.open", label: "不限制声音", weight: 2, impacts: ["score", "explanation"] }],
@@ -164,6 +168,9 @@ export function buildRecommendationPreferenceSignals(answers: AnswerState) {
   if (answers.physicalForm === "composite") signals.push(...createSignals("field:physicalForm", TAG_SIGNAL_TEMPLATES["复合机型"]));
   if (answers.motorType === "gentle") signals.push(...createSignals("field:motorType", TAG_SIGNAL_TEMPLATES["温柔慢热"]));
   if (answers.motorType === "strong") signals.push(...createSignals("field:motorType", TAG_SIGNAL_TEMPLATES["强刺激偏好"]));
+  if (answers.temperaturePreference === "want") signals.push(...createSignals("field:temperaturePreference", TAG_SIGNAL_TEMPLATES["想要温热"]));
+  if (answers.temperaturePreference === "avoid") signals.push(...createSignals("field:temperaturePreference", TAG_SIGNAL_TEMPLATES["不要加热"]));
+  if (answers.temperaturePreference === "neutral") signals.push(...createSignals("field:temperaturePreference", TAG_SIGNAL_TEMPLATES["温热不限定"]));
   if (answers.appearance === "high_disguise") signals.push(...createSignals("field:appearance", TAG_SIGNAL_TEMPLATES["高伪装"]));
   if (answers.appearance === "normal") signals.push(...createSignals("field:appearance", TAG_SIGNAL_TEMPLATES["无伪装限制"]));
   if (answers.driveMode === "manual") signals.push(...createSignals("field:driveMode", TAG_SIGNAL_TEMPLATES["手动型"]));
@@ -265,6 +272,7 @@ export function getPreferenceSignalAdjustment(
   const hasTight = hasAny(text, [/紧致/i, /包裹感强/i, /夹吸/i, /tight/i]);
   const hasSoft = hasAny(text, [/柔软/i, /慢玩/i, /温和/i, /soft/i, /gentle/i]);
   const hasStrong = hasAny(text, [/强刺激/i, /强震/i, /爆发/i, /快速/i, /strong/i, /intense/i]) || product.motorType === "strong";
+  const hasHeating = hasAny(text, [/加热/i, /发热/i, /恒温/i, /温热/i, /热感/i, /warming/i, /heating/i, /heated/i]);
   const typeCode = product.typeCode ?? "";
   const subtypeCode = product.subtypeCode ?? "";
   const isCoupleType =
@@ -322,6 +330,15 @@ export function getPreferenceSignalAdjustment(
       case "intensity.strong":
       case "couple.intensity.strong":
         add(score, summary, hasStrong, weight, "更贴近明确强反馈期待");
+        break;
+      case "temperature.want":
+        add(score, summary, hasHeating, weight, "温热功能更贴近放松期待");
+        break;
+      case "temperature.avoid":
+        add(score, summary, !hasHeating, weight, "常温体验更贴近当前选择");
+        break;
+      case "temperature.neutral":
+        add(score, summary, true, weight, "温热不是主要约束，保留更多合适选择");
         break;
       case "noise.strict":
         add(score, summary, product.maxDb != null && product.maxDb <= 45, weight, "静音表现更适合高敏感环境");

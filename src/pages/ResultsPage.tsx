@@ -825,7 +825,24 @@ export function ResultsPage({
 
       {topProducts.length === 0 ? (
         <div className="glass-panel rounded-3xl p-8 text-center">
-          <p className="text-slate-300">未找到完全匹配的装备，请尝试放宽条件。</p>
+          <p className="text-base font-medium text-white">
+            当前没有完全符合条件的玩具
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            我们没有自动放宽你的限制。可以尝试放宽下面这些条件，再重新匹配。
+          </p>
+          {relaxationTips.length > 0 ? (
+            <ul className="mx-auto mt-4 max-w-xl space-y-2 text-left">
+              {relaxationTips.map((tip) => (
+                <li
+                  key={tip}
+                  className="rounded-2xl border border-white/8 bg-white/[0.04] px-3 py-2 text-sm leading-6 text-slate-200"
+                >
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 
