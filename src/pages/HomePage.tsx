@@ -2,10 +2,8 @@ import { motion } from "motion/react";
 import gsap from "gsap";
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type Ref,
@@ -24,7 +22,6 @@ import { AuthPanel, type AuthPanelMode } from "../components/AuthPanel.tsx";
 import { HomeFeedbackModal } from "../components/HomeFeedbackModal.tsx";
 import { canShowMvpEntry, shouldUseFemaleMvp } from "../lib/app-mode.ts";
 import {
-  APP_THEME_HOME_COSMOS_IMAGE_BY_ID,
   APP_THEME_OPTIONS,
   type AppThemeId,
 } from "../lib/app-theme.ts";
@@ -38,7 +35,6 @@ const HOME_FEEDBACK_ALLOWED_IMAGE_TYPES = new Set([
   "image/webp",
 ]);
 const HOME_FEEDBACK_MAX_SCREENSHOTS = 3;
-const HOME_SPACE_PHOTO_CROSSFADE_MS = 900;
 const FEMALE_MVP_HOME_PLANETS = [
   {
     id: "privacy",
@@ -112,28 +108,6 @@ type HomeAuthOverlayFocusTrapInput = {
   currentIndex: number;
   isShiftKey: boolean;
 };
-
-type HomeSpacePhotoLayerState = "entering" | "active" | "exiting";
-
-type HomeSpacePhotoLayer = {
-  themeId: AppThemeId;
-  state: HomeSpacePhotoLayerState;
-};
-
-const HOME_SPACE_PHOTO_LAYER_OPACITY_BY_THEME: Record<AppThemeId, number> = {
-  "inner-space": 0.34,
-  "soft-signal": 0.32,
-  "sync-field": 0.3,
-};
-
-const HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME: Record<AppThemeId, string> = {
-  "inner-space": "home-space-photo-image-inner-space",
-  "soft-signal": "home-space-photo-image-soft-signal",
-  "sync-field": "home-space-photo-image-sync-field",
-};
-
-const useHomePhotoTransitionEffect =
-  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function planHomeFeedbackScreenshotSelection({
   currentCount,
@@ -285,33 +259,6 @@ function SecondaryEntryButton({
         </span>
       </button>
     </span>
-  );
-}
-
-function HomeSpacePhotoLayer({
-  layer,
-}: {
-  layer: HomeSpacePhotoLayer;
-}) {
-  return (
-    <img
-      alt=""
-      aria-hidden="true"
-      decoding="async"
-      draggable={false}
-      src={APP_THEME_HOME_COSMOS_IMAGE_BY_ID[layer.themeId]}
-      className={[
-        "home-space-photo-image",
-        HOME_SPACE_PHOTO_LAYER_CLASS_BY_THEME[layer.themeId],
-        `home-space-photo-image-${layer.state}`,
-      ].join(" ")}
-      style={
-        {
-          "--home-space-photo-layer-opacity":
-            HOME_SPACE_PHOTO_LAYER_OPACITY_BY_THEME[layer.themeId],
-        } as CSSProperties
-      }
-    />
   );
 }
 
@@ -623,16 +570,10 @@ export function HomePage({
   const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null);
   const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState<string | null>(null);
   const [isFemaleMvpLaunching, setIsFemaleMvpLaunching] = useState(false);
-  const [photoLayers, setPhotoLayers] = useState<HomeSpacePhotoLayer[]>([
-    { themeId, state: "active" },
-  ]);
   const feedbackCloseTimeoutRef = useRef<number | null>(null);
   const femaleMvpLaunchTimeoutRef = useRef<number | null>(null);
   const feedbackScreenshotCountRef = useRef(0);
   const feedbackPendingScreenshotReservationsRef = useRef(0);
-  const previousPhotoThemeIdRef = useRef(themeId);
-  const photoTransitionFrameRef = useRef<number | null>(null);
-  const photoTransitionTimeoutRef = useRef<number | null>(null);
   const femaleMvpHomeRef = useRef<HTMLElement | null>(null);
   const [isFemaleMvpAuthPanelOpen, setIsFemaleMvpAuthPanelOpen] = useState(false);
   const femaleMvpAuthEntryButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -650,12 +591,6 @@ export function HomePage({
       }
       if (femaleMvpLaunchTimeoutRef.current !== null) {
         window.clearTimeout(femaleMvpLaunchTimeoutRef.current);
-      }
-      if (photoTransitionFrameRef.current !== null) {
-        window.cancelAnimationFrame(photoTransitionFrameRef.current);
-      }
-      if (photoTransitionTimeoutRef.current !== null) {
-        window.clearTimeout(photoTransitionTimeoutRef.current);
       }
     };
   }, []);
@@ -888,43 +823,6 @@ export function HomePage({
       femaleMvpAuthDialogRef.current.focus();
     }
   }
-
-  useHomePhotoTransitionEffect(() => {
-    const previousThemeId = previousPhotoThemeIdRef.current;
-    if (previousThemeId === themeId) {
-      return;
-    }
-
-    previousPhotoThemeIdRef.current = themeId;
-
-    if (photoTransitionFrameRef.current !== null) {
-      window.cancelAnimationFrame(photoTransitionFrameRef.current);
-      photoTransitionFrameRef.current = null;
-    }
-    if (photoTransitionTimeoutRef.current !== null) {
-      window.clearTimeout(photoTransitionTimeoutRef.current);
-      photoTransitionTimeoutRef.current = null;
-    }
-
-    setPhotoLayers([
-      { themeId: previousThemeId, state: "exiting" },
-      { themeId, state: "entering" },
-    ]);
-
-    photoTransitionFrameRef.current = window.requestAnimationFrame(() => {
-      setPhotoLayers((currentLayers) =>
-        currentLayers.map((layer) =>
-          layer.themeId === themeId ? { ...layer, state: "active" } : layer,
-        ),
-      );
-      photoTransitionFrameRef.current = null;
-    });
-
-    photoTransitionTimeoutRef.current = window.setTimeout(() => {
-      setPhotoLayers([{ themeId, state: "active" }]);
-      photoTransitionTimeoutRef.current = null;
-    }, HOME_SPACE_PHOTO_CROSSFADE_MS + 120);
-  }, [themeId]);
 
   function clearFeedbackCloseTimeout() {
     if (feedbackCloseTimeoutRef.current !== null) {
@@ -1176,15 +1074,15 @@ export function HomePage({
               <p className="female-mvp-briefing-line">
                 <span>女性向 · 私密匹配</span>
               </p>
-              <h1 className="mt-2 text-[1.9rem] font-black leading-[1.03] tracking-[-0.04em] text-slate-950 sm:text-5xl">
+              <h1 className="mt-3 text-[1.9rem] font-black leading-[1.08] tracking-[-0.04em] text-slate-950 sm:text-5xl">
                 找到适合你的装备
               </h1>
-              <p className="female-mvp-copy-line mx-auto mt-3 max-w-[20rem] text-[13px] leading-6 text-slate-600 sm:max-w-md sm:text-base">
+              <p className="female-mvp-copy-line mx-auto mt-4 max-w-[20rem] text-[13px] leading-7 text-slate-600 sm:max-w-md sm:text-base">
                 <span>按感受、场景和偏好</span>
                 <span>问答、直说，或抽一份小幸运</span>
               </p>
 
-              <div className="female-mvp-mode-dock female-mvp-mission-nodes mt-4">
+              <div className="female-mvp-mode-dock female-mvp-mission-nodes mt-5">
                 {[
                   "问答",
                   "直说",
@@ -1283,27 +1181,6 @@ export function HomePage({
           shouldAnimate ? "" : "ambient-motion-paused",
         ].join(" ")}
       >
-        <div className="home-space-depth pointer-events-none absolute left-1/2 top-[-20%] -z-10 h-[134%] w-[112vw] -translate-x-1/2 overflow-hidden">
-          <div className="home-space-photo">
-            {photoLayers.map((layer) => (
-              <HomeSpacePhotoLayer
-                key={layer.themeId}
-                layer={layer}
-              />
-            ))}
-          </div>
-          <div className="home-space-photo-veil" />
-          <div className="home-space-nebula-flow home-space-nebula-flow-a absolute inset-0" />
-          <div className="home-space-nebula-flow home-space-nebula-flow-b absolute inset-0" />
-          <div className="home-space-galaxy-disk absolute inset-0" />
-          <div className="home-space-galaxy-stream absolute inset-0" />
-          <div className="home-space-aurora absolute inset-0" />
-          <div className="home-space-stars home-space-stars-a absolute inset-0" />
-          <div className="home-space-stars home-space-stars-b absolute inset-0" />
-          <div className="home-space-orbit home-space-orbit-a absolute left-[42%] top-[18%] h-[34rem] w-[64rem] -translate-x-1/2 rounded-[50%] border border-cyan-100/8" />
-          <div className="home-space-orbit home-space-orbit-b home-space-orbit-offset absolute left-[38%] top-[25%] h-[27rem] w-[54rem] -translate-x-1/2 rounded-[50%] border border-indigo-100/7" />
-        </div>
-
         <motion.div
           key="welcome"
           variants={pageVariants}

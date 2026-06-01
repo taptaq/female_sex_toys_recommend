@@ -535,8 +535,8 @@ test("female MVP home gives the lower copy cabin more breathing room", () => {
 
   assert.match(cssSource, /\.female-mvp-intro-stage \{[\s\S]*height: clamp\(16\.2rem, 37svh, 20\.6rem\);/);
   assert.match(cssSource, /\.female-mvp-launch-shell \{[\s\S]*margin-top: clamp\(-0\.8rem, -1\.4svh, -0\.25rem\);/);
-  assert.match(missionCardBlock, /min-height: clamp\(11\.2rem, 24svh, 13\.6rem\);/);
-  assert.match(missionCardBlock, /padding: 1\.2rem 1rem 1\.02rem;/);
+  assert.match(missionCardBlock, /min-height: clamp\(12\.6rem, 27svh, 15\.2rem\);/);
+  assert.match(missionCardBlock, /padding: 1\.55rem 1rem 1\.36rem;/);
   assert.match(missionCardBlock, /display: flex;/);
   assert.match(missionCardBlock, /align-items: center;/);
   assert.match(missionCardBlock, /justify-content: center;/);
@@ -563,24 +563,7 @@ test("female MVP home uses a full-screen soft gradient canvas instead of a dark 
 }
 );
 
-test("legacy home background orbits remain available as refined trace lines", () => {
-  const cssSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/index.css"),
-    "utf8",
-  );
-  const homePageSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
-    "utf8",
-  );
-
-  assert.match(homePageSource, /home-space-orbit-a/);
-  assert.match(homePageSource, /home-space-orbit-b/);
-  assert.match(cssSource, /\.home-space-orbit::before/);
-  assert.match(cssSource, /mask-image: linear-gradient/);
-  assert.doesNotMatch(cssSource, /inset 0 34px 80px var\(--theme-glow\)/);
-});
-
-test("legacy home background keeps the real-space photo layer available", () => {
+test("legacy home starfield background has been removed from the home page bundle", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
     "utf8",
@@ -593,87 +576,23 @@ test("legacy home background keeps the real-space photo layer available", () => 
     path.resolve(process.cwd(), "src/lib/app-theme.ts"),
     "utf8",
   );
-
-  assert.match(homePageSource, /home-space-photo/);
-  assert.match(homePageSource, /APP_THEME_HOME_COSMOS_IMAGE_BY_ID/);
-  assert.match(homePageSource, /home-space-photo-veil/);
-  assert.match(cssSource, /\.home-space-photo/);
-  assert.match(themeSource, /\/assets\/home-cosmos\/inner-space-spiral\.jpg/);
-  assert.match(themeSource, /\/assets\/home-cosmos\/soft-signal-rosette\.jpg/);
-  assert.match(themeSource, /\/assets\/home-cosmos\/sync-field-arp273\.jpg/);
-});
-
-test("home page mobile layout keeps the full photo background visible without pinning it to the corner", () => {
-  const cssSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/index.css"),
+  const mainSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/main.tsx"),
     "utf8",
   );
 
-  assert.match(cssSource, /@media \(max-width: 640px\)/);
-  assert.match(cssSource, /\.home-space-photo \{/);
-  assert.match(cssSource, /inset: -7% -12% -5%;/);
-  assert.match(cssSource, /--home-space-photo-opacity-boost: 0\.01;/);
-  assert.match(cssSource, /\.home-space-photo-image \{[\s\S]*object-position: 44% 34%;/);
-  assert.match(cssSource, /translate3d\(-2%, -4%, 0\)/);
-});
-
-test("home page ambient photo layers use layered motion instead of a static still background", () => {
-  const cssSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/index.css"),
-    "utf8",
-  );
-
-  assert.match(cssSource, /\.home-space-photo\s*\{[\s\S]*animation: home-space-photo-float/);
-  assert.match(cssSource, /\.home-space-photo-veil\s*\{[\s\S]*animation: home-space-veil-breathe/);
-  assert.match(cssSource, /\.home-space-nebula-flow-a\s*\{[\s\S]*animation: home-space-nebula-flow-a 34s cubic-bezier/);
-  assert.match(cssSource, /\.home-space-nebula-flow-b\s*\{[\s\S]*animation: home-space-nebula-flow-b 46s cubic-bezier/);
-  assert.match(cssSource, /\.home-space-galaxy-disk\s*\{[\s\S]*animation: home-space-galaxy-turn 72s linear infinite;/);
-  assert.match(cssSource, /\.home-space-galaxy-stream\s*\{[\s\S]*animation: home-space-galaxy-stream 48s ease-in-out infinite alternate;/);
-  assert.match(cssSource, /\.home-space-aurora\s*\{[\s\S]*animation: home-space-aurora-drift 64s ease-in-out infinite alternate;/);
-  assert.match(cssSource, /\.home-space-stars-a\s*\{[\s\S]*opacity: 0\.42;/);
-  assert.doesNotMatch(cssSource, /\.home-space-stars-a\s*\{[^}]*animation:/);
-  assert.doesNotMatch(cssSource, /\.home-space-stars-b\s*\{[^}]*animation:/);
-  assert.doesNotMatch(cssSource, /home-space-comet/);
+  assert.doesNotMatch(homePageSource, /home-space-/);
+  assert.doesNotMatch(homePageSource, /APP_THEME_HOME_COSMOS_IMAGE_BY_ID/);
+  assert.doesNotMatch(homePageSource, /useHomePhotoTransitionEffect/);
+  assert.doesNotMatch(cssSource, /home-space-/);
   assert.doesNotMatch(cssSource, /home-panel-scan/);
-  assert.match(cssSource, /\.home-space-depth \{[\s\S]*--home-space-stabilize-delay: 420ms;/);
-  assert.match(cssSource, /\.home-space-photo,\s*\.home-space-photo-veil,\s*\.home-space-nebula-flow-a,\s*\.home-space-nebula-flow-b,\s*\.home-space-galaxy-disk,\s*\.home-space-galaxy-stream,\s*\.home-space-aurora \{[\s\S]*animation-delay: var\(--home-space-stabilize-delay\);[\s\S]*animation-fill-mode: both;/);
-  assert.match(cssSource, /@keyframes home-space-veil-breathe/);
-  assert.match(cssSource, /@keyframes home-space-nebula-flow-a/);
-  assert.match(cssSource, /@keyframes home-space-nebula-flow-b/);
-  assert.match(cssSource, /@keyframes home-space-galaxy-turn/);
-  assert.match(cssSource, /@keyframes home-space-galaxy-stream/);
-  assert.match(cssSource, /@keyframes home-space-aurora-drift/);
+  assert.doesNotMatch(themeSource, /home-cosmos/);
+  assert.doesNotMatch(themeSource, /preloadAppThemeHomeCosmos/);
+  assert.doesNotMatch(mainSource, /preloadAllAppThemeHomeCosmos/);
+  assert.doesNotMatch(mainSource, /homeCosmosPreloadLink/);
 });
 
-test("home page keeps background mounted outside the first-load route fade", () => {
-  const homePageSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
-    "utf8",
-  );
-  const backgroundIndex = homePageSource.indexOf("home-space-depth");
-  const motionIndex = homePageSource.indexOf("<motion.div", backgroundIndex);
-
-  assert.notEqual(backgroundIndex, -1);
-  assert.notEqual(motionIndex, -1);
-  assert.ok(backgroundIndex < motionIndex);
-  assert.match(homePageSource, /initial=\{false\}/);
-});
-
-test("home page photo crossfade prepares theme image layers in a before-paint effect to avoid one-frame mismatches", () => {
-  const homePageSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
-    "utf8",
-  );
-
-  assert.match(homePageSource, /useLayoutEffect,/);
-  assert.match(
-    homePageSource,
-    /const useHomePhotoTransitionEffect =[\s\S]*typeof window === "undefined" \? useEffect : useLayoutEffect;/,
-  );
-  assert.match(homePageSource, /useHomePhotoTransitionEffect\(\(\) => \{/);
-});
-
-test("home page freezes ambient motion while preserving theme crossfade during asset switches", () => {
+test("home page freezes current ambient motion without legacy home-space selectors", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
     "utf8",
@@ -682,13 +601,7 @@ test("home page freezes ambient motion while preserving theme crossfade during a
     path.resolve(process.cwd(), "src/App.tsx"),
     "utf8",
   );
-  const homeBackgroundBlock = cssSource.slice(
-    cssSource.indexOf(".home-space-depth"),
-    cssSource.indexOf(".home-orbit-core"),
-  );
 
-  assert.match(cssSource, /\.home-space-photo-image \{[\s\S]*transition: opacity 560ms linear;/);
-  assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;[\s\S]*transition-delay: 120ms;/);
   assert.doesNotMatch(cssSource, /transition-duration: 0ms !important;/);
   assert.match(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(180deg, #040713, #070b18 48%, #050816\);/);
   assert.match(appSource, /effectiveShellRoute === "\/" \? "theme-home-route" : ""/);
@@ -696,9 +609,8 @@ test("home page freezes ambient motion while preserving theme crossfade during a
   assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);
   assert.match(appSource, /ROUTE_SHELL_EXIT_STABILIZE_MS = 480/);
   assert.match(appSource, /shellRouteStateRef\.current\.route === "\/knowledge" && currentRoute === "\/"/);
-  assert.doesNotMatch(homeBackgroundBlock, /var\(--theme/);
-  assert.match(cssSource, /\.theme-switch-stabilizing \.home-space-nebula-flow-a,/);
-  assert.match(cssSource, /\.theme-switch-stabilizing \.home-space-nebula-flow-b,/);
+  assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.home-space-/);
+  assert.doesNotMatch(cssSource, /\.ambient-motion-paused \.home-space-/);
   assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.theme-cosmos-motif \{[\s\S]*transition: none !important;/);
   assert.match(cssSource, /animation-play-state: paused !important;/);
 });
@@ -729,80 +641,20 @@ test("home page ambient animation avoids expensive filter and shadow churn on ev
     path.resolve(process.cwd(), "src/index.css"),
     "utf8",
   );
-  const veilKeyframe = cssSource.slice(
-    cssSource.indexOf("@keyframes home-space-veil-breathe"),
-    cssSource.indexOf("@keyframes home-orbit-breathe"),
-  );
   const orbitBreatheKeyframe = cssSource.slice(
     cssSource.indexOf("@keyframes home-orbit-breathe"),
-    cssSource.indexOf("@keyframes home-space-galaxy-turn"),
+    cssSource.indexOf("@keyframes home-primary-pulse"),
   );
   const buttonBorderBlock = cssSource.slice(
     cssSource.indexOf(".home-primary-ignition::after"),
     cssSource.indexOf(".home-privacy-status"),
   );
 
-  assert.match(cssSource, /\.home-space-photo \{[\s\S]*will-change: transform;/);
-  assert.match(cssSource, /\.home-space-photo-veil \{[\s\S]*will-change: transform;/);
-  assert.match(veilKeyframe, /transform: translate3d\(-0\.35%, 0\.22%, 0\) scale\(0\.996\);[\s\S]*transform: translate3d\(0\.55%, -0\.7%, 0\) scale\(1\.01\);/);
-  assert.doesNotMatch(veilKeyframe, /filter:/);
-  assert.doesNotMatch(cssSource, /@keyframes home-space-star-pulse/);
-  assert.doesNotMatch(cssSource, /@keyframes home-space-comet/);
+  assert.doesNotMatch(cssSource, /@keyframes home-space-/);
   assert.doesNotMatch(cssSource, /@keyframes home-panel-scan/);
   assert.doesNotMatch(orbitBreatheKeyframe, /box-shadow/);
   assert.doesNotMatch(orbitBreatheKeyframe, /opacity:/);
   assert.doesNotMatch(buttonBorderBlock, /animation:/);
-});
-
-test("home page theme atmospheres use the selected image as a full-page background", () => {
-  const cssSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/index.css"),
-    "utf8",
-  );
-  const starsABlock = cssSource.slice(
-    cssSource.indexOf(".home-space-stars-a"),
-    cssSource.indexOf(".home-space-stars-b"),
-  );
-
-  assert.match(cssSource, /:root\[data-theme="inner-space"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.34;/);
-  assert.match(cssSource, /:root\[data-theme="soft-signal"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.32;/);
-  assert.match(cssSource, /:root\[data-theme="sync-field"\] \.home-space-depth \{[\s\S]*--home-space-photo-opacity: 0\.3;[\s\S]*--home-space-photo-size: cover;/);
-  assert.match(cssSource, /:root\[data-theme="inner-space"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 24s;[\s\S]*--home-space-veil-duration: 19s;/);
-  assert.match(cssSource, /:root\[data-theme="soft-signal"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 29s;[\s\S]*--home-space-veil-duration: 23s;/);
-  assert.match(cssSource, /:root\[data-theme="sync-field"\] \.home-space-depth \{[\s\S]*--home-space-photo-float-duration: 21s;[\s\S]*--home-space-veil-duration: 17\.5s;/);
-  assert.doesNotMatch(cssSource, /--home-space-star-pulse-duration/);
-  assert.match(cssSource, /\.home-space-depth \{[\s\S]*rgba\(2, 6, 23, 0\.48\)\);/);
-  assert.match(cssSource, /\.home-space-depth::after \{[\s\S]*radial-gradient\(ellipse at 52% 44%/);
-  assert.match(cssSource, /\.home-space-photo \{[\s\S]*inset: -4% -3% -5%;[\s\S]*isolation: isolate;[\s\S]*mix-blend-mode: normal;/);
-  assert.match(cssSource, /\.home-space-photo-image \{[\s\S]*object-fit: cover;[\s\S]*opacity: 0;[\s\S]*transition: opacity 560ms linear;/);
-  assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;[\s\S]*transition-delay: 120ms;/);
-  assert.match(cssSource, /\.home-space-photo-image-active \{[\s\S]*opacity: calc\(var\(--home-space-photo-layer-opacity\) \+ var\(--home-space-photo-opacity-boost, 0\)\);/);
-  assert.match(cssSource, /\.home-space-photo-image-inner-space,\s*\.home-space-photo-image-soft-signal \{[\s\S]*object-position: center 42%;/);
-  assert.match(cssSource, /\.home-space-photo-image-sync-field \{[\s\S]*object-position: center 46%;/);
-  assert.match(cssSource, /\.home-space-depth \{[\s\S]*contain: paint;/);
-  assert.doesNotMatch(cssSource, /\.home-space-photo \{[^}]*mask-image:/);
-  assert.doesNotMatch(cssSource, /\.home-space-photo \{[^}]*filter:/);
-  assert.match(cssSource, /\.home-space-photo\s*\{[\s\S]*animation: home-space-photo-float var\(--home-space-photo-float-duration\)/);
-  assert.match(cssSource, /\.home-space-photo-veil\s*\{[\s\S]*animation: home-space-veil-breathe var\(--home-space-veil-duration\)/);
-  assert.doesNotMatch(starsABlock, /animation:/);
-  assert.doesNotMatch(starsABlock, /home-space-star-pulse/);
-});
-
-test("home page trims decorative animation density on mid-size and coarse-pointer viewports", () => {
-  const cssSource = fs.readFileSync(
-    path.resolve(process.cwd(), "src/index.css"),
-    "utf8",
-  );
-
-  assert.match(cssSource, /@media \(max-width: 1024px\), \(pointer: coarse\)/);
-  assert.match(cssSource, /\.home-space-stars-b \{[\s\S]*display: none;/);
-  assert.match(cssSource, /\.home-space-nebula-flow-a \{[\s\S]*opacity: 0\.58;[\s\S]*animation-duration: 48s;/);
-  assert.match(cssSource, /\.home-space-nebula-flow-b \{[\s\S]*opacity: 0\.42;[\s\S]*animation-duration: 64s;/);
-  assert.match(cssSource, /\.home-space-galaxy-disk \{[\s\S]*animation-duration: 96s;/);
-  assert.match(cssSource, /\.home-space-galaxy-stream \{[\s\S]*opacity: 0\.56;[\s\S]*animation-duration: 72s;/);
-  assert.match(cssSource, /\.home-space-photo-veil \{[\s\S]*animation: none;/);
-  assert.match(cssSource, /\.home-space-stars-a \{[\s\S]*opacity: 0\.34;/);
-  assert.match(cssSource, /\.home-orbit-core \{[\s\S]*animation: none;/);
 });
 
 test("home page secondary entry buttons do not render oversized hover halos", () => {
@@ -870,13 +722,14 @@ test("female MVP home gives the briefing panel more vertical rhythm", () => {
   const missionCardBlock = getExactCssBlock(cssSource, ".female-mvp-mission-card");
   const modeDockBlock = getExactCssBlock(cssSource, ".female-mvp-mode-dock");
 
-  assert.match(missionCardBlock, /min-height: clamp\(11\.2rem, 24svh, 13\.6rem\);/);
-  assert.match(missionCardBlock, /padding: 1\.2rem 1rem 1\.02rem;/);
+  assert.match(missionCardBlock, /min-height: clamp\(12\.6rem, 27svh, 15\.2rem\);/);
+  assert.match(missionCardBlock, /padding: 1\.55rem 1rem 1\.36rem;/);
   assert.match(cssSource, /\.female-mvp-briefing-line \{/);
   assert.match(cssSource, /\.female-mvp-mode-dock \{/);
   assert.match(modeDockBlock, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(modeDockBlock, /border-radius: 999px;/);
-  assert.match(modeDockBlock, /padding: 0\.12rem;/);
+  assert.match(modeDockBlock, /padding: 0\.2rem;/);
+  assert.match(cssSource, /\.female-mvp-copy-line \{[\s\S]*gap: 0\.2rem;/);
   assert.doesNotMatch(modeDockBlock, /border-top:/);
   assert.match(cssSource, /\.female-mvp-mission-node \{[\s\S]*background: transparent;/);
   assert.match(cssSource, /\.female-mvp-mission-node::before \{/);
@@ -932,7 +785,7 @@ test("female MVP home tightens the hero stage while lightening the lower action 
   assert.match(introStageBlock, /height: clamp\(16\.2rem, 37svh, 20\.6rem\);/);
   assert.match(introStageBlock, /margin-top: -0\.55rem;/);
   assert.match(missionCardBlock, /box-shadow:[\s\S]*0 0\.55rem 1\.8rem rgba\(196, 124, 146, 0\.06\);/);
-  assert.match(missionNodeBlock, /min-height: 1\.9rem;/);
+  assert.match(missionNodeBlock, /min-height: 2\.15rem;/);
   assert.match(primaryButtonBlock, /min-height: 3rem;/);
 });
 
@@ -1056,7 +909,7 @@ test("female MVP home keeps feedback modal mounted without rendering a feedback 
   assert.doesNotMatch(html, /截图上传（可选，最多 3 张）/);
 });
 
-test("theme switch stabilization also suppresses heavy shell and panel transitions without removing photo crossfade", () => {
+test("theme switch stabilization also suppresses heavy shell and panel transitions without legacy photo crossfade rules", () => {
   const cssSource = fs.readFileSync(
     path.resolve(process.cwd(), "src/index.css"),
     "utf8",
@@ -1070,7 +923,7 @@ test("theme switch stabilization also suppresses heavy shell and panel transitio
   assert.match(cssSource, /\.theme-switch-stabilizing \.floating-knowledge-capsule,/);
   assert.match(cssSource, /\.theme-switch-stabilizing \.floating-knowledge-capsule::before \{/);
   assert.match(cssSource, /transition: none !important;/);
-  assert.match(cssSource, /\.home-space-photo-image \{[\s\S]*transition: opacity 560ms linear;/);
-  assert.match(cssSource, /\.home-space-photo-image-exiting \{[\s\S]*transition-duration: 760ms;/);
-  assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.home-space-photo-image \{[\s\S]*transition: none !important;/);
+  assert.doesNotMatch(cssSource, /home-space-photo/);
+  assert.doesNotMatch(cssSource, /home-space-photo-image/);
+  assert.doesNotMatch(cssSource, /\.theme-switch-stabilizing \.home-space-/);
 });

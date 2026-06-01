@@ -152,7 +152,6 @@ import {
 import { AppRouteRenderer } from "./components/AppRouteRenderer";
 import {
   applyAppTheme,
-  preloadAppThemeHomeCosmos,
   readStoredAppTheme,
   writeStoredAppTheme,
   type AppThemeId,
@@ -734,15 +733,9 @@ export default function App() {
     clearThemeSwitchStabilizeTimeout();
     document.documentElement.classList.add("theme-switch-stabilizing");
 
-    void preloadAppThemeHomeCosmos(nextThemeId).then(() => {
-      if (themeSwitchRunRef.current !== runId) {
-        return;
-      }
-
-      applyAppTheme(nextThemeId);
-      setThemeId(nextThemeId);
-      releaseThemeSwitchStabilization(runId);
-    });
+    applyAppTheme(nextThemeId);
+    setThemeId(nextThemeId);
+    releaseThemeSwitchStabilization(runId);
   };
 
   useEffect(() => {

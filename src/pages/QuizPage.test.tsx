@@ -215,6 +215,9 @@ test("quiz female MVP background is scoped to the quiz shell", () => {
   assert.match(pageMarkup, /female-mvp-quiz/);
   assert.match(pageMarkup, /min-h-\[100svh\]/);
   assert.doesNotMatch(pageMarkup, /quiz-scan-shell/);
+  assert.doesNotMatch(source, /quiz-scan-shell/);
+  assert.doesNotMatch(source, /quiz-starfield/);
+  assert.doesNotMatch(source, /quiz-scan-beam/);
 });
 
 test("quiz female MVP ambient elements pause when animation is disabled", () => {
