@@ -5,11 +5,14 @@ import {
   getPrimaryAppAiProvider,
 } from "./app-ai-chain.ts";
 
-test("app ai provider order uses official Kimi instead of DMXAPI Kimi providers", () => {
+test("app ai provider order prefers Qinaigc before DMXAPI for minimax, qwen, and glm", () => {
   assert.deepEqual(APP_RECOMMENDATION_PROVIDER_ORDER, [
     "dmxapi-mimo",
+    "qnaigc-minimax",
     "dmxapi-minimax",
+    "qnaigc-qwen",
     "dmxapi-qwen",
+    "qnaigc-glm",
     "dmxapi-glm",
     "kimi",
     "dmxapi-claude",

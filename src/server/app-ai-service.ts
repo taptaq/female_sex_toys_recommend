@@ -41,8 +41,11 @@ export const ENHANCEMENT_PROVIDER_TIMEOUT_MS = 60_000;
 
 const PROVIDER_LABELS: Record<AppAiProvider, string> = {
   "dmxapi-mimo": "DMXAPI Mimo",
+  "qnaigc-minimax": "七牛云 MiniMax",
   "dmxapi-minimax": "DMXAPI MiniMax",
+  "qnaigc-qwen": "七牛云 Qwen",
   "dmxapi-qwen": "DMXAPI Qwen",
+  "qnaigc-glm": "七牛云 GLM",
   "dmxapi-glm": "DMXAPI GLM",
   kimi: "Kimi 官方",
   "dmxapi-claude": "DMXAPI Claude",
@@ -68,15 +71,30 @@ const PROVIDER_RUNTIME_CONFIG: Record<
     baseURL: "https://www.dmxapi.cn/v1",
     topP: 0.95,
   },
+  "qnaigc-minimax": {
+    apiKeyEnv: "QNAIGC_API_KEY",
+    baseURL: "https://api.qnaigc.com/v1",
+    topP: 0.95,
+  },
   "dmxapi-minimax": {
     apiKeyEnv: "DMXAPI_API_KEY",
     baseURL: "https://www.dmxapi.cn/v1",
+    topP: 0.95,
+  },
+  "qnaigc-qwen": {
+    apiKeyEnv: "QNAIGC_API_KEY",
+    baseURL: "https://api.qnaigc.com/v1",
     topP: 0.95,
   },
   "dmxapi-qwen": {
     apiKeyEnv: "DMXAPI_API_KEY",
     baseURL: "https://www.dmxapi.cn/v1",
     topP: 0.95,
+  },
+  "qnaigc-glm": {
+    apiKeyEnv: "QNAIGC_API_KEY",
+    baseURL: "https://api.qnaigc.com/v1",
+    topP: 1,
   },
   "dmxapi-glm": {
     apiKeyEnv: "DMXAPI_API_KEY",
@@ -124,8 +142,11 @@ const PROVIDER_RUNTIME_CONFIG: Record<
 
 const PROXY_PROVIDER_MODELS: Record<AppAiProvider, string> = {
   "dmxapi-mimo": "mimo-v2.5-pro",
+  "qnaigc-minimax": "minimax/minimax-m3",
   "dmxapi-minimax": "MiniMax-M2.7-free",
+  "qnaigc-qwen": "qwen/qwen3.6-plus",
   "dmxapi-qwen": "qwen3.5-27b",
+  "qnaigc-glm": "z-ai/glm-5.1",
   "dmxapi-glm": "glm-5",
   kimi: "kimi-k2.6",
   "dmxapi-claude": "claude-opus-4-7",
@@ -163,6 +184,9 @@ const RERANK_REROLL_ROTATION_ORDER: readonly AppAiProvider[] = Object.freeze([
 ]);
 
 const DEFAULT_RECALIBRATION_FALLBACK_ORDER: readonly AppAiProvider[] = Object.freeze([
+  "qnaigc-minimax",
+  "qnaigc-qwen",
+  "qnaigc-glm",
   "dmxapi-minimax",
   "dmxapi-qwen",
   "dmxapi-mimo",

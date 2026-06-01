@@ -13,6 +13,10 @@ test("runAppAiProviderLadder returns the first successful metadata-carrying prov
         calls.push("dmxapi-mimo");
         throw new Error("down");
       },
+      "qnaigc-minimax": async () => {
+        calls.push("qnaigc-minimax");
+        throw new Error("still-down");
+      },
       "dmxapi-minimax": async () => {
         calls.push("dmxapi-minimax");
         return {
@@ -21,8 +25,16 @@ test("runAppAiProviderLadder returns the first successful metadata-carrying prov
           provider: "dmxapi-minimax",
         };
       },
+      "qnaigc-qwen": async () => {
+        calls.push("qnaigc-qwen");
+        throw new Error("should-not-run");
+      },
       "dmxapi-qwen": async () => {
         calls.push("dmxapi-qwen");
+        throw new Error("should-not-run");
+      },
+      "qnaigc-glm": async () => {
+        calls.push("qnaigc-glm");
         throw new Error("should-not-run");
       },
       "dmxapi-glm": async () => {
@@ -69,14 +81,14 @@ test("runAppAiProviderLadder returns the first successful metadata-carrying prov
     modelName: "MiniMax-M2.7-free",
     provider: "dmxapi-minimax",
   });
-  assert.deepEqual(calls, ["dmxapi-mimo", "dmxapi-minimax"]);
+  assert.deepEqual(calls, ["dmxapi-mimo", "qnaigc-minimax", "dmxapi-minimax"]);
 });
 
 test("runAppAiProviderLadder skips a provider when it exceeds the timeout", async () => {
   const calls: string[] = [];
 
   const result = await runAppAiProviderLadder({
-    providerOrder: ["dmxapi-mimo", "dmxapi-minimax"],
+    providerOrder: ["dmxapi-mimo", "qnaigc-minimax", "dmxapi-minimax"],
     providerTimeoutMs: 5,
     providers: {
       "dmxapi-mimo": async () => {
@@ -88,6 +100,14 @@ test("runAppAiProviderLadder skips a provider when it exceeds the timeout", asyn
           provider: "dmxapi-mimo",
         };
       },
+      "qnaigc-minimax": async () => {
+        calls.push("qnaigc-minimax");
+        return {
+          data: [{ id: "p-1", reason: "七牛兜底结果" }],
+          modelName: "minimax/minimax-m3",
+          provider: "qnaigc-minimax",
+        };
+      },
       "dmxapi-minimax": async () => {
         calls.push("dmxapi-minimax");
         return {
@@ -96,7 +116,13 @@ test("runAppAiProviderLadder skips a provider when it exceeds the timeout", asyn
           provider: "dmxapi-minimax",
         };
       },
+      "qnaigc-qwen": async () => {
+        throw new Error("unused");
+      },
       "dmxapi-qwen": async () => {
+        throw new Error("unused");
+      },
+      "qnaigc-glm": async () => {
         throw new Error("unused");
       },
       "dmxapi-glm": async () => {
@@ -130,9 +156,9 @@ test("runAppAiProviderLadder skips a provider when it exceeds the timeout", asyn
   });
 
   assert.deepEqual(result, {
-    data: [{ id: "p-2", reason: "快速兜底结果" }],
-    modelName: "MiniMax-M2.7-free",
-    provider: "dmxapi-minimax",
+    data: [{ id: "p-1", reason: "七牛兜底结果" }],
+    modelName: "minimax/minimax-m3",
+    provider: "qnaigc-minimax",
   });
-  assert.deepEqual(calls, ["dmxapi-mimo", "dmxapi-minimax"]);
+  assert.deepEqual(calls, ["dmxapi-mimo", "qnaigc-minimax"]);
 });

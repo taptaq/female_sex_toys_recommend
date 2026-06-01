@@ -24,16 +24,34 @@ test("RESULT_MODEL_OPTIONS preserves provider order and labels", () => {
       description: "默认先试它，结果通常更稳妥。",
     },
     {
+      provider: "qnaigc-minimax",
+      model: "minimax/minimax-m3",
+      label: "MiniMax（七牛）",
+      description: "先走七牛云这版，更容易拿到同模型的结果。",
+    },
+    {
       provider: "dmxapi-minimax",
       model: "MiniMax-M2.7-free",
       label: "MiniMax（DMX）",
       description: "想看更详细的推荐解释，可以试它。",
     },
     {
+      provider: "qnaigc-qwen",
+      model: "qwen/qwen3.6-plus",
+      label: "Qwen（七牛）",
+      description: "先走七牛云这版，再看 DMX 兜底。",
+    },
+    {
       provider: "dmxapi-qwen",
       model: "qwen3.5-27b",
       label: "Qwen（DMX）",
       description: "想要更干脆清晰的结果，可以试它。",
+    },
+    {
+      provider: "qnaigc-glm",
+      model: "z-ai/glm-5.1",
+      label: "GLM（七牛）",
+      description: "先走七牛云这版，再看 DMX 兜底。",
     },
     {
       provider: "dmxapi-glm",
@@ -115,6 +133,12 @@ test("getResultModelOption returns the matching option when provider exists", ()
     model: "qwen3.5-27b",
     label: "Qwen（DMX）",
     description: "想要更干脆清晰的结果，可以试它。",
+  });
+  assert.deepEqual(getResultModelOption("qnaigc-qwen"), {
+    provider: "qnaigc-qwen",
+    model: "qwen/qwen3.6-plus",
+    label: "Qwen（七牛）",
+    description: "先走七牛云这版，再看 DMX 兜底。",
   });
   assert.equal(getResultModelOption("missing-provider"), undefined);
 });

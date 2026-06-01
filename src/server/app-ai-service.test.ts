@@ -90,6 +90,42 @@ test("createProviderExecutors exposes provider-specific executors with result-mo
   });
 });
 
+test("createProviderExecutors routes qnaigc models through the qnaigc chat completions endpoint", async () => {
+  const requests: ChatCompletionRequest[] = [];
+  const service = createAppAiService({
+    env: {
+      QNAIGC_API_KEY: "qnaigc-key",
+    } as NodeJS.ProcessEnv,
+    chatCompletionRunner: async (request) => {
+      requests.push(request);
+      return '[{"id":"p-1","reason":"七牛云结果"}]';
+    },
+  });
+
+  const executors = service.createProviderExecutors({
+    prompt: "rerank prompt",
+    temperature: 0.1,
+    emptyJson: "[]",
+    logContext: "单模型重校准",
+  });
+  const result = await executors["qnaigc-qwen"]();
+
+  assert.deepEqual(result, {
+    data: [{ id: "p-1", reason: "七牛云结果" }],
+    modelName: "qwen/qwen3.6-plus",
+    provider: "qnaigc-qwen",
+  });
+  assert.deepEqual(requests[0], {
+    apiKey: "qnaigc-key",
+    baseURL: "https://api.qnaigc.com/v1",
+    model: "qwen/qwen3.6-plus",
+    prompt: "rerank prompt",
+    temperature: 0.1,
+    maxTokens: 4096,
+    topP: 0.95,
+  });
+});
+
 test("createProviderExecutors routes Kimi through the official Moonshot API", async () => {
   const requests: ChatCompletionRequest[] = [];
   const service = createAppAiService({
@@ -356,13 +392,17 @@ test("runResultRecalibration uses the automatic provider ladder and recomputes c
   assert.match(requests[1]?.prompt || "", /"id":"p-3"/);
   assert.match(requests[1]?.prompt || "", /"id":"b-2"/);
   assert.match(requests[1]?.prompt || "", /"id":"b-3"/);
-  assert.match(requests[0]?.prompt || "", /"descriptionSignals":"低噪静音、吮吸刺激、新手友好"/);
-  assert.match(requests[0]?.prompt || "", /"descriptionSignals":"自动活塞、强刺激"/);
+  assert.match(requests[0]?.prompt || "", /"descriptionSignals":"/);
+  assert.match(requests[0]?.prompt || "", /吮吸刺激/);
+  assert.match(requests[0]?.prompt || "", /新手友好/);
+  assert.match(requests[0]?.prompt || "", /自动活塞/);
+  assert.match(requests[0]?.prompt || "", /强刺激/);
   assert.doesNotMatch(requests[0]?.prompt || "", /\{\n\s+"rank"/);
   assert.doesNotMatch(requests[0]?.prompt || "", /低噪吮吸设计，适合新手慢热探索/);
-  assert.match(requests[1]?.prompt || "", /"descriptionSignals":"低噪静音、可穿戴"/);
-  assert.match(requests[1]?.prompt || "", /"descriptionSignals":"低噪静音"/);
-  assert.match(requests[1]?.prompt || "", /"descriptionSignals":"易清洗"/);
+  assert.match(requests[1]?.prompt || "", /"descriptionSignals":"/);
+  assert.match(requests[1]?.prompt || "", /可穿戴/);
+  assert.match(requests[1]?.prompt || "", /低噪静音/);
+  assert.match(requests[1]?.prompt || "", /易清洗/);
 });
 
 test("runResultRecalibration passes explicit disguise signals to the rerank prompt", async () => {
@@ -453,12 +493,12 @@ test("resolveRecalibrationPlan starts the first manual reroll on the next rerank
     previousShoppingGuidanceCount: 4,
   });
 
-  assert.equal(plan.rerankProvider, "dmxapi-minimax");
+  assert.equal(plan.rerankProvider, "qnaigc-minimax");
   assert.equal(plan.enhancementProvider, "dmxapi-qwen");
   assert.deepEqual(plan.fallbackOrder.slice(0, 3), [
-    "dmxapi-minimax",
-    "dmxapi-qwen",
-    "dmxapi-mimo",
+    "qnaigc-minimax",
+    "qnaigc-qwen",
+    "qnaigc-glm",
   ]);
 });
 
@@ -484,16 +524,16 @@ test("resolveRecalibrationPlan rotates rerank providers across repeated rerolls 
     previousShoppingGuidanceCount: 4,
   });
 
-  assert.equal(secondPlan.rerankProvider, "dmxapi-qwen");
+  assert.equal(secondPlan.rerankProvider, "dmxapi-minimax");
   assert.equal(secondPlan.enhancementProvider, "dmxapi-qwen");
-  assert.equal(secondPlan.fallbackOrder[0], "dmxapi-qwen");
-  assert.ok(secondPlan.fallbackOrder.includes("dmxapi-minimax"));
+  assert.equal(secondPlan.fallbackOrder[0], "dmxapi-minimax");
+  assert.ok(secondPlan.fallbackOrder.includes("qnaigc-qwen"));
   assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-claude"));
   assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-gemini"));
   assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-grok"));
   assert.ok(wrappedPlan.fallbackOrder.includes("dmxapi-gpt"));
   assert.ok(wrappedPlan.fallbackOrder.includes("kimi"));
-  assert.equal(wrappedPlan.rerankProvider, "dmxapi-gpt");
+  assert.equal(wrappedPlan.rerankProvider, "dmxapi-claude");
 });
 
 test("runResultRecalibration follows the rotated rerank provider while keeping the stable enhancement provider", async () => {

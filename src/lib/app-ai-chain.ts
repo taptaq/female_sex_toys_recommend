@@ -1,7 +1,10 @@
 export const APP_RECOMMENDATION_PROVIDER_ORDER = [
   "dmxapi-mimo",
+  "qnaigc-minimax",
   "dmxapi-minimax",
+  "qnaigc-qwen",
   "dmxapi-qwen",
+  "qnaigc-glm",
   "dmxapi-glm",
   "kimi",
   "dmxapi-claude",
