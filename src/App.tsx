@@ -171,6 +171,7 @@ type AiResultEnhancement = {
 };
 
 const ROUTE_SHELL_EXIT_STABILIZE_MS = 480;
+const DEBUG_FORCE_MATCHING_LOADING_PAGE = false;
 
 type AppAiProxyResponse<T> = {
   data: T;
@@ -233,6 +234,32 @@ type QuizReturnToResultsState = {
   matchInputMode?: "quiz" | "natural-language";
   naturalLanguageQuery?: string;
 };
+
+function DataLoadingPage({ loadingStep }: { loadingStep: number }) {
+  const statusText =
+    loadingStep === -1
+      ? "装备库连接暂时不稳定"
+      : loadingStep >= 2
+        ? "正在整理候选装备..."
+        : "正在准备装备库...";
+
+  return (
+    <div className="female-mvp-data-loading relative left-1/2 flex min-h-[100svh] w-screen -translate-x-1/2 items-center justify-center overflow-hidden px-6">
+      <div className="female-mvp-data-loading__panel relative z-10 w-full max-w-[20rem] text-center">
+        <span className="female-mvp-data-loading__badge">LUNA 数据准备中</span>
+        <h2 className="mt-5 text-xl font-black tracking-normal text-slate-900">
+          {statusText}
+        </h2>
+        <p className="mt-3 text-xs font-semibold leading-6 text-slate-500">
+          我们先把装备库准备好，稍后再进入 Luna 校准匹配。
+        </p>
+        <div className="female-mvp-data-loading__bar mt-6" aria-hidden="true">
+          <span />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function normalizeLibraryAudienceGender(value: string): LibraryAudienceGender {
   if (value === "female" || value === "male" || value === "unisex") {
@@ -2252,19 +2279,22 @@ ${JSON.stringify(context.backupCandidates)}
     void fetchProducts({ preferCachedResult: true });
   }, [isFavoritesModalOpen, favoriteProductIds.size, allProducts.length, isLoading]);
 
+  if (DEBUG_FORCE_MATCHING_LOADING_PAGE) {
+    return (
+      <MatchingPage
+        pageVariants={pageVariants}
+        mode="matching"
+        loadingStep={2}
+        isAiMatching
+        tags={["静音", "新手友好", "温柔慢热"]}
+      />
+    );
+  }
+
   if (isLoading && currentRoute !== "/library") {
     return (
-      <div className="theme-synced-page relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 sm:p-6 md:p-8">
-        <ThemeCosmosLayer variant="matching" />
-        <div className="relative z-10 w-full">
-          <MatchingPage
-            pageVariants={pageVariants}
-            mode="loading"
-            loadingStep={loadingStep}
-            isAiMatching={false}
-            tags={answers.tags}
-          />
-        </div>
+      <div className="theme-synced-page female-mvp-soft-shell relative min-h-screen overflow-hidden">
+        <DataLoadingPage loadingStep={loadingStep} />
       </div>
     );
   }

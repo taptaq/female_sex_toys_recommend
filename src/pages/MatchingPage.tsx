@@ -38,6 +38,9 @@ export function MatchingPage({
   const helperText = isLoadingMode
     ? "先休息一下，马上回来。"
     : "我们只筛选女性向候选，再按你的偏好轻轻排序。";
+  const calibrationSteps = isLoadingMode
+    ? ["打开推荐舱", "读取偏好", "准备清单"]
+    : ["女性向候选", "体感偏好", "温度限制"];
 
   useEffect(() => {
     if (!ritualRef.current) return;
@@ -75,6 +78,9 @@ export function MatchingPage({
       <div className="female-mvp-matching__stars" aria-hidden="true" />
       <div className="female-mvp-matching__orb female-mvp-matching__orb-rose" aria-hidden="true" />
       <div className="female-mvp-matching__orb female-mvp-matching__orb-blue" aria-hidden="true" />
+      <span className="female-mvp-matching__sticker female-mvp-matching__sticker-orbit" aria-hidden="true" />
+      <span className="female-mvp-matching__sticker female-mvp-matching__sticker-meteor" aria-hidden="true" />
+      <span className="female-mvp-matching__sticker female-mvp-matching__sticker-spark" aria-hidden="true" />
 
       <div
         ref={ritualRef}
@@ -82,6 +88,9 @@ export function MatchingPage({
       >
         <div className="female-mvp-matching__reveal relative">
           <div className="female-mvp-matching__halo" aria-hidden="true" />
+          <div className="female-mvp-matching__scan-ring" aria-hidden="true" />
+          <span className="female-mvp-matching__scan-dot female-mvp-matching__scan-dot-a" aria-hidden="true" />
+          <span className="female-mvp-matching__scan-dot female-mvp-matching__scan-dot-b" aria-hidden="true" />
           <span
             className="female-mvp-matching__planet female-mvp-matching__planet-safety"
             aria-label="安心星"
@@ -104,18 +113,18 @@ export function MatchingPage({
           </span>
           <div className="female-mvp-matching__astronaut" role="img" aria-label="Luna 正在匹配你的推荐装备">
             <img
-              src="/assets/luna-astronaut/yeah.png"
+              src="/assets/luna-astronaut/matching-calibration.png"
               alt=""
               className="female-mvp-matching__astronaut-image"
             />
           </div>
         </div>
-        <span className="female-mvp-matching__reveal mt-7 inline-flex items-center gap-2 rounded-full border border-white/76 bg-white/66 px-4 py-2 text-xs font-black tracking-[0.12em] text-rose-500 shadow-[0_14px_34px_rgba(244,114,182,0.16)] backdrop-blur-md">
+        <span className="female-mvp-matching__reveal mt-6 inline-flex items-center gap-2 rounded-full border border-white/76 bg-white/66 px-4 py-2 text-xs font-black tracking-[0.12em] text-rose-500 shadow-[0_14px_34px_rgba(244,114,182,0.16)] backdrop-blur-md">
           <Sparkles className="h-3.5 w-3.5 text-sky-500" />
           LUNA 装备校准中
         </span>
         <h2 className="female-mvp-matching__reveal mt-5 text-2xl font-black leading-tight tracking-normal text-slate-900">
-          正在为你挑一件舒服的装备
+          正在为你挑一件合适的装备
         </h2>
         <p className="female-mvp-matching__reveal mt-3 text-sm font-semibold leading-7 tracking-normal text-slate-600">
           {statusText}
@@ -125,13 +134,20 @@ export function MatchingPage({
             大概需要 1-2 分钟，请先别关闭页面。
           </p>
         ) : null}
-        <div className="female-mvp-matching__reveal mt-7 w-full rounded-[1.75rem] border border-white/78 bg-white/64 p-4 shadow-[0_20px_58px_rgba(196,124,146,0.16)] backdrop-blur-xl">
+        <div className="female-mvp-matching__reveal female-mvp-matching__calibration-panel mt-7 w-full">
           <div className="female-mvp-matching__track" aria-hidden="true">
             <div className="female-mvp-matching__comet" />
           </div>
           <p className="mt-4 text-[12px] leading-6 tracking-normal text-slate-600">
             {helperText}
           </p>
+          <div className="female-mvp-matching__step-list" aria-label="校准进度">
+            {calibrationSteps.map((step) => (
+              <span key={step} className="female-mvp-matching__step">
+                {step}
+              </span>
+            ))}
+          </div>
         </div>
         {loadingStep === -1 && isLoadingMode ? (
           <button
