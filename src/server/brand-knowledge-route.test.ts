@@ -45,7 +45,7 @@ test("brand knowledge handler prefers database competitor content when available
           {
             name: "LELO",
             domain: "lelo.com",
-            country: "Sweden",
+            country: "瑞典",
             founded_date: "2003",
             description: "LELO 是偏高完成度与整体质感的经典品牌。",
             focus: "Unisex",
@@ -65,7 +65,7 @@ test("brand knowledge handler prefers database competitor content when available
   assert.deepEqual(mockResponse.readJsonPayload(), {
     brandName: "LELO",
     brandSlug: "lelo",
-    country: "Sweden",
+    country: "瑞典",
     description: "LELO 是偏高完成度与整体质感的经典品牌。",
     focus: "Unisex",
     philosophy: ["风格更克制、稳定，也更强调长期复用体验。"],
@@ -99,7 +99,7 @@ test("brand knowledge list handler returns database brands and backfills missing
           {
             name: "POPOCAT",
             domain: "popocat.tmall.com",
-            country: "China",
+            country: "中国",
             founded_date: null,
             description: "POPOCAT 描述",
             focus: "Female",
@@ -110,7 +110,7 @@ test("brand knowledge list handler returns database brands and backfills missing
           {
             name: "We-Vibe",
             domain: "we-vibe.com",
-            country: "Canada",
+            country: "加拿大",
             founded_date: null,
             description: "We-Vibe 描述",
             focus: "Unisex",

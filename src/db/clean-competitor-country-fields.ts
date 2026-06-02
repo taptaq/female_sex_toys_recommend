@@ -28,34 +28,35 @@ type CompetitorCountryPatch = {
 };
 
 const COUNTRY_NORMALIZATION_MAP = new Map<string, string>([
-  ["中国", "China"],
-  ["china", "China"],
-  ["美国", "USA"],
-  ["usa", "USA"],
-  ["united states", "USA"],
-  ["germany", "Germany"],
-  ["德国", "Germany"],
-  ["united kingdom", "United Kingdom"],
-  ["uk", "United Kingdom"],
-  ["英国", "United Kingdom"],
-  ["japan", "Japan"],
-  ["日本", "Japan"],
-  ["canada", "Canada"],
-  ["加拿大", "Canada"],
-  ["france", "France"],
-  ["法国", "France"],
-  ["sweden", "Sweden"],
-  ["瑞典", "Sweden"],
-  ["netherlands", "Netherlands"],
-  ["荷兰", "Netherlands"],
+  ["中国", "中国"],
+  ["china", "中国"],
+  ["美国", "美国"],
+  ["usa", "美国"],
+  ["united states", "美国"],
+  ["united states of america", "美国"],
+  ["germany", "德国"],
+  ["德国", "德国"],
+  ["united kingdom", "英国"],
+  ["uk", "英国"],
+  ["英国", "英国"],
+  ["japan", "日本"],
+  ["日本", "日本"],
+  ["canada", "加拿大"],
+  ["加拿大", "加拿大"],
+  ["france", "法国"],
+  ["法国", "法国"],
+  ["sweden", "瑞典"],
+  ["瑞典", "瑞典"],
+  ["netherlands", "荷兰"],
+  ["荷兰", "荷兰"],
 ]);
 
 const EXPLICIT_BRAND_COUNTRY_MAP = new Map<string, string>([
-  ["arcwave", "Germany"],
-  ["beu", "China"],
-  ["hello nancy", "China"],
-  ["lbdo", "USA"],
-  ["醉清风-谜姬", "China"],
+  ["arcwave", "德国"],
+  ["beu", "中国"],
+  ["hello nancy", "中国"],
+  ["lbdo", "美国"],
+  ["醉清风-谜姬", "中国"],
 ]);
 
 export function normalizeCompetitorCountry(value: string | null | undefined) {
@@ -76,7 +77,7 @@ export function buildCompetitorCountryPatch(
   const nextCountry =
     normalizedCountry ??
     explicitCountry ??
-    (row.is_domestic === true ? "China" : null);
+    (row.is_domestic === true ? "中国" : null);
 
   if (!nextCountry || nextCountry === previousCountry) {
     return null;

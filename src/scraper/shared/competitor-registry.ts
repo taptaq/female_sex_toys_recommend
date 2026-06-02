@@ -39,7 +39,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "POPOCAT",
     matchNames: ["popocat"],
     domain: "popocat.tmall.com",
-    country: "China",
+    country: "中国",
     description:
       "POPOCAT 是天猫在售的个人护理与情趣用品品牌，覆盖女性向器具、情侣场景用品以及部分护理耗材。",
     focus: "Female",
@@ -56,7 +56,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "KUMOCOOM",
     matchNames: ["kumocoom"],
     domain: "kumocoom.com",
-    country: "China",
+    country: "中国",
     description:
       "KUMOCOOM 是原创幻想造型情趣品牌，主打以铂金硅胶材质打造的艺术化玩具与奇幻风格产品。",
     focus: "Unisex",
@@ -73,7 +73,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Magic Motion",
     matchNames: ["magic motion", "magicmotion"],
     domain: "us.magicmotion.shop",
-    country: "China",
+    country: "中国",
     foundedDate: "2016",
     description:
       "Magic Motion 是智能情趣科技品牌，覆盖女性向、穿戴式与远程互动类玩具产品。",
@@ -91,7 +91,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Hot Octopuss",
     matchNames: ["hot octopuss", "hotoctopuss"],
     domain: "www.hotoctopuss.com",
-    country: "United Kingdom",
+    country: "英国",
     description:
       "Hot Octopuss 是英国情趣科技品牌，覆盖男性、女性与情侣场景，并以脉冲技术产品见长。",
     focus: "Unisex",
@@ -108,7 +108,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "LBDO",
     matchNames: ["lbdo"],
     domain: "us.lbdo.com",
-    country: "USA",
+    country: "美国",
     description:
       "LBDO 是情趣与亲密关系场景品牌，产品覆盖玩具、润滑剂、蜡烛与互动套装。",
     focus: "Unisex",
@@ -125,7 +125,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Hello Nancy",
     matchNames: ["hello nancy", "hellonancy", "nancy"],
     domain: "hellonancy.com",
-    country: "China",
+    country: "中国",
     description:
       "Hello Nancy 是面向女性情趣场景的品牌，覆盖吸吮、震动与便携式个人护理玩具。",
     focus: "Female",
@@ -142,7 +142,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Je Joue",
     matchNames: ["je joue", "jejoue"],
     domain: "www.jejoue.com",
-    country: "United Kingdom",
+    country: "英国",
     description:
       "Je Joue 是英国情趣品牌，聚焦设计感与高端材质的女性向震动与按摩产品。",
     focus: "Female",
@@ -159,7 +159,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Kiiroo",
     matchNames: ["kiiroo"],
     domain: "www.kiiroo.com",
-    country: "Netherlands",
+    country: "荷兰",
     description:
       "Kiiroo 是互动情趣科技品牌，覆盖男性、女性与情侣远程联动设备与配套产品。",
     focus: "Unisex",
@@ -176,7 +176,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Arcwave",
     matchNames: ["arcwave"],
     domain: "www.arcwave.com",
-    country: "Germany",
+    country: "德国",
     foundedDate: "2020",
     description:
       "Arcwave 是男性向高端情趣科技品牌，聚焦男士快感设备与空气脉冲体验。",
@@ -194,7 +194,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "CRAVE",
     matchNames: ["crave", "lovecrave"],
     domain: "lovecrave.com",
-    country: "USA",
+    country: "美国",
     description:
       "CRAVE 是以 pleasure jewelry 和 bedside products 著称的高端女性向品牌，强调首饰感、工艺和审美表达。",
     focus: "Female",
@@ -211,7 +211,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Dame",
     matchNames: ["dame"],
     domain: "dame.com",
-    country: "USA",
+    country: "美国",
     foundedDate: "2014",
     description:
       "Dame 是美国女性向 sexual wellness 品牌，由 sexologist Alexandra Fine 与 MIT engineer Janet Lieberman 创立，强调研究驱动与女性本位设计。",
@@ -229,7 +229,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Master4Fancy",
     matchNames: ["master4fancy", "四趣"],
     domain: "master4fancy.com",
-    country: "China",
+    country: "中国",
     foundedDate: "2019",
     description:
       "Master4Fancy 是中国原创幻想情趣品牌，以手工铂金硅胶、角色设定和怪物幻想题材著称，由女性与 queer 艺术团队打造。",
@@ -247,7 +247,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Unbound",
     matchNames: ["unbound", "unbound babes"],
     domain: "unboundbabes.com",
-    country: "USA",
+    country: "美国",
     description:
       "Unbound 是美国女性主导的情趣与亲密健康品牌，强调 body-safe 设计、社会倡议和更无羞耻感的愉悦社区。",
     focus: "Unisex",
@@ -264,7 +264,7 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     canonicalName: "Womanizer",
     matchNames: ["womanizer"],
     domain: "www.womanizer.com",
-    country: "Germany",
+    country: "德国",
     foundedDate: "2014",
     description:
       "Womanizer 是以 Pleasure Air Technology 著称的国际女性向情趣科技品牌，现为 Lovehoney Group 旗下核心品牌之一。",
@@ -279,10 +279,27 @@ export const OFFICIAL_COMPETITOR_REGISTRY: CompetitorRegistryConfig[] = [
     isDomestic: false,
   },
   {
+    canonicalName: "We-Vibe",
+    matchNames: ["we-vibe", "we vibe", "wevibe"],
+    domain: "www.we-vibe.com",
+    country: "加拿大",
+    description:
+      "We-Vibe 是加拿大高端情趣科技品牌，产品覆盖女性向、男性向与伴侣共玩系列。",
+    focus: "Unisex",
+    philosophy: [
+      "以情侣互动、远程联动和智能控制体验作为核心品牌识别。",
+      "强调亲密关系里的共同探索，兼顾单人使用和伴侣共玩。",
+      "通过 App、穿戴式结构与人体工学设计降低互动场景的操作成本。",
+    ],
+    majorUserGroupProfile:
+      "【核心人口】25-45 岁情侣、异地关系用户和接受智能情趣科技的女性用户。\n【心理特征】重视连接稳定性、互动感和品牌可信度，希望产品能自然进入亲密关系场景。\n【核心痛点】远程互动容易受连接、佩戴舒适度和操作复杂度影响，需要更成熟的品牌与生态。",
+    isDomestic: false,
+  },
+  {
     canonicalName: "ROMP",
     matchNames: ["romp", "绒谱"],
     domain: "www.romp.toys",
-    country: "Germany",
+    country: "德国",
     description:
       "ROMP 是 Lovehoney Group 旗下更强调颜色、趣味与可及性的情趣品牌，覆盖女性、男性与情侣场景产品。",
     focus: "Unisex",

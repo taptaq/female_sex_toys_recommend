@@ -26,7 +26,7 @@ const profile: SavedRecommendationProfile = {
         brandBrief: {
           brandName: "LELO",
           brandSlug: "lelo",
-          countryLabel: "Sweden",
+          countryLabel: "瑞典",
           positioning: "偏高完成度与整体质感的经典品牌。",
           styleSummary: "风格更克制、稳定，也更强调长期复用体验。",
         },
@@ -95,7 +95,7 @@ const fallbackProducts: Product[] = [
     brandBrief: {
       brandName: "KISSTOY",
       brandSlug: "kisstoy",
-      countryLabel: "China",
+      countryLabel: "中国",
       positioning: "偏电商场景与女性向快速决策的品牌。",
       styleSummary: "风格更直接、货架化，也更强调快速理解和快速下单。",
     },
@@ -231,7 +231,7 @@ test("profiles detail shows a short brand brief for the saved primary recommenda
   );
 
   assert.match(html, /当前品牌/);
-  assert.match(html, /LELO · Sweden/);
+  assert.match(html, /LELO · 瑞典/);
   assert.match(html, /偏高完成度与整体质感的经典品牌。/);
   assert.match(html, /风格更克制、稳定，也更强调长期复用体验。/);
 });
@@ -293,7 +293,7 @@ test("profiles detail can resolve brand brief from the current product pool when
   );
 
   assert.match(html, /当前品牌/);
-  assert.match(html, /KISSTOY · China/);
+  assert.match(html, /KISSTOY · 中国/);
 });
 
 test("profiles page gives mobile users a calmer stacked archive layout and a wider detail sheet", () => {

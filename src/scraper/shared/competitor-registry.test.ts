@@ -19,7 +19,7 @@ test("buildCompetitorCreateData exposes domain and metadata fields", () => {
   assert.deepEqual(buildCompetitorCreateData(config!), {
     name: "Magic Motion",
     domain: "us.magicmotion.shop",
-    country: "China",
+    country: "中国",
     founded_date: "2016",
     description:
       "Magic Motion 是智能情趣科技品牌，覆盖女性向、穿戴式与远程互动类玩具产品。",
@@ -57,6 +57,7 @@ test("buildCompetitorUpdateData only fills missing metadata", () => {
     ),
     {
       domain: "www.arcwave.com",
+      country: "德国",
       founded_date: "2020",
       description: "Arcwave 是男性向高端情趣科技品牌，聚焦男士快感设备与空气脉冲体验。",
       focus: "Male",

@@ -49,7 +49,7 @@ test("product card shows a compact brand brief block when brand metadata exists"
   );
 
   assert.match(html, /当前品牌/);
-  assert.match(html, /Brand · USA/);
+  assert.match(html, /Brand · 美国/);
   assert.match(html, /偏入门友好与轻决策成本的品牌。/);
   assert.match(html, /风格更直接、轻量，也更适合快速开始。/);
 });

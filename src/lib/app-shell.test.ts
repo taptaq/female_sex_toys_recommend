@@ -95,7 +95,7 @@ test("normalizeProductsPayload preserves typeCode from cached products", () => {
       brandBrief: {
         brandName: "Womanizer",
         brandSlug: "womanizer",
-        countryLabel: "Germany",
+        countryLabel: "德国",
         positioning: "偏设计感与高完成度的女性向品牌。",
         styleSummary: "风格更稳定、细腻，也更强调长期体验。",
       },

@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -74,6 +74,159 @@ type BodyPersonaPageState = {
 const MAX_RELAXATION_TIPS = 3;
 const MAX_SHOPPING_GUIDANCE_WITH_RELAXATION = 3;
 const MAX_SHOPPING_GUIDANCE_ONLY = 5;
+const SHARE_CANVAS_WIDTH = 1080;
+const SHARE_CANVAS_HEIGHT = 1440;
+
+const SHARE_STICKER_ASSETS = [
+  {
+    id: "luna-result-sticker",
+    label: "星球贴纸",
+    src: "/assets/results/luna-result-sticker.png",
+    size: 210,
+    x: 72,
+    y: 210,
+  },
+  {
+    id: "luna-result-decoration-stars",
+    label: "双星",
+    src: "/assets/results/luna-result-decoration-stars.png",
+    size: 190,
+    x: 66,
+    y: 238,
+  },
+  {
+    id: "luna-result-decoration-planet",
+    label: "小星球",
+    src: "/assets/results/luna-result-decoration-planet.png",
+    size: 150,
+    x: 848,
+    y: 246,
+  },
+  {
+    id: "luna-result-decoration-orbit",
+    label: "星环",
+    src: "/assets/results/luna-result-decoration-orbit.png",
+    size: 360,
+    x: 120,
+    y: 880,
+  },
+  {
+    id: "luna-result-decoration-hearts",
+    label: "爱心",
+    src: "/assets/results/luna-result-decoration-hearts.png",
+    size: 210,
+    x: 96,
+    y: 1054,
+  },
+  {
+    id: "luna-result-decoration-cloud",
+    label: "云朵",
+    src: "/assets/results/luna-result-decoration-cloud.png",
+    size: 245,
+    x: 720,
+    y: 930,
+  },
+  {
+    id: "luna-result-decoration-sparkles",
+    label: "散落星光",
+    src: "/assets/results/luna-result-decoration-sparkles.png",
+    size: 180,
+    x: 782,
+    y: 650,
+  },
+  {
+    id: "luna-result-footer-flight",
+    label: "飞行轨迹",
+    src: "/assets/results/luna-result-footer-flight.png",
+    size: 240,
+    x: 724,
+    y: 1068,
+  },
+  {
+    id: "luna-result-sticker-badge",
+    label: "Luna 徽章",
+    src: "/assets/results/luna-result-sticker-badge.png",
+    size: 190,
+    x: 94,
+    y: 1054,
+  },
+  {
+    id: "luna-result-sticker-arrow",
+    label: "指向箭头",
+    src: "/assets/results/luna-result-sticker-arrow.png",
+    size: 220,
+    x: 648,
+    y: 520,
+  },
+  {
+    id: "luna-result-sticker-shield",
+    label: "防水盾牌",
+    src: "/assets/results/luna-result-sticker-shield.png",
+    size: 190,
+    x: 742,
+    y: 760,
+  },
+  {
+    id: "luna-result-sticker-magnifier",
+    label: "Luna 放大镜",
+    src: "/assets/results/luna-result-sticker-magnifier.png",
+    size: 190,
+    x: 708,
+    y: 342,
+  },
+  {
+    id: "luna-result-sticker-orbit-ring",
+    label: "星环底座",
+    src: "/assets/results/luna-result-sticker-orbit-ring.png",
+    size: 300,
+    x: 558,
+    y: 980,
+  },
+] as const;
+const DEFAULT_SHARE_STICKER_ASSET_IDS = [
+  "luna-result-decoration-stars",
+  "luna-result-decoration-planet",
+  "luna-result-decoration-hearts",
+] as const;
+
+type ShareStickerAsset = (typeof SHARE_STICKER_ASSETS)[number];
+type ShareStickerInstance = {
+  id: string;
+  assetId: ShareStickerAsset["id"];
+  label: string;
+  src: string;
+  x: number;
+  y: number;
+  size: number;
+};
+type ShareStickerDragState = {
+  id: string;
+  pointerId: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+function createShareStickerFromAsset(
+  asset: ShareStickerAsset,
+  idSuffix = `${Date.now()}-${Math.round(Math.random() * 1000)}`,
+): ShareStickerInstance {
+  return {
+    id: `${asset.id}-${idSuffix}`,
+    assetId: asset.id,
+    label: asset.label,
+    src: asset.src,
+    x: asset.x,
+    y: asset.y,
+    size: asset.size,
+  };
+}
+
+function createDefaultShareStickers(): ShareStickerInstance[] {
+  return DEFAULT_SHARE_STICKER_ASSET_IDS.flatMap((assetId, index) => {
+    const asset = SHARE_STICKER_ASSETS.find((item) => item.id === assetId);
+    return asset ? [createShareStickerFromAsset(asset, `default-${index}`)] : [];
+  });
+}
 
 const PARAMETER_PREVIEW_ITEMS = [
   {
@@ -271,6 +424,62 @@ function getMetricChips(product: Pick<RankedProduct, "maxDb" | "waterproof" | "m
   ];
 }
 
+function getShareCanvasPoint(
+  event: ReactPointerEvent<HTMLElement>,
+  canvasElement: HTMLElement,
+) {
+  const rect = canvasElement.getBoundingClientRect();
+  const x = ((event.clientX - rect.left) / rect.width) * SHARE_CANVAS_WIDTH;
+  const y = ((event.clientY - rect.top) / rect.height) * SHARE_CANVAS_HEIGHT;
+
+  return { x, y };
+}
+
+function clampShareStickerPosition(
+  x: number,
+  y: number,
+  size: number,
+) {
+  return {
+    x: Math.max(0, Math.min(SHARE_CANVAS_WIDTH - size, x)),
+    y: Math.max(0, Math.min(SHARE_CANVAS_HEIGHT - size, y)),
+  };
+}
+
+function buildShareFitReasons(
+  product: RankedProduct,
+  summary: ReturnType<typeof buildResultConfidenceSummary> | null,
+  fallbackReasons: string[],
+) {
+  const parameterReasons = [
+    typeof product.maxDb === "number"
+      ? `${product.maxDb}dB，适合先确认真实使用环境里的声音边界。`
+      : "",
+    typeof product.waterproof === "number"
+      ? `IPX${product.waterproof}，清洁方式和防水边界更容易提前判断。`
+      : "",
+    `¥${product.price}，适合和预算、渠道、售后一起比较。`,
+  ];
+  const reasons = [
+    ...(summary?.reasons ?? []),
+    ...fallbackReasons,
+    product.reason ?? "",
+    ...product.matchSummary,
+    ...parameterReasons,
+  ]
+    .map(normalizeGuidanceItem)
+    .filter(Boolean);
+  const seen = new Set<string>();
+
+  return reasons
+    .filter((reason) => {
+      if (seen.has(reason)) return false;
+      seen.add(reason);
+      return true;
+    })
+    .slice(0, 3);
+}
+
 function getTuningProgressLabel(mode: ResultTuningMode) {
   if (mode === "quieter") return "正在按更安静方向重新计算推荐...";
   if (mode === "cheaper") return "正在按更低预算方向重新计算推荐...";
@@ -429,6 +638,15 @@ export function ResultsPage({
   const [isComparisonPanelOpen, setIsComparisonPanelOpen] = useState(false);
   const [isSavePanelOpen, setIsSavePanelOpen] = useState(false);
   const [isParameterGuideOpen, setIsParameterGuideOpen] = useState(false);
+  const [areResultTagsExpanded, setAreResultTagsExpanded] = useState(false);
+  const [isCreatingShareImage, setIsCreatingShareImage] = useState(false);
+  const [isShareEditorOpen, setIsShareEditorOpen] = useState(false);
+  const [shareStickers, setShareStickers] = useState<ShareStickerInstance[]>([]);
+  const [selectedShareStickerId, setSelectedShareStickerId] = useState<string | null>(null);
+  const [shareStickerDragState, setShareStickerDragState] =
+    useState<ShareStickerDragState | null>(null);
+  const shareCardRef = useRef<HTMLElement | null>(null);
+  const shareCanvasRef = useRef<HTMLDivElement | null>(null);
   const [selectedRerollReason, setSelectedRerollReason] = useState<RecommendationRerollReason>(
     DEFAULT_RECOMMENDATION_REROLL_REASON,
   );
@@ -467,7 +685,7 @@ export function ResultsPage({
         return "换一版更好理解的推荐";
     }
   })();
-  const canShowRecalibrationModule = topProducts.length > 0;
+  const canShowRecalibrationModule = !isFemaleMvp && topProducts.length > 0;
   const resultTags = dedupeDisplayTags(answers.tags);
   const resultLeadCopy = getResultLeadCopy(answers);
   const comparisonProducts = topProducts.slice(0, 3);
@@ -512,8 +730,123 @@ export function ResultsPage({
     : null;
   const prePurchaseChecklist = buildPrePurchaseChecklist(answers, topProducts[0]);
   const avoidanceTips = buildResultAvoidanceTips(answers);
-  const visibleResultTags = resultTags.slice(0, 3);
+  const visibleResultTags = areResultTagsExpanded ? resultTags : resultTags.slice(0, 3);
   const hiddenResultTagCount = Math.max(resultTags.length - visibleResultTags.length, 0);
+  const shareFitReasons = topProducts[0]
+    ? buildShareFitReasons(topProducts[0], primaryConfidenceSummary, [
+        ...relaxationTips,
+        ...shoppingGuidanceItems,
+      ])
+    : [];
+
+  async function handleCreateShareImage() {
+    if (shareStickers.length === 0) {
+      setShareStickers(createDefaultShareStickers());
+      setSelectedShareStickerId(null);
+    }
+    setIsShareEditorOpen(true);
+  }
+
+  function handleAddShareSticker(asset: ShareStickerAsset) {
+    const nextSticker = createShareStickerFromAsset(asset);
+
+    setShareStickers((stickers) => [...stickers, nextSticker]);
+    setSelectedShareStickerId(nextSticker.id);
+  }
+
+  function handleResetShareStickers() {
+    setShareStickerDragState(null);
+    setShareStickers(createDefaultShareStickers());
+    setSelectedShareStickerId(null);
+  }
+
+  function handleClearShareStickers() {
+    setShareStickerDragState(null);
+    setShareStickers([]);
+    setSelectedShareStickerId(null);
+  }
+
+  function handleDeleteSelectedShareSticker() {
+    if (!selectedShareStickerId) return;
+
+    setShareStickers((stickers) =>
+      stickers.filter((sticker) => sticker.id !== selectedShareStickerId),
+    );
+    setShareStickerDragState(null);
+    setSelectedShareStickerId(null);
+  }
+
+  function handleShareStickerPointerDown(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    sticker: ShareStickerInstance,
+  ) {
+    const canvasElement = shareCanvasRef.current;
+    if (!canvasElement) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = getShareCanvasPoint(event, canvasElement);
+    setSelectedShareStickerId(sticker.id);
+    setShareStickerDragState({
+      id: sticker.id,
+      pointerId: event.pointerId,
+      offsetX: point.x - sticker.x,
+      offsetY: point.y - sticker.y,
+    });
+  }
+
+  function handleShareCanvasPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!shareStickerDragState) return;
+    const canvasElement = shareCanvasRef.current;
+    if (!canvasElement) return;
+
+    const point = getShareCanvasPoint(event, canvasElement);
+    setShareStickers((stickers) =>
+      stickers.map((sticker) => {
+        if (sticker.id !== shareStickerDragState.id) return sticker;
+
+        const position = clampShareStickerPosition(
+          point.x - shareStickerDragState.offsetX,
+          point.y - shareStickerDragState.offsetY,
+          sticker.size,
+        );
+
+        return { ...sticker, ...position };
+      }),
+    );
+  }
+
+  function handleShareStickerPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!shareStickerDragState || shareStickerDragState.pointerId !== event.pointerId) return;
+
+    setShareStickerDragState(null);
+  }
+
+  async function handleDownloadEditedShareImage() {
+    if (!shareCanvasRef.current || isCreatingShareImage) return;
+
+    setIsCreatingShareImage(true);
+    setSelectedShareStickerId(null);
+    try {
+      const { toPng } = await import("html-to-image");
+      shareCanvasRef.current.classList.add("female-mvp-share-editor__canvas--exporting");
+      const dataUrl = await toPng(shareCanvasRef.current, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: "#fff7fb",
+      });
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = "luna-result-edited-share.png";
+      link.click();
+    } catch (error) {
+      console.error("Failed to create Luna share image", error);
+      window.alert("生成分享图失败，可以先截图分享这张编辑图。");
+    } finally {
+      shareCanvasRef.current?.classList.remove("female-mvp-share-editor__canvas--exporting");
+      setIsCreatingShareImage(false);
+    }
+  }
   const appliedTuningOptions = RESULT_TUNING_OPTIONS.filter((option) =>
     appliedResultTuningModes.includes(option.mode),
   );
@@ -592,7 +925,7 @@ export function ResultsPage({
             isFemaleMvp ? "font-black text-[#342936]" : "font-light text-white",
           ].join(" ")}
         >
-          {isFemaleMvp ? "这套装备可以先看" : "这次更贴近你的，是这条路线"}
+          {isFemaleMvp ? "为你匹配到这件装备" : "这次更贴近你的，是这条路线"}
         </h2>
         <div className="mx-auto mb-4 flex max-w-xl flex-wrap justify-center gap-1.5">
           {visibleResultTags.map((tag, index) => (
@@ -603,20 +936,36 @@ export function ResultsPage({
               {tag}
             </span>
           ))}
-          {hiddenResultTagCount > 0 && (
-            <span className="rounded border border-cyan-300/15 bg-cyan-300/8 px-2 py-0.5 text-[10px] text-cyan-100/70">
+          {hiddenResultTagCount > 0 ? (
+            <button
+              type="button"
+              onClick={() => setAreResultTagsExpanded(true)}
+              aria-label={`展开剩余 ${hiddenResultTagCount} 个匹配标签`}
+              className="rounded border border-cyan-300/20 bg-cyan-300/12 px-2 py-0.5 text-[10px] font-bold text-cyan-100/80 transition-colors hover:border-cyan-300/35 hover:bg-cyan-300/18"
+            >
               +{hiddenResultTagCount}
-            </span>
-          )}
+            </button>
+          ) : areResultTagsExpanded && resultTags.length > 3 ? (
+            <button
+              type="button"
+              onClick={() => setAreResultTagsExpanded(false)}
+              aria-label="收起匹配标签"
+              className="rounded border border-cyan-300/20 bg-white/40 px-2 py-0.5 text-[10px] font-bold text-cyan-100/80 transition-colors hover:border-cyan-300/35 hover:bg-white/58"
+            >
+              收起
+            </button>
+          ) : null}
         </div>
-        <p className="text-sm text-slate-400">
-          {resultLeadCopy}
-        </p>
-        <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-slate-500">
-          {isFemaleMvp
-            ? "先看主推荐和购买前检查；如果想换个方向，可以用下面的轻量微调。"
-            : "先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。"}
-        </p>
+        {!isFemaleMvp ? (
+          <>
+            <p className="text-sm text-slate-400">
+              {resultLeadCopy}
+            </p>
+            <p className="mx-auto mt-2 max-w-2xl text-xs leading-6 text-slate-500">
+              先看主推荐，如果你想换个方向，再往下微调、比较备选，或者补一层长期人格画像。
+            </p>
+          </>
+        ) : null}
         {isNaturalLanguageResult ? (
           <div className="mx-auto mt-4 max-w-3xl rounded-2xl border border-violet-300/14 bg-violet-300/[0.06] px-4 py-3 text-left shadow-[0_14px_40px_rgba(67,56,202,0.12)]">
             <p className="text-[11px] font-medium tracking-[0.18em] text-violet-100/86">
@@ -662,7 +1011,147 @@ export function ResultsPage({
           isFavorited={favoriteProductIds.has(topProducts[0].originalId || topProducts[0].id)}
           onToggleFavorite={onToggleFavorite}
           isFemaleMvp={isFemaleMvp}
+          femaleMvpShareCardRef={shareCardRef}
+          onCreateFemaleMvpShareImage={isFemaleMvp ? handleCreateShareImage : undefined}
+          isCreatingFemaleMvpShareImage={isCreatingShareImage}
         />
+      ) : null}
+
+      {isFemaleMvp && topProducts[0] && isShareEditorOpen ? (
+        <div className="female-mvp-share-editor" role="dialog" aria-modal="true" aria-label="分享图编辑弹窗">
+          <button
+            type="button"
+            className="female-mvp-share-editor__scrim"
+            aria-label="关闭分享图编辑弹窗"
+            onClick={() => setIsShareEditorOpen(false)}
+          />
+          <div className="female-mvp-share-editor__modal">
+            <div className="female-mvp-share-editor__panel">
+              <div className="female-mvp-share-editor__toolbar">
+                <div>
+                  <p className="female-mvp-share-editor__eyebrow">LUNA SHARE STUDIO</p>
+                  <h3>编辑你的分享图</h3>
+                  <p>点击贴纸加入画布，拖动到你喜欢的位置。</p>
+                </div>
+                <button
+                  type="button"
+                  className="female-mvp-share-editor__close"
+                  onClick={() => setIsShareEditorOpen(false)}
+                >
+                  关闭
+                </button>
+              </div>
+
+              <div
+                ref={shareCanvasRef}
+                className="female-mvp-share-editor__canvas"
+                onPointerMove={handleShareCanvasPointerMove}
+                onPointerUp={handleShareStickerPointerUp}
+                onPointerCancel={handleShareStickerPointerUp}
+              >
+                <div className="female-mvp-share-editor__canvas-glow" />
+                <header className="female-mvp-share-editor__canvas-header">
+                  <span>Luna Result</span>
+                  <strong>匹配完成</strong>
+                </header>
+
+                <section className="female-mvp-share-editor__result-card">
+                  <p className="female-mvp-share-editor__result-kicker">主推荐</p>
+                  <h4>{primaryProductDisplayName}</h4>
+                  <div className="female-mvp-share-editor__meta-row">
+                    <span>{primaryProductBrandLabel}</span>
+                    <strong>¥{topProducts[0].price}</strong>
+                  </div>
+                  <div className="female-mvp-share-editor__reason-list">
+                    {shareFitReasons.map((reason, index) => (
+                      <p key={`share-reason-${index}`}>
+                        <span>{index + 1}</span>
+                        {reason}
+                      </p>
+                    ))}
+                  </div>
+                </section>
+
+                <footer className="female-mvp-share-editor__canvas-footer">
+                  <span>Generated by Luna</span>
+                  <strong>Shareable match card</strong>
+                </footer>
+
+                {shareStickers.map((sticker) => (
+                  <button
+                    key={sticker.id}
+                    type="button"
+                    className={[
+                      "female-mvp-share-editor__sticker",
+                      selectedShareStickerId === sticker.id
+                        ? "female-mvp-share-editor__sticker--selected"
+                        : "",
+                    ].join(" ")}
+                    aria-label={`拖动 ${sticker.label}`}
+                    onPointerDown={(event) => handleShareStickerPointerDown(event, sticker)}
+                    style={{
+                      left: `${(sticker.x / SHARE_CANVAS_WIDTH) * 100}%`,
+                      top: `${(sticker.y / SHARE_CANVAS_HEIGHT) * 100}%`,
+                      width: `${(sticker.size / SHARE_CANVAS_WIDTH) * 100}%`,
+                    }}
+                  >
+                    <img src={sticker.src} alt="" draggable={false} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <aside className="female-mvp-share-editor__side">
+              <div>
+                <p className="female-mvp-share-editor__side-title">贴纸库</p>
+                <div className="female-mvp-share-editor__sticker-library">
+                  {SHARE_STICKER_ASSETS.map((asset) => (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      onClick={() => handleAddShareSticker(asset)}
+                      className="female-mvp-share-editor__sticker-option"
+                    >
+                      <img src={asset.src} alt="" />
+                      <span>{asset.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="female-mvp-share-editor__actions">
+                <button
+                  type="button"
+                  onClick={handleDeleteSelectedShareSticker}
+                  disabled={!selectedShareStickerId}
+                >
+                  删除选中
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetShareStickers}
+                >
+                  恢复初始
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearShareStickers}
+                  disabled={shareStickers.length === 0}
+                >
+                  清空贴纸
+                </button>
+                <button
+                  type="button"
+                  className="female-mvp-share-editor__download"
+                  onClick={() => void handleDownloadEditedShareImage()}
+                  disabled={isCreatingShareImage}
+                >
+                  {isCreatingShareImage ? "下载中..." : "下载分享图"}
+                </button>
+              </div>
+            </aside>
+          </div>
+        </div>
       ) : null}
 
       {!isFemaleMvp && isBodyPersonaQuizOpen ? (
@@ -686,7 +1175,7 @@ export function ResultsPage({
         />
       ) : null}
 
-      {topProducts.length > 0 && (
+      {!isFemaleMvp && topProducts.length > 0 && (
         <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.028] p-4 sm:p-5">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -811,7 +1300,7 @@ export function ResultsPage({
         </>
       ) : null}
 
-      {topProducts.length > 0 ? (
+      {!isFemaleMvp && topProducts.length > 0 ? (
         <ResultsAlternativeProductsSection
           topProducts={topProducts}
           canBrowseSimilarLibraryProducts={canBrowseSimilarLibraryProducts}
@@ -846,7 +1335,7 @@ export function ResultsPage({
         </div>
       ) : null}
 
-      {comparisonProducts.length >= 2 && (
+      {!isFemaleMvp && comparisonProducts.length >= 2 && (
         <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 sm:p-5">
           <button
             type="button"
@@ -989,9 +1478,11 @@ export function ResultsPage({
         />
       ) : null}
 
-      <ResultsNextStepsPanel nextStepGroups={nextStepGroupsWithNaturalLanguageLead} />
+      {!isFemaleMvp ? (
+        <ResultsNextStepsPanel nextStepGroups={nextStepGroupsWithNaturalLanguageLead} />
+      ) : null}
 
-      {topProducts[0] && (
+      {!isFemaleMvp && topProducts[0] && (
         <section className="relative z-10 overflow-hidden rounded-2xl border border-emerald-300/12 bg-emerald-300/[0.045] p-4 sm:p-5">
           <div id="result-final-check" />
           <div className="pointer-events-none absolute inset-y-4 left-0 w-px bg-gradient-to-b from-transparent via-emerald-200/35 to-transparent" />
@@ -1027,7 +1518,7 @@ export function ResultsPage({
         </section>
       )}
 
-      {topProducts.length > 0 && (
+      {!isFemaleMvp && topProducts.length > 0 && (
         <section className="relative z-10 rounded-2xl border border-cyan-400/12 bg-cyan-400/[0.04] p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-start gap-2">
@@ -1085,12 +1576,20 @@ export function ResultsPage({
         </section>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div
+        className={[
+          "mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2",
+          isFemaleMvp ? "female-mvp-result-actions" : "",
+        ].filter(Boolean).join(" ")}
+      >
         {onBackHome ? (
           <button
             onClick={onBackHome}
             disabled={isRecalibratingResults}
-            className="w-full rounded-xl border border-white/10 bg-transparent py-4 text-sm text-slate-300 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+            className={[
+              "w-full rounded-xl border border-white/10 bg-transparent py-4 text-sm text-slate-300 transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
+              isFemaleMvp ? "female-mvp-result-actions__button female-mvp-result-actions__button--ghost" : "",
+            ].filter(Boolean).join(" ")}
           >
             返回首页
           </button>
@@ -1098,7 +1597,10 @@ export function ResultsPage({
         <button
           onClick={onReset}
           disabled={isRecalibratingResults}
-          className="w-full rounded-xl bg-white/5 py-4 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/5"
+          className={[
+            "w-full rounded-xl bg-white/5 py-4 text-sm text-slate-300 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/5",
+            isFemaleMvp ? "female-mvp-result-actions__button female-mvp-result-actions__button--soft" : "",
+          ].filter(Boolean).join(" ")}
         >
           {resetButtonLabel}
         </button>

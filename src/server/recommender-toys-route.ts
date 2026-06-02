@@ -37,6 +37,7 @@ type QueryResultRow = {
   tags: string[] | null;
   persona_analysis: string | null;
   is_domestic: boolean | null;
+  competitor_domain: string | null;
   competitor_country: string | null;
   competitor_description: string | null;
   competitor_focus: string | null;
@@ -170,6 +171,7 @@ function normalizeLibraryRows(rows: QueryResultRow[]) {
       focus: toy.competitor_focus,
       philosophy: toy.competitor_philosophy,
       majorUserGroupProfile: toy.competitor_major_user_group_profile,
+      officialWebsiteUrl: toy.competitor_domain,
     });
 
     return {
@@ -265,6 +267,7 @@ export function createListRecommenderToysHandler({
           p.tags,
           p.persona_\x61nalysis AS persona_analysis,
           c.is_domestic,
+          c.domain AS competitor_domain,
           c.country AS competitor_country,
           c.description AS competitor_description,
           c.focus AS competitor_focus,

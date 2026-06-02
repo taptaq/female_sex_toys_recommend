@@ -4,6 +4,7 @@ export type BrandBrief = {
   countryLabel?: string;
   positioning: string;
   styleSummary: string;
+  officialWebsiteUrl?: string;
 };
 
 import { findCompetitorRegistryConfig } from "../scraper/shared/competitor-registry.ts";
@@ -15,6 +16,7 @@ type BrandBriefSource = {
   focus?: string | null;
   majorUserGroupProfile?: string | null;
   philosophy?: string[] | null;
+  officialWebsiteUrl?: string | null;
 };
 
 function normalizeText(value: string | null | undefined) {
@@ -23,10 +25,50 @@ function normalizeText(value: string | null | undefined) {
     .trim();
 }
 
+const COUNTRY_LABEL_MAP = new Map<string, string>([
+  ["中国", "中国"],
+  ["china", "中国"],
+  ["美国", "美国"],
+  ["usa", "美国"],
+  ["united states", "美国"],
+  ["united states of america", "美国"],
+  ["德国", "德国"],
+  ["germany", "德国"],
+  ["英国", "英国"],
+  ["uk", "英国"],
+  ["united kingdom", "英国"],
+  ["日本", "日本"],
+  ["japan", "日本"],
+  ["加拿大", "加拿大"],
+  ["canada", "加拿大"],
+  ["法国", "法国"],
+  ["france", "法国"],
+  ["瑞典", "瑞典"],
+  ["sweden", "瑞典"],
+  ["荷兰", "荷兰"],
+  ["netherlands", "荷兰"],
+]);
+
 function normalizeCountryLabel(country: string | null | undefined) {
   const normalized = normalizeText(country);
   if (!normalized) return undefined;
-  return normalized;
+  return COUNTRY_LABEL_MAP.get(normalized.toLowerCase()) ?? normalized;
+}
+
+function normalizeOfficialWebsiteUrl(value: string | null | undefined) {
+  const normalized = normalizeText(value);
+  if (!normalized) return undefined;
+
+  try {
+    const url = new URL(
+      normalized.startsWith("http://") || normalized.startsWith("https://")
+        ? normalized
+        : `https://${normalized}`,
+    );
+    return `${url.protocol}//${url.host}/`;
+  } catch {
+    return undefined;
+  }
 }
 
 export function buildBrandSlug(value: string | null | undefined) {
@@ -107,6 +149,7 @@ export function buildBrandBrief(source: BrandBriefSource): BrandBrief | null {
     countryLabel,
     positioning,
     styleSummary,
+    officialWebsiteUrl: normalizeOfficialWebsiteUrl(source.officialWebsiteUrl),
   };
 }
 
@@ -115,7 +158,10 @@ export function resolveBrandBrief(
   brandName: string | null | undefined,
 ) {
   if (brandBrief) {
-    return brandBrief;
+    return {
+      ...brandBrief,
+      countryLabel: normalizeCountryLabel(brandBrief.countryLabel),
+    };
   }
 
   const normalizedBrandName = normalizeText(brandName);
@@ -132,6 +178,7 @@ export function resolveBrandBrief(
       focus: registryConfig.focus,
       philosophy: registryConfig.philosophy,
       majorUserGroupProfile: registryConfig.majorUserGroupProfile,
+      officialWebsiteUrl: registryConfig.domain,
     });
   }
 

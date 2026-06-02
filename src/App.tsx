@@ -1362,10 +1362,11 @@ ${JSON.stringify(context.rankedProducts)}
 要求：
 1. 只能从候选商品列表中选择，严禁输出列表外的 id。
 2. 最多返回 3 个，顺序就是你最终认定的 Top1 到 Top3。
-3. 推荐理由必须体现该商品为什么适合当前偏好，避免空泛夸张。
-4. 用中文输出，简洁自然，不要重复同一句话。
-5. 请综合用户标签、preferenceSignals、结构化分数、matchSummary、disguiseSignals、价格、噪音、防水、刺激形式来判断，不要只看单一字段。
-6. 高伪装偏好下，优先考虑明确非传统设备外观、日用品/装饰物造型、口红/玫瑰/香水/挂件等伪装信号；不要仅凭抽象“高伪装”标签自由发挥。`;
+3. 推荐理由只抓一个最关键的适配取舍，避免把噪音、防水、价格、刺激形式全部罗列一遍。
+4. 不要罗列参数，不要复述多个参数；如果必须提参数，只保留一个最能帮助决策的点。
+5. 用中文输出，像 Luna 给用户的一句轻建议，简洁自然，不要重复同一句话。
+6. 请综合用户标签、preferenceSignals、结构化分数、matchSummary、disguiseSignals、价格、噪音、防水、刺激形式来判断，不要只看单一字段。
+7. 高伪装偏好下，优先考虑明确非传统设备外观、日用品/装饰物造型、口红/玫瑰/香水/挂件等伪装信号；不要仅凭抽象“高伪装”标签自由发挥。`;
 
     console.log("🤖 [AI] 正在通过本地后端代理执行 Top3 重排...");
     const response = await postAppAiProxy<AiReasonResult[]>(
@@ -2600,21 +2601,26 @@ ${JSON.stringify(context.backupCandidates)}
       </div>
 
       {isFavoriteAuthOpen ? (
-        <HomeAuthOverlay onClose={() => setIsFavoriteAuthOpen(false)}>
-          <div>
+        <HomeAuthOverlay variant="femaleMvp" onClose={() => setIsFavoriteAuthOpen(false)}>
+          <div className="female-mvp-auth-modal-shell">
+            <span className="female-mvp-auth-orbit-glow" aria-hidden="true" />
+            <div className="female-mvp-auth-modal-header">
+              <span> Luna 私密舱 </span>
+              <p>{authPanel.userLabel ? "同步你的收藏记录" : "登录后即可收藏喜欢的装备"}</p>
+            </div>
             <AuthPanel {...authPanel} surface="modal" />
-            <p className="mt-3 text-center text-xs leading-5 text-cyan-100/65">
+            <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-500">
               登录后即可收藏全息装备库和匹配结果中的产品。
             </p>
             {favoriteActionError ? (
-              <p className="mt-2 text-center text-xs leading-5 text-rose-200/80">
+              <p className="mt-2 text-center text-xs font-semibold leading-5 text-rose-500">
                 {favoriteActionError}
               </p>
             ) : null}
             <button
               type="button"
               onClick={() => setIsFavoriteAuthOpen(false)}
-              className="mt-3 w-full rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+              className="female-mvp-auth-modal-close"
             >
               暂时不用
             </button>

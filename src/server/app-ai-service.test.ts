@@ -397,6 +397,8 @@ test("runResultRecalibration uses the automatic provider ladder and recomputes c
   assert.match(requests[0]?.prompt || "", /新手友好/);
   assert.match(requests[0]?.prompt || "", /自动活塞/);
   assert.match(requests[0]?.prompt || "", /强刺激/);
+  assert.match(requests[0]?.prompt || "", /不要罗列参数/);
+  assert.match(requests[0]?.prompt || "", /只抓一个最关键的适配取舍/);
   assert.doesNotMatch(requests[0]?.prompt || "", /\{\n\s+"rank"/);
   assert.doesNotMatch(requests[0]?.prompt || "", /低噪吮吸设计，适合新手慢热探索/);
   assert.match(requests[1]?.prompt || "", /"descriptionSignals":"/);

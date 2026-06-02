@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "project_id": "female_toy_recommender-b8f44deedb0b",
+  "updated_at": "2026-06-02",
+  "user_style": [],
+  "expression_style_card": {
+    "structure": [],
+    "tone": [],
+    "judgment": []
+  },
+  "response_policy": {
+    "structure": [],
+    "tone": [],
+    "judgment": []
+  },
+  "response_guidance": [],
+  "collaboration_profile": {
+    "version": 1,
+    "updated_at": "2026-06-02",
+    "decision_style": [],
+    "execution_style": [],
+    "interaction_style": [],
+    "learning_style": []
+  },
+  "collaboration_guidance": [],
+  "project_preferences": [],
+  "active_patterns": [],
+  "avoid": [],
+  "memory_pointers": {
+    "project_link": ".agent-memory/project-link.json",
+    "project_summary": ".agent-memory/session-context.md"
+  }
+}

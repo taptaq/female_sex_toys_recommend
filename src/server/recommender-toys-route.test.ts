@@ -77,7 +77,8 @@ test("createListRecommenderToysHandler caches the normalized library payload and
               tags: ["静音"],
               persona_analysis: "适合新手",
               is_domestic: true,
-              competitor_country: "Germany",
+              competitor_domain: "brand.example.com",
+              competitor_country: "德国",
               competitor_description: "Brand 是偏设计感与材质完成度的一线品牌。",
               competitor_focus: "Female",
               competitor_philosophy: [
@@ -131,9 +132,10 @@ test("createListRecommenderToysHandler caches the normalized library payload and
       brandBrief: {
         brandName: "Brand",
         brandSlug: "brand",
-        countryLabel: "Germany",
+        countryLabel: "德国",
         positioning: "Brand 是偏设计感与材质完成度的一线品牌。",
         styleSummary: "整体风格更现代、克制，也更强调稳定体验。",
+        officialWebsiteUrl: "https://brand.example.com/",
       },
     },
   ]);
@@ -176,7 +178,8 @@ test("createListRecommenderToysHandler returns 304 when the cached payload etag 
             tags: ["静音"],
             persona_analysis: "适合新手",
             is_domestic: true,
-            competitor_country: "Germany",
+            competitor_domain: "brand.example.com",
+            competitor_country: "德国",
             competitor_description: "Brand 是偏设计感与材质完成度的一线品牌。",
             competitor_focus: "Female",
             competitor_philosophy: [
@@ -243,7 +246,8 @@ test("createListRecommenderToysHandler retries once on transient database discon
               tags: ["静音"],
               persona_analysis: "适合新手",
               is_domestic: true,
-              competitor_country: "Germany",
+              competitor_domain: "brand.example.com",
+              competitor_country: "德国",
               competitor_description: "Brand 是偏设计感与材质完成度的一线品牌。",
               competitor_focus: "Female",
               competitor_philosophy: [
@@ -291,9 +295,10 @@ test("createListRecommenderToysHandler retries once on transient database discon
       brandBrief: {
         brandName: "Brand",
         brandSlug: "brand",
-        countryLabel: "Germany",
+        countryLabel: "德国",
         positioning: "Brand 是偏设计感与材质完成度的一线品牌。",
         styleSummary: "整体风格更现代、克制，也更强调稳定体验。",
+        officialWebsiteUrl: "https://brand.example.com/",
       },
     },
   ]);

@@ -7,15 +7,24 @@ import {
 } from "./clean-competitor-country-fields.ts";
 
 test("normalizeCompetitorCountry unifies mixed Chinese and English country names", () => {
-  assert.equal(normalizeCompetitorCountry("中国"), "China");
-  assert.equal(normalizeCompetitorCountry("美国"), "USA");
-  assert.equal(normalizeCompetitorCountry("德国"), "Germany");
-  assert.equal(normalizeCompetitorCountry("英国"), "United Kingdom");
-  assert.equal(normalizeCompetitorCountry("日本"), "Japan");
-  assert.equal(normalizeCompetitorCountry("加拿大"), "Canada");
-  assert.equal(normalizeCompetitorCountry("法国"), "France");
-  assert.equal(normalizeCompetitorCountry("瑞典"), "Sweden");
-  assert.equal(normalizeCompetitorCountry("Germany"), "Germany");
+  assert.equal(normalizeCompetitorCountry("中国"), "中国");
+  assert.equal(normalizeCompetitorCountry("China"), "中国");
+  assert.equal(normalizeCompetitorCountry("美国"), "美国");
+  assert.equal(normalizeCompetitorCountry("USA"), "美国");
+  assert.equal(normalizeCompetitorCountry("德国"), "德国");
+  assert.equal(normalizeCompetitorCountry("Germany"), "德国");
+  assert.equal(normalizeCompetitorCountry("英国"), "英国");
+  assert.equal(normalizeCompetitorCountry("United Kingdom"), "英国");
+  assert.equal(normalizeCompetitorCountry("日本"), "日本");
+  assert.equal(normalizeCompetitorCountry("Japan"), "日本");
+  assert.equal(normalizeCompetitorCountry("加拿大"), "加拿大");
+  assert.equal(normalizeCompetitorCountry("Canada"), "加拿大");
+  assert.equal(normalizeCompetitorCountry("法国"), "法国");
+  assert.equal(normalizeCompetitorCountry("France"), "法国");
+  assert.equal(normalizeCompetitorCountry("瑞典"), "瑞典");
+  assert.equal(normalizeCompetitorCountry("Sweden"), "瑞典");
+  assert.equal(normalizeCompetitorCountry("荷兰"), "荷兰");
+  assert.equal(normalizeCompetitorCountry("Netherlands"), "荷兰");
   assert.equal(normalizeCompetitorCountry(""), null);
 });
 
@@ -30,7 +39,7 @@ test("buildCompetitorCountryPatch fills blanks from explicit brand overrides", (
     }),
     {
       id: "1",
-      nextCountry: "Germany",
+      nextCountry: "德国",
       previousCountry: null,
     },
   );
@@ -45,7 +54,7 @@ test("buildCompetitorCountryPatch fills blanks from explicit brand overrides", (
     }),
     {
       id: "2",
-      nextCountry: "China",
+      nextCountry: "中国",
       previousCountry: null,
     },
   );
@@ -56,7 +65,7 @@ test("buildCompetitorCountryPatch returns null when country is already normalize
     buildCompetitorCountryPatch({
       id: "3",
       name: "POPOCAT",
-      country: "China",
+      country: "中国",
       is_domestic: true,
       domain: "popocat.tmall.com",
     }),
