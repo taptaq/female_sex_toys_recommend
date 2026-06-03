@@ -33,7 +33,7 @@ type QueryResultRow = {
   material: string | null;
   image_url: string | null;
   resolved_raw_description: string | null;
-  link: string | null;
+  product_link: string | null;
   tags: string[] | null;
   persona_analysis: string | null;
   is_domestic: boolean | null;
@@ -195,8 +195,8 @@ function normalizeLibraryRows(rows: QueryResultRow[]) {
       rawDescription,
       imagePlaceholder:
         toy.image_url || "bg-gradient-to-br from-indigo-900/40 to-blue-900/40",
-      link: toy.link || undefined,
-      sourceUrl: toy.link || undefined,
+      link: toy.product_link || undefined,
+      sourceUrl: toy.product_link || undefined,
       tags,
       personaAnalysis: toy.persona_analysis || undefined,
       isDomestic: toy.is_domestic ?? undefined,
@@ -263,19 +263,22 @@ export function createListRecommenderToysHandler({
           t.material,
           t.image_url,
           COALESCE(NULLIF(t.raw_description, ''), p.specs::jsonb ->> 'rawDescription', NULL) AS resolved_raw_description,
-          p.link,
+          COALESCE(NULLIF(t.link, ''), p.link) AS product_link,
           p.tags,
           p.persona_\x61nalysis AS persona_analysis,
-          c.is_domestic,
-          c.domain AS competitor_domain,
-          c.country AS competitor_country,
-          c.description AS competitor_description,
-          c.focus AS competitor_focus,
-          c.philosophy AS competitor_philosophy,
-          c.major_user_group_profile AS competitor_major_user_group_profile
+          COALESCE(c.is_domestic, c_brand.is_domestic) AS is_domestic,
+          COALESCE(c.domain, c_brand.domain) AS competitor_domain,
+          COALESCE(c.country, c_brand.country) AS competitor_country,
+          COALESCE(c.description, c_brand.description) AS competitor_description,
+          COALESCE(c.focus, c_brand.focus) AS competitor_focus,
+          COALESCE(c.philosophy, c_brand.philosophy) AS competitor_philosophy,
+          COALESCE(c.major_user_group_profile, c_brand.major_user_group_profile) AS competitor_major_user_group_profile
         FROM public.female_recommender_toys t
         LEFT JOIN public.products p ON t.original_id = p.id
         LEFT JOIN public.competitors c ON p.competitor_id = c.id
+        LEFT JOIN public.competitors c_brand
+          ON c.id IS NULL
+          AND lower(c_brand.name) = lower(NULLIF(t.brand, ''))
         ORDER BY t.created_at DESC
       `);
 

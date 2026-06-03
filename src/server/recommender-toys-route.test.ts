@@ -73,7 +73,7 @@ test("createListRecommenderToysHandler caches the normalized library payload and
               material: "硅胶",
               image_url: "https://cdn.example.com/a.jpg",
               resolved_raw_description: "气脉冲测试",
-              link: "https://example.com/product",
+              product_link: "https://example.com/product",
               tags: ["静音"],
               persona_analysis: "适合新手",
               is_domestic: true,
@@ -97,6 +97,7 @@ test("createListRecommenderToysHandler caches the normalized library payload and
 
   assert.equal(queryCount, 1);
   assert.match(capturedSql, /public\.female_recommender_toys/i);
+  assert.match(capturedSql, /COALESCE\(NULLIF\(t\.link, ''\), p\.link\) AS product_link/i);
   assert.doesNotMatch(capturedSql, /FROM public\.recommender_toys/i);
   assert.equal(first.readStatusCode(), 200);
   assert.equal(
@@ -174,7 +175,7 @@ test("createListRecommenderToysHandler returns 304 when the cached payload etag 
             material: "硅胶",
             image_url: "https://cdn.example.com/a.jpg",
             resolved_raw_description: "气脉冲测试",
-            link: "https://example.com/product",
+            product_link: "https://example.com/product",
             tags: ["静音"],
             persona_analysis: "适合新手",
             is_domestic: true,
@@ -207,6 +208,59 @@ test("createListRecommenderToysHandler returns 304 when the cached payload etag 
 
   assert.equal(second.readStatusCode(), 304);
   assert.equal(second.readJsonPayload(), undefined);
+});
+
+test("createListRecommenderToysHandler falls back to brand-name competitor domain when product competitor link is missing", async () => {
+  let capturedSql = "";
+  const handler = createListRecommenderToysHandler({
+    ensureLibraryRouteReady: async () => {},
+    now: () => 1000,
+    cacheTtlMs: 60_000,
+    pool: {
+      query: async (sql: string) => {
+        capturedSql = sql;
+        return {
+          rows: [
+            {
+              id: "toy-1",
+              original_id: "product-1",
+              name: "TENGA 测试装备",
+              safe_display_name: "TENGA 测试装备",
+              price: "199.00",
+              max_db: 42,
+              waterproof: 7,
+              appearance: "normal",
+              physical_form: "external",
+              motor_type: "gentle",
+              gender: "female",
+              type_code: "external_vibe",
+              subtype_code: "bullet_vibe",
+              brand: "TENGA",
+              material: "硅胶",
+              image_url: "https://cdn.example.com/a.jpg",
+              resolved_raw_description: "震动测试",
+              product_link: "https://detail.tmall.com/item.htm?id=123",
+              tags: ["静音"],
+              persona_analysis: null,
+              is_domestic: false,
+              competitor_domain: "https://www.tenga.co.jp",
+              competitor_country: "日本",
+              competitor_description: "TENGA 是日本成人健康品牌。",
+              competitor_focus: "Unisex",
+              competitor_philosophy: ["以清晰产品线和身体友好体验为核心。"],
+              competitor_major_user_group_profile: null,
+            },
+          ],
+        };
+      },
+    },
+  });
+
+  const response = createMockResponse();
+  await handler({ query: {}, headers: {} } as never, response.response as never, (() => {}) as never);
+
+  assert.match(capturedSql, /LEFT JOIN public\.competitors c_brand/i);
+  assert.deepEqual((response.readJsonPayload() as any[])[0].brandBrief.officialWebsiteUrl, "https://www.tenga.co.jp/");
 });
 
 test("createListRecommenderToysHandler retries once on transient database disconnects", async () => {
@@ -242,7 +296,7 @@ test("createListRecommenderToysHandler retries once on transient database discon
               material: "硅胶",
               image_url: "https://cdn.example.com/a.jpg",
               resolved_raw_description: "气脉冲测试",
-              link: "https://example.com/product",
+              product_link: "https://example.com/product",
               tags: ["静音"],
               persona_analysis: "适合新手",
               is_domestic: true,

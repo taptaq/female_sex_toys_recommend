@@ -26,6 +26,43 @@ test("ensureRecommenderItemsSchema creates the table before altering columns", a
     ),
     "runtime schema should keep recommendation feature metadata available",
   );
+  assert.ok(
+    queries.some((query) =>
+      /ALTER TABLE public\.recommender_toys[\s\S]*ADD COLUMN IF NOT EXISTS link TEXT/i.test(
+        query,
+      ),
+    ),
+    "runtime schema should keep product detail links available",
+  );
+});
+
+test("ensureRecommenderItemsSchema persists product links into the female-only table", async () => {
+  const queries: string[] = [];
+  const pool = {
+    async query(sql: string) {
+      queries.push(sql);
+      return { rows: [], rowCount: 0 };
+    },
+  };
+
+  await ensureRecommenderItemsSchema(pool);
+
+  assert.ok(
+    queries.some((query) =>
+      /ALTER TABLE public\.female_recommender_toys[\s\S]*ADD COLUMN IF NOT EXISTS link TEXT/i.test(
+        query,
+      ),
+    ),
+    "female table should expose product detail links directly",
+  );
+  assert.ok(
+    queries.some((query) =>
+      /UPDATE public\.female_recommender_toys t[\s\S]*SET link = p\.link[\s\S]*FROM public\.products p/i.test(
+        query,
+      ),
+    ),
+    "female table should backfill detail links from products",
+  );
 });
 
 test("ensureRecommenderItemsSchema creates and refreshes a female-only product table", async () => {

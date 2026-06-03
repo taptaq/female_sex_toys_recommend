@@ -18,6 +18,7 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
       gender TEXT,
       brand TEXT,
       material TEXT,
+      link TEXT,
       image_url TEXT,
       raw_description TEXT,
       type_code TEXT,
@@ -44,6 +45,11 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
   `);
 
   await pool.query(`
+    ALTER TABLE public.recommender_toys
+    ADD COLUMN IF NOT EXISTS link TEXT
+  `);
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_recommender_toys_created_at
     ON public.recommender_toys(created_at DESC)
   `);
@@ -66,6 +72,11 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
   `);
 
   await pool.query(`
+    ALTER TABLE public.female_recommender_toys
+    ADD COLUMN IF NOT EXISTS link TEXT
+  `);
+
+  await pool.query(`
     TRUNCATE TABLE public.female_recommender_toys
   `);
 
@@ -74,6 +85,15 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
     SELECT *
     FROM public.recommender_toys
     WHERE gender = 'female'
+  `);
+
+  await pool.query(`
+    UPDATE public.female_recommender_toys t
+    SET link = p.link
+    FROM public.products p
+    WHERE t.original_id = p.id
+      AND NULLIF(BTRIM(COALESCE(t.link, '')), '') IS NULL
+      AND NULLIF(BTRIM(COALESCE(p.link, '')), '') IS NOT NULL
   `);
 
   await pool.query(`

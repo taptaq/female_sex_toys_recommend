@@ -707,6 +707,7 @@ model recommender_toys {
   gender        String?
   brand         String?
   material      String?
+  link          String?
   image_url     String?
   raw_description String? @db.Text
   type_code     String?
@@ -732,6 +733,7 @@ model female_recommender_toys {
   gender        String?
   brand         String?
   material      String?
+  link          String?
   image_url     String?
   raw_description String? @db.Text
   type_code     String?
