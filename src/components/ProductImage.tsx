@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
+import {
+  getProductImagePlaceholderValue,
+  isDefaultGradientPlaceholder,
+  isImagePlaceholder,
+} from "../lib/product-image-placeholders.ts";
 
 const DEFAULT_FALLBACK_CLASS_NAME =
   "bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-cyan-950/90";
@@ -10,7 +15,10 @@ function isRenderableProductImageSource(value: string) {
   return (
     /^https?:\/\//i.test(trimmed) ||
     /^data:image\//i.test(trimmed) ||
-    /^blob:/i.test(trimmed)
+    /^blob:/i.test(trimmed) ||
+    /^\/assets\//i.test(trimmed) || // 支持本地图片路径
+    /^[^?#]+\.(?:avif|webp|png|jpe?g|gif|svg)(?:[?#].*)?$/i.test(trimmed) ||
+    isImagePlaceholder(trimmed) // 支持占位符图片
   );
 }
 
@@ -33,34 +41,116 @@ export function getNextProductImageStateOnError(imageValue: string) {
   };
 }
 
+export function resolveProductImageValue({
+  imageValue,
+  typeCode,
+  subtypeCode,
+  gender,
+  physicalForm,
+}: {
+  imageValue: string;
+  typeCode?: string | null;
+  subtypeCode?: string | null;
+  gender?: "female" | "male" | "unisex" | null;
+  physicalForm?: string | null;
+}) {
+  const trimmedImageValue = imageValue.trim();
+  const hasTaxonomyPlaceholderSource = Boolean(
+    subtypeCode || typeCode || physicalForm,
+  );
+  const taxonomyPlaceholderValue = hasTaxonomyPlaceholderSource
+    ? getProductImagePlaceholderValue(
+        subtypeCode,
+        typeCode,
+        gender,
+        physicalForm,
+      )
+    : "";
+  const shouldUseTaxonomyPlaceholder =
+    !trimmedImageValue ||
+    isDefaultGradientPlaceholder(trimmedImageValue) ||
+    (hasTaxonomyPlaceholderSource &&
+      !isRenderableProductImageSource(trimmedImageValue));
+
+  return {
+    resolvedImageValue: shouldUseTaxonomyPlaceholder
+      ? taxonomyPlaceholderValue
+      : trimmedImageValue,
+    taxonomyPlaceholderValue,
+  };
+}
+
 export function ProductImage({
   imageValue,
+  typeCode,
+  subtypeCode,
+  gender,
+  physicalForm,
   alt,
   iconClassName,
   imageClassName,
 }: {
   imageValue: string;
+  typeCode?: string | null;
+  subtypeCode?: string | null;
+  gender?: "female" | "male" | "unisex" | null;
+  physicalForm?: string | null;
   alt: string;
   iconClassName: string;
   imageClassName: string;
 }) {
-  const [state, setState] = useState(() => getInitialProductImageState(imageValue));
+  const { resolvedImageValue, taxonomyPlaceholderValue } =
+    resolveProductImageValue({
+      imageValue,
+      typeCode,
+      subtypeCode,
+      gender,
+      physicalForm,
+    });
+  const [activeImageValue, setActiveImageValue] = useState(resolvedImageValue);
+  const [state, setState] = useState(() =>
+    getInitialProductImageState(resolvedImageValue),
+  );
 
   useEffect(() => {
-    setState(getInitialProductImageState(imageValue));
-  }, [imageValue]);
+    setActiveImageValue(resolvedImageValue);
+    setState(getInitialProductImageState(resolvedImageValue));
+  }, [resolvedImageValue]);
 
   const resolvedFallbackClassName =
     state.resolvedImageClassName || DEFAULT_FALLBACK_CLASS_NAME;
+  const shouldShowTaxonomyPlaceholderBadge =
+    Boolean(taxonomyPlaceholderValue) &&
+    activeImageValue === taxonomyPlaceholderValue &&
+    state.isRemoteImage;
 
   if (state.isRemoteImage) {
     return (
-      <img
-        src={imageValue}
-        alt={alt}
-        className={imageClassName}
-        onError={() => setState(getNextProductImageStateOnError(imageValue))}
-      />
+      <>
+        <img
+          src={activeImageValue}
+          alt={alt}
+          className={imageClassName}
+          onError={() => {
+            if (
+              taxonomyPlaceholderValue &&
+              activeImageValue !== taxonomyPlaceholderValue
+            ) {
+              setActiveImageValue(taxonomyPlaceholderValue);
+              setState(getInitialProductImageState(taxonomyPlaceholderValue));
+              return;
+            }
+
+            setState(getNextProductImageStateOnError(activeImageValue));
+          }}
+        />
+        {shouldShowTaxonomyPlaceholderBadge ? (
+          <span className="pointer-events-none absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border border-sky-200/70 bg-white/82 px-2.5 py-1.5 text-[10px] font-semibold leading-none text-sky-800 shadow-[0_10px_28px_rgba(14,165,233,0.18)] ring-1 ring-white/80 backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-cyan-300 to-sky-500 shadow-[0_0_10px_rgba(56,189,248,0.85)]" />
+            类型产品占位参考图
+          </span>
+        ) : null}
+      </>
     );
   }
 

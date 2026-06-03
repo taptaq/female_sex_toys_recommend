@@ -191,12 +191,26 @@ function dedupeGuidanceItems(items: string[]) {
 }
 
 function renderProductImage(
-  product: Pick<RankedProduct, "imagePlaceholder" | "name" | "displayName" | "safeDisplayName">,
+  product: Pick<
+    RankedProduct,
+    | "imagePlaceholder"
+    | "name"
+    | "displayName"
+    | "safeDisplayName"
+    | "typeCode"
+    | "subtypeCode"
+    | "gender"
+    | "physicalForm"
+  >,
   iconClassName: string,
 ) {
   return (
     <ProductImage
       imageValue={product.imagePlaceholder}
+      typeCode={product.typeCode}
+      subtypeCode={product.subtypeCode}
+      gender={product.gender}
+      physicalForm={product.physicalForm}
       alt={getProductDisplayName(product)}
       iconClassName={iconClassName}
       imageClassName="h-full w-full object-cover opacity-90"
@@ -372,6 +386,18 @@ export function ResultsPage({
         ...shoppingGuidanceItems,
       ])
     : [];
+  const renderResultProductImage = (
+    product: Parameters<typeof renderProductImage>[0],
+    iconClassName: string,
+  ) =>
+    renderProductImage(
+      {
+        ...product,
+        gender: product.gender ?? answers.gender ?? null,
+        physicalForm: product.physicalForm ?? answers.physicalForm ?? null,
+      },
+      iconClassName,
+    );
 
   async function handleCreateShareImage() {
     if (shareStickers.length === 0) {
@@ -576,7 +602,7 @@ export function ResultsPage({
             primaryProductDisplayName={primaryProductDisplayName}
             primaryProductBrandLabel={primaryProductBrandLabel}
             primaryConfidenceSummary={primaryConfidenceSummary}
-            renderProductImage={renderProductImage}
+            renderProductImage={renderResultProductImage}
             renderClickableHint={renderClickableHint}
             isFavorited={favoriteProductIds.has(topProducts[0].originalId || topProducts[0].id)}
             onToggleFavorite={onToggleFavorite}
@@ -763,7 +789,7 @@ export function ResultsPage({
               "female-mvp-result-actions__button female-mvp-result-actions__button--ghost",
             ].filter(Boolean).join(" ")}
           >
-            返回首页
+            返回选择模式
           </button>
         ) : null}
         <button

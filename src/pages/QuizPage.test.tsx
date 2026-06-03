@@ -312,3 +312,18 @@ test("quiz page hides the return-to-results entry during a fresh quiz flow", () 
 
   assert.doesNotMatch(html, /返回结果页/);
 });
+
+test("quiz final answer waits for Luna to launch before submitting", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/pages/QuizPage.tsx"), "utf8");
+  const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+
+  assert.match(source, /const isFinalQuestion = step === activeQuestions\.length - 1;/);
+  assert.match(source, /const \[isLunaLaunching, setIsLunaLaunching\] = useState\(false\);/);
+  assert.match(source, /QUIZ_LUNA_LAUNCH_DURATION_MS = 1080/);
+  assert.match(source, /window\.setTimeout\(\(\) => \{[\s\S]*?onSelectOption\(/);
+  assert.match(source, /female-mvp-quiz__astronaut-launching/);
+  assert.match(source, /disabled=\{isLunaLaunching\}/);
+  assert.match(cssSource, /@keyframes female-mvp-quiz-luna-launch-right/);
+  assert.match(cssSource, /\.female-mvp-quiz__astronaut-launching\s*\{[\s\S]*?animation: female-mvp-quiz-luna-launch-right 1080ms/);
+  assert.match(cssSource, /\.female-mvp-quiz__astronaut-launching::after/);
+});

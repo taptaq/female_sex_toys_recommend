@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find ~/Desktop -name \"*.png\" -o -name \"*.jpg\" | grep -i -E \"\\(suction|vibe|wand|lube|lingerie|toy|product\\)\" | head -10)",
+      "Read(//Users/taptaq/Desktop/**)",
+      "Bash(ls -la ~/Downloads/*.png ~/Downloads/*.jpg 2>/dev/null | tail -10)",
+      "Read(//Users/taptaq/Downloads/**)",
+      "Bash(chmod +x \"/Users/taptaq/Documents/Original Heart Road/project/female_toy_recommender/scripts/process-product-placeholders.sh\")",
+      "Bash(chmod +x \"/Users/taptaq/Documents/Original Heart Road/project/female_toy_recommender/scripts/deploy-placeholders-guide.sh\")",
+      "Bash(\"/Users/taptaq/Documents/Original Heart Road/project/female_toy_recommender/scripts/deploy-placeholders-guide.sh\")"
+    ]
+  }
+}

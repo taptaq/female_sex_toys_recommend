@@ -67,3 +67,111 @@ test("product card can derive a compact brand brief from the brand name when cac
   assert.match(html, /当前品牌/);
   assert.match(html, /Lovense/);
 });
+
+test("product card falls back to a subtype placeholder image when image placeholder is empty", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "",
+        subtypeCode: "bullet_vibe",
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.png"/);
+});
+
+test("product card labels taxonomy placeholder images as references", () => {
+  const placeholderHtml = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "",
+        subtypeCode: "bullet_vibe",
+      })}
+    />,
+  );
+  const realImageHtml = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "https://example.com/product.png",
+        subtypeCode: "bullet_vibe",
+      })}
+    />,
+  );
+
+  assert.match(placeholderHtml, /类型产品占位参考图/);
+  assert.match(placeholderHtml, /border-sky-200\/70/);
+  assert.match(placeholderHtml, /bg-white\/82/);
+  assert.match(placeholderHtml, /text-sky-800/);
+  assert.doesNotMatch(realImageHtml, /类型产品占位参考图/);
+});
+
+test("product card maps legacy subtype aliases to placeholder images", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "",
+        typeCode: "suction",
+        subtypeCode: "clitoral_suction",
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+});
+
+test("product card falls back to type placeholder when subtype is missing", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "",
+        typeCode: "suction",
+        subtypeCode: null,
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+});
+
+test("product card replaces legacy gradient placeholders with subtype images", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "bg-gradient-to-br from-indigo-900/40 to-blue-900/40",
+        typeCode: "suction",
+        subtypeCode: null,
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+});
+
+test("product card replaces non-renderable placeholder strings with subtype images", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "image",
+        subtypeCode: "bullet_vibe",
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.png"/);
+});
+
+test("product card falls back to physical form placeholder for restored result snapshots", () => {
+  const html = renderToStaticMarkup(
+    <ProductCardContent
+      product={makeProduct({
+        imagePlaceholder: "bg-gradient-to-br from-indigo-900/40 to-blue-900/40",
+        typeCode: null,
+        subtypeCode: null,
+        physicalForm: "composite",
+      })}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.png"/);
+});

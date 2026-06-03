@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   getInitialProductImageState,
   getNextProductImageStateOnError,
+  resolveProductImageValue,
 } from "../components/ProductImage.tsx";
 
 test("getInitialProductImageState uses fallback when image is missing", () => {
@@ -57,6 +58,22 @@ test("getNextProductImageStateOnError preserves local gradient placeholders", ()
     {
       isRemoteImage: false,
       resolvedImageClassName: "bg-gradient-to-br from-indigo-900/40 to-blue-900/40",
+    },
+  );
+});
+
+test("resolveProductImageValue keeps real image source while preparing taxonomy fallback", () => {
+  assert.deepEqual(
+    resolveProductImageValue({
+      imageValue: "695f9569c6dfd.png",
+      typeCode: "external_vibe",
+      subtypeCode: "bullet_vibe",
+      gender: "female",
+      physicalForm: "external",
+    }),
+    {
+      resolvedImageValue: "695f9569c6dfd.png",
+      taxonomyPlaceholderValue: "/assets/product-placeholder/bullet_vibe.png",
     },
   );
 });

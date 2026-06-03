@@ -49,6 +49,29 @@ test("matching page keeps the answer-driven matching state", () => {
   assert.match(html, /新手友好/);
 });
 
+test("matching page answer tags use high contrast text on the light background", () => {
+  const html = renderToStaticMarkup(
+    <MatchingPage
+      pageVariants={{}}
+      mode="matching"
+      isAiMatching
+      tags={["复合机型", "女性向", "平衡进阶"]}
+    />,
+  );
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+  const tagRule = source.match(
+    /\.female-mvp-matching__answer-tag\s*\{(?<body>[\s\S]*?)\n\}/,
+  )?.groups?.body ?? "";
+
+  assert.match(html, /female-mvp-matching__answer-tag/);
+  assert.match(html, /复合机型/);
+  assert.match(html, /女性向/);
+  assert.match(html, /平衡进阶/);
+  assert.match(tagRule, /color: #0f6f8f;/);
+  assert.match(tagRule, /background: rgba\(255, 255, 255, 0\.94\);/);
+  assert.doesNotMatch(html, /text-sky-600/);
+});
+
 test("matching page moves the safety and exploration planets into the loading ritual", () => {
   const html = renderToStaticMarkup(
     <MatchingPage

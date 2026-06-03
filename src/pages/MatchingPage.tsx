@@ -165,7 +165,7 @@ export function MatchingPage({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: shouldAnimate ? index * 0.24 : 0 }}
-                className="tag-flash rounded-full border border-white/76 bg-white/68 px-3 py-1.5 text-xs font-bold tracking-normal text-sky-600 shadow-[0_10px_24px_rgba(117,181,214,0.14)]"
+                className="tag-flash female-mvp-matching__answer-tag"
             >
               {tag}
               </motion.span>

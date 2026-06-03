@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { motion } from "motion/react";
 import { ArrowLeft, CircleDashed, Hexagon, Sparkles, Triangle } from "lucide-react";
@@ -11,6 +11,7 @@ const QUIZ_PROMPT_ART = [
   "/assets/quiz-art/prompt-star.png",
   "/assets/quiz-art/prompt-cloud.png",
 ] as const;
+const QUIZ_LUNA_LAUNCH_DURATION_MS = 1080;
 
 export function QuizPage({
   pageVariants,
@@ -43,6 +44,9 @@ export function QuizPage({
   const promptArtSrc = QUIZ_PROMPT_ART[step % QUIZ_PROMPT_ART.length];
   const { shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const launchTimeoutRef = useRef<number | null>(null);
+  const [isLunaLaunching, setIsLunaLaunching] = useState(false);
+  const isFinalQuestion = step === activeQuestions.length - 1;
 
   useEffect(() => {
     if (!cardRef.current) return;
@@ -63,6 +67,38 @@ export function QuizPage({
 
     return () => ctx.revert();
   }, [step, shouldAnimate, prefersReducedMotion]);
+
+  useEffect(() => {
+    setIsLunaLaunching(false);
+
+    return () => {
+      if (launchTimeoutRef.current != null) {
+        window.clearTimeout(launchTimeoutRef.current);
+        launchTimeoutRef.current = null;
+      }
+    };
+  }, [step]);
+
+  function handleOptionSelect(
+    field: keyof AnswerState,
+    value: AnswerState[keyof AnswerState],
+    tag: string,
+    answerPatch: Partial<Omit<AnswerState, "tags">> | undefined,
+    optionLabel: string,
+  ) {
+    if (isLunaLaunching) return;
+
+    if (!isFinalQuestion || !shouldAnimate || prefersReducedMotion) {
+      onSelectOption(field, value, tag, answerPatch, optionLabel);
+      return;
+    }
+
+    setIsLunaLaunching(true);
+    launchTimeoutRef.current = window.setTimeout(() => {
+      onSelectOption(field, value, tag, answerPatch, optionLabel);
+      launchTimeoutRef.current = null;
+    }, QUIZ_LUNA_LAUNCH_DURATION_MS);
+  }
 
   return (
     <motion.div
@@ -165,6 +201,7 @@ export function QuizPage({
               className={[
                 "female-mvp-quiz__astronaut",
                 shouldPlayLanding ? "female-mvp-quiz__astronaut-landing" : "",
+                isLunaLaunching ? "female-mvp-quiz__astronaut-launching" : "",
               ].join(" ")}
               role="img"
               aria-label="Luna 正在帮你校准"
@@ -207,7 +244,7 @@ export function QuizPage({
             <button
               key={index}
               onClick={() =>
-                onSelectOption(
+                handleOptionSelect(
                   currentQuestion.field,
                   option.value,
                   option.tag,
@@ -215,6 +252,7 @@ export function QuizPage({
                   option.label,
                 )
               }
+              disabled={isLunaLaunching}
               className="female-mvp-option group relative flex w-full items-center gap-4 overflow-hidden rounded-[1.35rem] border p-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/90 sm:p-5"
             >
               <span className="pointer-events-none absolute inset-y-3 left-0 w-1 rounded-full bg-rose-200/74 transition-colors group-hover:bg-rose-400" />

@@ -34,6 +34,10 @@ export function ProductCardContent({
       <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-white/5 bg-black/20">
         <ProductImage
           imageValue={product.imagePlaceholder}
+          typeCode={product.typeCode}
+          subtypeCode={product.subtypeCode}
+          gender={product.gender}
+          physicalForm={product.physicalForm}
           alt={displayName}
           iconClassName="w-8 h-8 text-white/20"
           imageClassName="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"

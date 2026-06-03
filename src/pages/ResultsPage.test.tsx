@@ -590,11 +590,11 @@ test("female MVP keeps the primary image area separate from the detail link hots
     />,
   );
 
-  assert.match(html, /Primary Pick 默认图片/);
+  assert.match(html, /<img src="\/assets\/product-placeholder\/suction_pure.png" alt="Primary Pick"/);
   assert.match(html, /href="https:\/\/example.com\/primary-pick"/);
   assert.doesNotMatch(
     html,
-    /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*Primary Pick 默认图片[\s\S]*Primary Pick[\s\S]*<\/a>/,
+    /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*<img src="\/assets\/product-placeholder\/suction_pure\.png"[\s\S]*Primary Pick[\s\S]*<\/a>/,
   );
 });
 
@@ -628,6 +628,56 @@ test("female MVP keeps product copy out of the primary image area", () => {
     html,
     /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*Primary Pick 默认图片[\s\S]*Primary Pick[\s\S]*<\/a>/,
   );
+});
+
+test("female MVP primary image falls back to subtype placeholder when product image is empty", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["静音"] }}
+      topProducts={[
+        makeProduct({
+          id: "p1",
+          name: "Primary Pick",
+          imagePlaceholder: "",
+          subtypeCode: "suction_pure",
+        }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+});
+
+test("female MVP primary image can fall back to quiz physical form when restored product taxonomy is missing", () => {
+  const html = renderToStaticMarkup(
+    <ResultsPage
+      pageVariants={{}}
+      answers={{ tags: ["复合机型"], physicalForm: "composite" }}
+      topProducts={[
+        makeProduct({
+          id: "p1",
+          name: "甜甜棒",
+          imagePlaceholder: "image",
+          typeCode: null,
+          subtypeCode: null,
+          physicalForm: undefined as unknown as RankedProduct["physicalForm"],
+        }),
+      ]}
+      backupProducts={[]}
+      shoppingGuidance={[]}
+      recommendationTips={[]}
+      isRecalibratingResults={false}
+      onReset={() => {}}
+    />,
+  );
+
+  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.png"/);
 });
 
 test("female MVP folds practical cautions into the primary check card", () => {
