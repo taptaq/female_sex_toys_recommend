@@ -126,9 +126,6 @@ import { MatchModePage } from "./pages/MatchModePage";
 import type { MatchModeEntrance } from "./pages/MatchModePage";
 import { NaturalLanguageMatchPage } from "./pages/NaturalLanguageMatchPage";
 import {
-  type ResultEditableCondition,
-} from "./pages/ResultsPage";
-import {
   DEFAULT_LIBRARY_FILTER_MAX_DB,
   LibraryPage,
 } from "./pages/LibraryPage";
@@ -1144,54 +1141,6 @@ export default function App() {
     );
     setAnswerPath((currentPath) => currentPath.slice(0, -1));
     setStep(step - 1);
-  };
-
-  const handleEditQuizCondition = (condition: ResultEditableCondition) => {
-    const questionByCondition = activeQuestions.find((question) => {
-      if (condition === "budget") return question.field === "budget";
-      if (condition === "quietness") return question.field === "maxDb";
-      return (
-        question.field === "coupleScene" ||
-        question.field === "appearance" ||
-        question.field === "sessionGoal"
-      );
-    });
-
-    if (!questionByCondition) {
-      resetQuiz();
-      return;
-    }
-
-    const questionIndex = activeQuestions.findIndex(
-      (question) => question.id === questionByCondition.id,
-    );
-
-    const editableAnswers = resultBaseAnswers ?? answers;
-    setQuizReturnToResultsState({
-      step,
-      answers,
-      answerPath,
-      resultBaseAnswers,
-      appliedResultTuningModes,
-      topProducts,
-      backupProducts,
-      recommendationTips,
-      shoppingGuidance,
-      bodyPersonaState,
-      bodyPersonaDraftAnswers,
-      currentResultProvider,
-      currentResultModelName,
-    });
-
-    clearResultTuningTracking();
-    clearBodyPersonaFlow();
-    setAnswerPath((currentPath) =>
-      trimQuizAnswerPathFromStep(currentPath, questionIndex),
-    );
-    setAnswers(removeQuizQuestionAnswer(editableAnswers, questionByCondition));
-    resetResultViewState();
-    setStep(questionIndex);
-    navigateTo("/quiz");
   };
 
   const handleBackToResultsFromQuiz = () => {
@@ -2524,28 +2473,16 @@ ${JSON.stringify(context.backupCandidates)}
           activeQuestions={activeQuestions}
           isAiMatching={isAiMatching}
           answers={answers}
-          answerPath={answerPath}
-          appliedResultTuningModes={appliedResultTuningModes}
           topProducts={topProducts}
           backupProducts={backupProducts}
           shoppingGuidance={shoppingGuidance}
           recommendationTips={recommendationTips}
-          bodyPersonaState={bodyPersonaState}
-          isStartingBodyPersona={false}
-          isBodyPersonaQuizOpen={isBodyPersonaQuizOpen}
-          bodyPersonaQuestions={BODY_PERSONA_QUESTIONS}
-          bodyPersonaDraftAnswers={bodyPersonaDraftAnswers}
-          isSubmittingBodyPersonaQuiz={isSubmittingBodyPersonaQuiz}
-          isUnlockingBodyPersona={isUnlockingBodyPersona}
           isEnhancingResults={isEnhancingResults}
           isRecalibratingResults={isRecalibratingResults}
-          resultRecalibrationError={resultRecalibrationError}
           onStart={startFreshQuizSession}
-          onStartBodyPersona={handleStartBodyPersona}
           onBrowseLibraryHome={() => {
             navigateTo("/library");
           }}
-          onBrowseLibraryResults={handleBrowseLibraryFromResults}
           onOpenKnowledgeNebula={(path) => {
             navigateToKnowledgeNebula(
               parseKnowledgeNebulaPath(path || buildKnowledgeNebulaPath()).topicSlug,
@@ -2562,23 +2499,8 @@ ${JSON.stringify(context.backupCandidates)}
             quizReturnToResultsState ? handleBackToResultsFromQuiz : undefined
           }
           onJumpToQuestion={handleJumpToQuizQuestion}
-          onCloseBodyPersonaQuiz={handleCloseBodyPersonaQuiz}
-          onChangeBodyPersonaAnswer={handleChangeBodyPersonaAnswer}
-          onSubmitBodyPersonaQuiz={handleSubmitBodyPersonaQuiz}
-          onUnlockBodyPersona={handleUnlockBodyPersona}
-          onOpenBodyPersonaFullReport={handleOpenBodyPersonaFullReport}
-          onCloseBodyPersonaFullReport={handleCloseBodyPersonaFullReport}
-          onRecalibrateResults={recalibrateCurrentResults}
-          onTuneResults={handleTuneResults}
-          onEditQuizCondition={handleEditQuizCondition}
-          onSaveRecommendationProfile={handleSaveRecommendationProfile}
-          onOpenRecommendationProfiles={navigateToProfiles}
           onReloadRecommendationProfiles={() => void fetchRecommendationProfiles()}
-          isSavingRecommendationProfile={isSavingRecommendationProfile}
-          saveRecommendationProfileMessage={saveRecommendationProfileMessage}
           authPanel={authPanel}
-          isBodyPersonaUnlockLoginRequired={!supabaseSession?.user?.id}
-          isBodyPersonaFullReportOpen={isBodyPersonaFullReportOpen}
           recommendationProfiles={recommendationProfiles}
           isLoadingRecommendationProfiles={isLoadingRecommendationProfiles}
           recommendationProfilesError={recommendationProfilesError}

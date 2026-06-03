@@ -1,18 +1,15 @@
 import type { ReactNode, Ref } from "react";
-import { AlertCircle, Heart, Sparkles } from "lucide-react";
+import { Heart, Sparkles } from "lucide-react";
 
-import { BrandBriefCard } from "../BrandBriefCard.tsx";
+import { useLunaResultStageAnimation } from "../../hooks/useResultsPageAnimation.ts";
 import type { RankedProduct } from "../../lib/app-shell.ts";
 import { resolveBrandBrief } from "../../lib/brand-brief.ts";
-import {
-  buildResultConfidenceSummary,
-  buildResultRouteSummary,
-} from "../../lib/recommendation-results.ts";
+import { buildResultConfidenceSummary } from "../../lib/recommendation-results.ts";
+import type { GsapMotionState } from "../../lib/gsap-motion.ts";
 
 type ResultsPrimaryConfidenceSummary = ReturnType<
   typeof buildResultConfidenceSummary
 >;
-type ResultsPrimaryRouteSummary = ReturnType<typeof buildResultRouteSummary>;
 
 function getConfidenceToneClassName(tone: "high" | "conditional" | "backup") {
   if (tone === "high") {
@@ -22,58 +19,6 @@ function getConfidenceToneClassName(tone: "high" | "conditional" | "backup") {
     return "border-amber-300/25 bg-amber-400/10 text-amber-100";
   }
   return "border-slate-300/20 bg-slate-400/10 text-slate-100";
-}
-
-function renderConfidenceSummary(summary: ResultsPrimaryConfidenceSummary) {
-  return (
-    <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span
-          className={[
-            "rounded-full border px-2.5 py-1 text-[11px]",
-            getConfidenceToneClassName(summary.tone),
-          ].join(" ")}
-        >
-          {summary.levelLabel}
-        </span>
-        <span className="text-[11px] text-slate-500">推荐信心与注意点</span>
-      </div>
-
-      {summary.reasons.length > 0 && (
-        <div className="mb-3">
-          <p className="mb-1 text-[10px] font-mono tracking-wider text-cyan-300/70">
-            为什么适合
-          </p>
-          <ul className="space-y-1">
-            {summary.reasons.map((reason, index) => (
-              <li
-                key={`reason-${index}`}
-                className="text-[11px] leading-5 text-slate-200"
-              >
-                {reason}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div>
-        <p className="mb-1 text-[10px] font-mono tracking-wider text-amber-300/70">
-          需要留意
-        </p>
-        <ul className="space-y-1">
-          {summary.caveats.map((caveat, index) => (
-            <li
-              key={`caveat-${index}`}
-              className="text-[11px] leading-5 text-slate-300"
-            >
-              {caveat}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
 }
 
 function buildFemaleMvpPracticalChecks(product: RankedProduct) {
@@ -197,18 +142,14 @@ export function ResultsPrimaryRecommendationPanel({
   primaryProductDisplayName,
   primaryProductBrandLabel,
   primaryConfidenceSummary,
-  primaryRouteSummary,
-  avoidanceTips,
-  primaryNextStepGroupTitle,
-  primaryNextStep,
   renderProductImage,
   renderClickableHint,
   isFavorited = false,
   onToggleFavorite,
-  isFemaleMvp = false,
   femaleMvpShareCardRef,
   onCreateFemaleMvpShareImage,
   isCreatingFemaleMvpShareImage = false,
+  gsapMotionState,
 }: {
   className: string;
   topProduct: RankedProduct;
@@ -216,39 +157,33 @@ export function ResultsPrimaryRecommendationPanel({
   primaryProductDisplayName: string;
   primaryProductBrandLabel: string;
   primaryConfidenceSummary: ResultsPrimaryConfidenceSummary | null;
-  primaryRouteSummary: ResultsPrimaryRouteSummary | null;
-  avoidanceTips: string[];
-  primaryNextStepGroupTitle?: string;
-  primaryNextStep?: string | null;
   renderProductImage: (product: RankedProduct, iconClassName: string) => ReactNode;
   renderClickableHint: (label?: string) => ReactNode;
   isFavorited?: boolean;
   onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
-  isFemaleMvp?: boolean;
   femaleMvpShareCardRef?: Ref<HTMLElement>;
   onCreateFemaleMvpShareImage?: () => void | Promise<void>;
   isCreatingFemaleMvpShareImage?: boolean;
+  gsapMotionState: GsapMotionState;
 }) {
   const resolvedBrandBrief = resolveBrandBrief(topProduct.brandBrief, topProduct.brand);
-  const femaleMvpPracticalChecks = isFemaleMvp
-    ? buildFemaleMvpPracticalChecks(topProduct)
-    : [];
-  const femaleMvpGuideNote = isFemaleMvp
-    ? getFemaleMvpGuideNote(primaryConfidenceSummary)
-    : null;
-  const femaleMvpAskItems = isFemaleMvp
-    ? buildFemaleMvpAskItems(femaleMvpPracticalChecks, femaleMvpGuideNote)
-    : [];
+  const femaleMvpPracticalChecks = buildFemaleMvpPracticalChecks(topProduct);
+  const femaleMvpGuideNote = getFemaleMvpGuideNote(primaryConfidenceSummary);
+  const femaleMvpAskItems = buildFemaleMvpAskItems(
+    femaleMvpPracticalChecks,
+    femaleMvpGuideNote,
+  );
   const femaleMvpBrandHref =
     resolvedBrandBrief?.officialWebsiteUrl ?? getUrlOrigin(primaryProductHref);
   const femaleMvpBrandHrefLabel = isMarketplaceUrl(femaleMvpBrandHref)
     ? "查看品牌渠道"
     : "品牌官网";
+  const lunaStageRef = useLunaResultStageAnimation(gsapMotionState);
 
   return (
     <section
-      ref={isFemaleMvp ? femaleMvpShareCardRef : undefined}
-      className={[className, isFemaleMvp ? "female-mvp-result-share-card" : ""].join(" ")}
+      ref={femaleMvpShareCardRef}
+      className={[className, "female-mvp-result-share-card"].join(" ")}
     >
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-stretch">
@@ -272,95 +207,29 @@ export function ResultsPrimaryRecommendationPanel({
                 <Heart className={`h-4 w-4 ${isFavorited ? "fill-current" : ""}`} />
               </button>
             ) : null}
-            {primaryProductHref && !isFemaleMvp ? (
-              <>
-                <a
-                  href={primaryProductHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`查看 ${primaryProductDisplayName} 详情`}
-                  className="group absolute inset-0 block overflow-hidden rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                >
-                  {renderProductImage(topProduct, "h-8 w-8 text-white/50")}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent transition-opacity group-hover:opacity-90" />
-                  <div className="absolute bottom-4 left-4 right-24">
-                    <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                      本轮最贴合
-                    </span>
-                    <p className="mb-1 text-[11px] text-cyan-200/72">
-                      {primaryProductBrandLabel}
-                    </p>
-                    <h3 className="break-words text-xl font-medium leading-snug text-white transition-colors group-hover:text-cyan-50">
-                      {primaryProductDisplayName}
-                    </h3>
-                  </div>
-                </a>
-                <div className="pointer-events-none absolute bottom-4 right-4 z-10 flex shrink-0 flex-col items-end gap-2">
-                  <span className="text-xl font-semibold text-cyan-300">
-                    ¥{topProduct.price}
-                  </span>
-                  <a
-                    href={primaryProductHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="pointer-events-auto group inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  >
-                    {renderClickableHint()}
-                  </a>
-                </div>
-              </>
-            ) : (
-              <>
-                {renderProductImage(topProduct, "h-8 w-8 text-white/50")}
-                {!isFemaleMvp ? (
-                  <>
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
-                      <div>
-                        <span className="mb-2 inline-flex rounded-full border border-cyan-300/25 bg-cyan-300/12 px-2.5 py-1 font-mono text-[10px] tracking-[0.18em] text-cyan-100">
-                          本轮最贴合
-                        </span>
-                        <p className="mb-1 text-[11px] text-cyan-200/72">
-                          {primaryProductBrandLabel}
-                        </p>
-                        <h3 className="break-words text-xl font-medium leading-snug text-white">
-                          {primaryProductDisplayName}
-                        </h3>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-2">
-                        <span className="text-xl font-semibold text-cyan-300">
-                          ¥{topProduct.price}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                ) : null}
-              </>
-            )}
+            {renderProductImage(topProduct, "h-8 w-8 text-white/50")}
           </div>
 
-          {isFemaleMvp ? (
-            <div className="female-mvp-result-share-card__product-info">
-              <span>本轮最贴合</span>
-              <p>{primaryProductBrandLabel}</p>
-              <div className="female-mvp-result-share-card__product-title-row">
-                <h3>{primaryProductDisplayName}</h3>
-                <strong>¥{topProduct.price}</strong>
-              </div>
-              {primaryProductHref ? (
-                <a
-                  href={primaryProductHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="female-mvp-result-share-card__detail-link group"
-                >
-                  {renderClickableHint()}
-                </a>
-              ) : null}
+          <div className="female-mvp-result-share-card__product-info">
+            <span>本轮最贴合</span>
+            <p>{primaryProductBrandLabel}</p>
+            <div className="female-mvp-result-share-card__product-title-row">
+              <h3>{primaryProductDisplayName}</h3>
+              <strong>¥{topProduct.price}</strong>
             </div>
-          ) : null}
+            {primaryProductHref ? (
+              <a
+                href={primaryProductHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="female-mvp-result-share-card__detail-link group"
+              >
+                {renderClickableHint()}
+              </a>
+            ) : null}
+          </div>
 
-          {isFemaleMvp && resolvedBrandBrief ? (
+          {resolvedBrandBrief ? (
             <div className="female-mvp-result-share-card__brand-brief">
               <div>
                 <p className="female-mvp-result-share-card__brand-eyebrow">
@@ -392,12 +261,7 @@ export function ResultsPrimaryRecommendationPanel({
           <div>
             {topProduct.reason && (
               <div
-                className={[
-                  "rounded-2xl border p-3",
-                  isFemaleMvp
-                    ? "border-sky-200/70 bg-sky-50/70"
-                    : "border-cyan-300/15 bg-cyan-300/[0.055]",
-                ].join(" ")}
+                className="rounded-2xl border border-sky-200/70 bg-sky-50/70 p-3"
               >
                 <p className="text-sm leading-6 text-cyan-50/82">
                   <Sparkles className="mr-1 inline-block h-3.5 w-3.5 text-cyan-200" />
@@ -406,11 +270,14 @@ export function ResultsPrimaryRecommendationPanel({
               </div>
             )}
 
-            {isFemaleMvp ? (
-              <div className="female-mvp-result-share-card__stage">
-                <div className="female-mvp-result-share-card__stage-scene">
-                  <div className="female-mvp-result-share-card__stage-light" />
-                  <div className="female-mvp-result-share-card__luna-orbit">
+            <div className="female-mvp-result-share-card__stage">
+              <div
+                ref={lunaStageRef}
+                className="female-mvp-result-share-card__stage-scene"
+              >
+                <div className="female-mvp-result-share-card__stage-light" />
+                <div className="female-mvp-result-share-card__luna-orbit">
+                  <div className="female-mvp-result-share-card__luna-figure">
                     <span
                       className="female-mvp-result-share-card__luna-halo"
                       aria-hidden="true"
@@ -420,159 +287,79 @@ export function ResultsPrimaryRecommendationPanel({
                       alt="Luna 结果讲解员"
                       className="female-mvp-result-share-card__luna"
                     />
+                  </div>
+                </div>
+                <div className="female-mvp-result-share-card__stage-caption">
+                  <p>LUNA STAGE</p>
+                  <h3>这一款可以先看</h3>
+                  <span>少看参数堆叠，先跟 Luna 确认 3 个问题。</span>
+                </div>
+              </div>
+
+              <div className="female-mvp-result-share-card__ask">
+                <div className="female-mvp-result-share-card__ask-head">
+                  <div>
+                    <p>KEY SIGNALS</p>
+                    <h3>关键判断</h3>
+                  </div>
+                  {primaryConfidenceSummary ? (
                     <span
-                      className="female-mvp-result-share-card__luna-signal"
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <div className="female-mvp-result-share-card__stage-caption">
-                    <p>LUNA STAGE</p>
-                    <h3>这一款可以先看</h3>
-                    <span>少看参数堆叠，先跟 Luna 确认 3 个问题。</span>
-                  </div>
+                      className={[
+                        "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-black",
+                        getConfidenceToneClassName(primaryConfidenceSummary.tone),
+                      ].join(" ")}
+                    >
+                      {primaryConfidenceSummary.levelLabel}
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="female-mvp-result-share-card__ask">
-                  <div className="female-mvp-result-share-card__ask-head">
-                    <div>
-                      <p>KEY SIGNALS</p>
-                      <h3>关键判断</h3>
-                    </div>
-                    {primaryConfidenceSummary ? (
-                      <span
-                        className={[
-                          "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-black",
-                          getConfidenceToneClassName(primaryConfidenceSummary.tone),
-                        ].join(" ")}
-                      >
-                        {primaryConfidenceSummary.levelLabel}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="female-mvp-result-share-card__ask-list">
-                    {femaleMvpAskItems.map((item) => (
-                      <details
-                        key={item.question}
-                        className="female-mvp-result-share-card__ask-item"
-                        open={item.isOpen}
-                      >
-                        <summary>
-                          <span className="female-mvp-result-share-card__ask-status">
-                            <img
-                              src="/assets/results/luna-result-sticker-check.png"
-                              alt=""
-                              aria-hidden="true"
-                            />
-                          </span>
-                          {item.question}
-                        </summary>
-                        <p>{item.answer}</p>
-                      </details>
-                    ))}
-                  </div>
+                <div className="female-mvp-result-share-card__ask-list">
+                  {femaleMvpAskItems.map((item) => (
+                    <details
+                      key={item.question}
+                      className="female-mvp-result-share-card__ask-item"
+                      open={item.isOpen}
+                    >
+                      <summary>
+                        <span className="female-mvp-result-share-card__ask-status">
+                          <img
+                            src="/assets/results/luna-result-sticker-check.png"
+                            alt=""
+                            aria-hidden="true"
+                          />
+                        </span>
+                        {item.question}
+                      </summary>
+                      <p>{item.answer}</p>
+                    </details>
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <>
-                <BrandBriefCard brief={resolvedBrandBrief} showKnowledgeLink />
-
-                {primaryConfidenceSummary && renderConfidenceSummary(primaryConfidenceSummary)}
-
-                {primaryRouteSummary && (
-                  <div className="mt-3 rounded-2xl border border-cyan-300/12 bg-cyan-400/[0.05] p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-cyan-200/80" />
-                      <p className="text-[11px] font-medium tracking-wide text-cyan-100/86">
-                        为什么这条路线更适合你
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-3">
-                      <p className="text-[11px] font-medium text-cyan-100/84">
-                        这次更适合先走 {primaryRouteSummary.routeLabel}
-                      </p>
-                      <p className="mt-1.5 text-[11px] leading-5 text-slate-200">
-                        {primaryRouteSummary.summary}
-                      </p>
-                      <p className="mt-2 text-[11px] leading-5 text-slate-400">
-                        {primaryRouteSummary.nextPriority}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {avoidanceTips.length > 0 && (
-                  <div className="mt-3 rounded-2xl border border-rose-300/12 bg-rose-400/[0.05] p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <AlertCircle className="h-3.5 w-3.5 text-rose-200/80" />
-                      <p className="text-[11px] font-medium tracking-wide text-rose-100/88">
-                        暂时不建议优先看
-                      </p>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {avoidanceTips.map((tip, index) => (
-                        <li
-                          key={`avoidance-${index}`}
-                          className="text-[11px] leading-5 text-rose-50/78"
-                        >
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {!isFemaleMvp && primaryNextStep ? (
-            <div className="rounded-2xl border border-amber-300/14 bg-amber-400/[0.06] p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-amber-200/80" />
-                <p className="text-[11px] font-medium tracking-wide text-amber-100/86">
-                  下一步先做这件事
-                </p>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-black/10 px-3 py-3">
-                <p className="text-[11px] font-medium text-amber-100/84">
-                  {primaryNextStepGroupTitle}
-                </p>
-                <p className="mt-1.5 text-[11px] leading-5 text-slate-200">
-                  {primaryNextStep}
-                </p>
-                <a
-                  href="#result-next-steps"
-                  className="mt-3 inline-flex items-center rounded-full border border-amber-300/18 bg-amber-300/10 px-2.5 py-1 text-[11px] text-amber-100/82 transition-colors hover:border-amber-200/30 hover:bg-amber-300/14"
-                >
-                  查看下一步建议
-                </a>
               </div>
             </div>
-          ) : null}
+          </div>
         </div>
       </div>
-      {isFemaleMvp ? (
-        <div className="female-mvp-result-share-card__footer">
-          <span>Generated by Luna</span>
-          {onCreateFemaleMvpShareImage ? (
-            <button
-              type="button"
-              onClick={() => void onCreateFemaleMvpShareImage()}
-              disabled={isCreatingFemaleMvpShareImage}
-              className="female-mvp-result-share-card__share-button"
-            >
-              <img
-                src="/assets/results/luna-result-sticker-share-seal.png"
-                alt=""
-                aria-hidden="true"
-              />
-              <span>{isCreatingFemaleMvpShareImage ? "生成中..." : "生成分享图"}</span>
-            </button>
-          ) : (
-            <strong>截图分享给朋友一起参考</strong>
-          )}
-        </div>
-      ) : null}
+      <div className="female-mvp-result-share-card__footer">
+        <span>Generated by Luna</span>
+        {onCreateFemaleMvpShareImage ? (
+          <button
+            type="button"
+            onClick={() => void onCreateFemaleMvpShareImage()}
+            disabled={isCreatingFemaleMvpShareImage}
+            className="female-mvp-result-share-card__share-button"
+          >
+            <img
+              src="/assets/results/luna-result-sticker-share-seal.png"
+              alt=""
+              aria-hidden="true"
+            />
+            <span>{isCreatingFemaleMvpShareImage ? "生成中..." : "生成分享图"}</span>
+          </button>
+        ) : (
+          <strong>截图分享给朋友一起参考</strong>
+        )}
+      </div>
     </section>
   );
 }

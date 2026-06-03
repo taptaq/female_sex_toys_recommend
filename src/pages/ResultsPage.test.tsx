@@ -6,15 +6,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { RankedProduct } from "../lib/app-shell.ts";
 import { ResultsPage } from "./ResultsPage.tsx";
 
-const authPanel = {
-  isConfigured: true,
-  userLabel: null,
-  statusMessage: null,
-  isSubmitting: false,
-  onSubmit: async () => {},
-  onSignOut: async () => {},
-};
-
 function makeProduct(overrides: Partial<RankedProduct>): RankedProduct {
   return {
     id: "p1",
@@ -68,15 +59,6 @@ test("female MVP result primary card renders as a social share card with practic
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -92,7 +74,7 @@ test("female MVP result primary card renders as a social share card with practic
   assert.match(html, /这一款可以先看/);
   assert.match(html, /female-mvp-result-share-card__stage/);
   assert.match(html, /female-mvp-result-share-card__luna-halo/);
-  assert.match(html, /female-mvp-result-share-card__luna-signal/);
+  assert.doesNotMatch(html, /female-mvp-result-share-card__luna-signal/);
   assert.match(html, /female-mvp-result-share-card__ask/);
   assert.match(html, /female-mvp-result-share-card__ask-status/);
   assert.match(html, /\/assets\/results\/luna-result-sticker-check\.png/);
@@ -194,29 +176,7 @@ test("female MVP results hide heavy secondary modules", () => {
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      bodyPersonaState={{
-        sessionId: "persona-session-1",
-        status: "completed_free",
-        freeSummary: {
-          title: "星幕型·隐秘安全感者",
-          blurb: "你更在意低压力进入。",
-          why: "你在隐私与慢热维度更高。",
-          hints: ["优先低存在感路线"],
-        },
-        fullReport: null,
-      }}
-      isBodyPersonaQuizOpen
-      isBodyPersonaFullReportOpen
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -250,15 +210,6 @@ test("female MVP result tags can expand from the hidden count chip", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -309,15 +260,6 @@ test("female MVP shows a lightweight brand brief with an official website link",
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -342,15 +284,6 @@ test("results page shows the original natural language request when matched from
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
       matchInputMode="natural-language"
       naturalLanguageQuery="想要一个更静音、预算 300 以内、适合女生新手、最好容易清洁的产品。"
@@ -373,38 +306,7 @@ test("female MVP hides the body persona entry and free summary block", () => {
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      bodyPersonaState={{
-        sessionId: "persona-session-1",
-        status: "completed_free",
-        freeSummary: {
-          title: "星幕型·隐秘安全感者",
-          blurb: "你更在意低压力进入。",
-          why: "你在隐私与慢热维度更高。",
-          hints: ["优先低存在感路线"],
-        },
-        fullReport: null,
-      }}
-      isStartingBodyPersona={false}
-      isBodyPersonaQuizOpen={false}
-      bodyPersonaQuestions={[]}
-      bodyPersonaDraftAnswers={{}}
-      isSubmittingBodyPersonaQuiz={false}
-      isUnlockingBodyPersona={false}
-      onStartBodyPersona={() => {}}
-      onCloseBodyPersonaQuiz={() => {}}
-      onChangeBodyPersonaAnswer={() => {}}
-      onSubmitBodyPersonaQuiz={async () => {}}
-      onUnlockBodyPersona={async () => {}}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -427,76 +329,7 @@ test("female MVP hides the body persona reopen entry even when the report is unl
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
-      bodyPersonaState={{
-        sessionId: "persona-session-1",
-        status: "unlocked",
-        freeSummary: {
-          title: "星幕型·隐秘安全感者",
-          blurb: "你更在意低压力进入。",
-          why: "你在隐私与慢热维度更高。",
-          hints: ["优先低存在感路线"],
-        },
-        fullReport: {
-          reportTitle: "完整星系人格档案",
-          personaName: "隐私安全型",
-          personaSubtitle: "隐私安全型 · M104 草帽星系",
-          personaManifesto: "你不是退缩，你只是更需要边界清晰的靠近方式。",
-          personaImageAsset: null,
-          primaryPersonaCode: "starlit_guard",
-          secondaryPersonaCode: "soft_glow",
-          secondaryPersonaName: "慢热探索型",
-          hiddenRouteCode: "daily_object",
-          hiddenRouteName: "日常器物型",
-          hiddenPowerGrade: "S",
-          coLivingComfortGrade: "high",
-          portraitShort: "短描述",
-          portraitLong: "长描述",
-          whyYouAreThis: "形成原因",
-          strengthTags: ["边界清晰"],
-          growthTip: "成长建议",
-          dimensionBreakdown: [],
-          hiddenRouteSummaryShort: "短隐藏路线",
-          hiddenRouteSummaryLong: "长隐藏路线",
-          disguisePreference: "更偏好伪装",
-          storagePreference: "优先易收纳",
-          privacyNeedLevel: "高",
-          bestRouteSummary: "最适合路线",
-          goodFits: ["低存在感路线"],
-          avoidNotes: ["高存在感路线"],
-          sceneMatches: ["同住环境"],
-          paceAdvice: ["先低压进入"],
-          parameterFocus: ["优先看静音"],
-          topCategoryMatches: [],
-          pickReasonSummary: "匹配原因总结",
-          mismatchWarnings: ["别先看高噪音路线"],
-          productPicks: [],
-          title: "隐私安全型",
-          portrait: "长描述",
-          hiddenRouteSummary: "长隐藏路线",
-        },
-      }}
-      isStartingBodyPersona={false}
-      isBodyPersonaQuizOpen={false}
-      bodyPersonaQuestions={[]}
-      bodyPersonaDraftAnswers={{}}
-      isSubmittingBodyPersonaQuiz={false}
-      isUnlockingBodyPersona={false}
-      onStartBodyPersona={() => {}}
-      onCloseBodyPersonaQuiz={() => {}}
-      onChangeBodyPersonaAnswer={() => {}}
-      onSubmitBodyPersonaQuiz={async () => {}}
-      onUnlockBodyPersona={async () => {}}
-      onOpenBodyPersonaFullReport={() => {}}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={{ ...authPanel, userLabel: "taptaq" }}
       onReset={() => {}}
     />,
   );
@@ -521,15 +354,6 @@ test("results page shows a lightweight status while AI enhancement is still runn
       recommendationTips={[]}
       isEnhancingResults
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -547,7 +371,7 @@ test("results page gives the core result shell roomier horizontal and panel padd
 
   assert.match(
     source,
-    /results-report-shell relative isolate w-full space-y-6 overflow-x-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4/,
+    /results-report-shell female-mvp-results relative isolate min-h-\[100svh\] w-full space-y-6 overflow-x-hidden px-4 pt-\[calc\(1\.25rem\+env\(safe-area-inset-top\)\)\]/,
   );
   assert.match(
     source,
@@ -571,15 +395,6 @@ test("results page exposes a detail link for the primary recommendation when a p
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -607,6 +422,119 @@ test("female MVP detail link uses a darker text color on the light pill", () => 
     css,
     /\.female-mvp-result-share-card__detail-link > span > span \{[\s\S]*color: #0c4a6e;/,
   );
+  assert.match(
+    css,
+    /\.female-mvp-result-share-card__detail-link svg \{[\s\S]*background: linear-gradient\(135deg, #7dd3fc, #c4b5fd\);/,
+  );
+  assert.match(
+    css,
+    /\.female-mvp-result-share-card__detail-link svg \{[\s\S]*box-shadow: 0 0\.28rem 0\.7rem rgba\(14, 165, 233, 0\.14\);/,
+  );
+});
+
+test("female MVP Luna stage removes the old framed portrait and uses GSAP stage motion", () => {
+  const css = fs.readFileSync(
+    path.resolve(process.cwd(), "src/index.css"),
+    "utf8",
+  );
+  const panelSource = fs.readFileSync(
+    path.resolve(
+      process.cwd(),
+      "src/components/results/ResultsPrimaryRecommendationPanel.tsx",
+    ),
+    "utf8",
+  );
+  const animationSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/hooks/useResultsPageAnimation.ts"),
+    "utf8",
+  );
+  const resultsPageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/ResultsPage.tsx"),
+    "utf8",
+  );
+
+  const lunaRule = css.match(
+    /\.female-mvp-result-share-card__luna \{(?<body>[\s\S]*?)\n\}/,
+  )?.groups?.body ?? "";
+  const lunaStageOrbitRule = css.match(
+    /\.female-mvp-result-share-card__stage-scene \.female-mvp-result-share-card__luna-orbit \{(?<body>[\s\S]*?)\n\}/,
+  )?.groups?.body ?? "";
+  const lunaFlightCloneRule = css.match(
+    /\.female-mvp-result-share-card__luna-flight-clone \{(?<body>[\s\S]*?)\n\}/,
+  )?.groups?.body ?? "";
+
+  assert.doesNotMatch(lunaRule, /border:/);
+  assert.doesNotMatch(lunaRule, /background:/);
+  assert.match(lunaRule, /filter: drop-shadow/);
+  assert.match(lunaStageOrbitRule, /top: -0\.25rem;/);
+  assert.match(panelSource, /useLunaResultStageAnimation\(gsapMotionState\)/);
+  assert.match(panelSource, /ref=\{lunaStageRef\}/);
+  assert.doesNotMatch(panelSource, /female-mvp-result-share-card__luna-signal/);
+  assert.match(animationSource, /export function useLunaResultStageAnimation/);
+  assert.match(animationSource, /document\.createElement\("canvas"\)/);
+  assert.match(animationSource, /drawImage\(lunaImage/);
+  assert.match(animationSource, /lunaImage\.naturalWidth \/ lunaImage\.naturalHeight/);
+  assert.match(animationSource, /drawWidth/);
+  assert.match(animationSource, /drawHeight/);
+  assert.match(animationSource, /drawX/);
+  assert.match(animationSource, /drawY/);
+  assert.doesNotMatch(
+    animationSource,
+    /drawImage\(lunaImage, 0, 0, finalRect\.width, finalRect\.height\)/,
+  );
+  assert.match(animationSource, /Math\.min\(window\.devicePixelRatio \|\| 1, 2\)/);
+  assert.match(animationSource, /LUNA_FLIGHT_ACTIVE_CLASS/);
+  assert.match(animationSource, /LUNA_FLIGHT_DELAY_SECONDS = 1\.5/);
+  assert.match(animationSource, /lunaFlightStart = getGsapDuration\(LUNA_FLIGHT_DELAY_SECONDS, gsapMotionState\)/);
+  assert.match(animationSource, /classList\.add\(LUNA_FLIGHT_ACTIVE_CLASS\)/);
+  assert.match(animationSource, /classList\.remove\(LUNA_FLIGHT_ACTIVE_CLASS\)/);
+  assert.match(animationSource, /flightClone\.style\.visibility = "hidden"/);
+  assert.match(animationSource, /lunaArcPath/);
+  assert.match(animationSource, /motionPath/);
+  assert.match(animationSource, /curviness: 1\.25/);
+  assert.match(animationSource, /autoRound: false/);
+  assert.match(animationSource, /force3D: true/);
+  assert.match(animationSource, /duration: getGsapDuration\(1\.38, gsapMotionState\)/);
+  assert.match(animationSource, /createLunaFlightClone/);
+  assert.match(animationSource, /document\.body\.appendChild\(flightClone\)/);
+  assert.match(animationSource, /female-mvp-result-share-card__luna-flight-clone/);
+  assert.match(animationSource, /window\.innerWidth \* 0\.08/);
+  assert.match(animationSource, /window\.innerHeight \* 0\.07/);
+  assert.match(animationSource, /visibility: "visible"/);
+  assert.doesNotMatch(
+    animationSource,
+    /lunaFigure,[\s\S]{0,220}autoAlpha/,
+  );
+  assert.match(animationSource, /gsap\.quickTo/);
+  assert.match(animationSource, /mapRange/);
+  assert.match(css, /width: min\(54%, 12\.8rem\);/);
+  assert.match(css, /width: min\(54%, 10\.6rem\);/);
+  assert.match(css, /\.female-mvp-result-share-card__luna-flight-clone \{/);
+  assert.match(css, /position: fixed;/);
+  assert.match(lunaFlightCloneRule, /contain: layout paint style;/);
+  assert.doesNotMatch(lunaFlightCloneRule, /filter:/);
+  assert.match(css, /\.female-mvp-result-share-card__stage-scene--luna-flight::before/);
+  assert.match(css, /animation-play-state: paused;/);
+  assert.doesNotMatch(css, /female-mvp-result-luna-signal/);
+  assert.match(resultsPageSource, /gsapMotionState=\{gsapMotionState\}/);
+});
+
+test("results page entrance animation does not replay on parent-only rerenders", () => {
+  const animationSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/hooks/useResultsPageAnimation.ts"),
+    "utf8",
+  );
+
+  const resultsAnimationHookSource = animationSource.slice(
+    animationSource.indexOf("export function useResultsPageAnimation"),
+    animationSource.indexOf("export function useLunaResultStageAnimation"),
+  );
+
+  assert.doesNotMatch(resultsAnimationHookSource, /\}, \[gsapMotionState\]\);/);
+  assert.match(
+    resultsAnimationHookSource,
+    /\}, \[gsapMotionState\.shouldAnimate, gsapMotionState\.prefersReducedMotion\]\);/,
+  );
 });
 
 test("female MVP shows the primary recommendation brand above the product name outside the image", () => {
@@ -625,15 +553,6 @@ test("female MVP shows the primary recommendation brand above the product name o
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -667,15 +586,6 @@ test("female MVP keeps the primary image area separate from the detail link hots
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -706,15 +616,6 @@ test("female MVP keeps product copy out of the primary image area", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -743,15 +644,6 @@ test("female MVP folds practical cautions into the primary check card", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -771,15 +663,6 @@ test("female MVP hides archive actions from the result page", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage="登录后可加密保存到云端"
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -799,15 +682,6 @@ test("female MVP hides archive actions even when the auth session is already act
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage="已登录，可加密保存并多端同步"
-      authPanel={{ ...authPanel, userLabel: "taptaq" }}
       onReset={() => {}}
     />,
   );
@@ -834,15 +708,6 @@ test("female MVP prioritizes the primary recommendation and removes secondary co
       shoppingGuidance={["优先确认清洁便利性"]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -879,15 +744,6 @@ test("female MVP removes comparison, alternatives, tuning, and regeneration from
       shoppingGuidance={["购买前优先确认是否有明确售后和材质说明。"]}
       recommendationTips={["如果同住，先优先比较更安静的路线。"]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -918,15 +774,6 @@ test("results page shows relaxation tips when strict matching finds no products"
         "如果可接受 IPX6 或基础防水，能解锁更多仍然好清洁的选择。",
       ]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -949,16 +796,6 @@ test("female MVP hides the same-category library bridge after recommendation", (
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onBrowseLibrary={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -988,15 +825,6 @@ test("female MVP hides comparison and backup headings", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1030,15 +858,6 @@ test("female MVP hides formal candidate groups, adjustment actions, and final ch
       ]}
       recommendationTips={["如果同住，先优先比较更安静的路线。"]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1055,21 +874,11 @@ test("female MVP hides tuning feedback and tuning buttons", () => {
     <ResultsPage
       pageVariants={{}}
       answers={{ tags: ["静音", "微调：更安静"] }}
-      appliedResultTuningModes={["quieter"]}
       topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1086,21 +895,11 @@ test("results page does not disable tuning buttons just because stale tuning tag
       answers={{
         tags: ["静音", "微调：更安静", "微调：预算更低", "微调：新手友好"],
       }}
-      appliedResultTuningModes={[]}
       topProducts={[makeProduct({ id: "p1", name: "Primary Pick" })]}
       backupProducts={[]}
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1124,16 +923,6 @@ test("female MVP hides direct entry points to revise key quiz conditions", () =>
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onEditQuizCondition={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1158,15 +947,6 @@ test("female MVP hides the stacked comparison view", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1189,15 +969,6 @@ test("female MVP hides archive mobile button layout", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1225,15 +996,6 @@ test("results page no longer exposes a later-comparison candidate picker", () =>
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1256,15 +1018,6 @@ test("female MVP hides shopping guidance next-step sections", () => {
       ]}
       recommendationTips={["如果同住，先优先比较更安静的路线。"]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1288,15 +1041,6 @@ test("female MVP hides general shopping guidance next-step sections", () => {
       ]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1322,15 +1066,6 @@ test("female MVP hides the final pre-purchase checklist", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1370,15 +1105,6 @@ test("female MVP hides route summary and keeps practical primary checks", () => 
       ]}
       recommendationTips={["如果同住，先优先比较更安静的路线。"]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1402,15 +1128,6 @@ test("female MVP hides the parameter explanation entry near metric chips", () =>
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1433,15 +1150,6 @@ test("female MVP hides metric chips as direct knowledge entry points", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1463,15 +1171,6 @@ test("female MVP hides the inline parameter preview layer for chip explanations"
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1495,15 +1194,6 @@ test("female MVP keeps parameter preview code recoverable but hidden from output
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1515,8 +1205,8 @@ test("female MVP keeps parameter preview code recoverable but hidden from output
   assert.doesNotMatch(html, /静音参数/);
   assert.doesNotMatch(html, /防水边界/);
   assert.doesNotMatch(html, /电机体感/);
-  assert.match(source, /ResultsParameterEducationSection/);
-  assert.match(source, /getSortedParameterPreviewItems/);
+  assert.doesNotMatch(source, /ResultsParameterEducationSection/);
+  assert.doesNotMatch(source, /getSortedParameterPreviewItems/);
 });
 
 test("female MVP hides motor guidance even when the user's current concern is body feedback", () => {
@@ -1533,15 +1223,6 @@ test("female MVP hides motor guidance even when the user's current concern is bo
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1560,15 +1241,6 @@ test("female MVP hides model selection details and regenerate recommendation ent
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
     />,
   );
@@ -1596,15 +1268,6 @@ test("results page offers separate restart and return-home actions", () => {
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
       onBackHome={() => {}}
     />,
@@ -1624,15 +1287,6 @@ test("results page adapts the reset button copy for natural-language matching", 
       shoppingGuidance={[]}
       recommendationTips={[]}
       isRecalibratingResults={false}
-      resultRecalibrationError={null}
-      onRecalibrateResults={() => {}}
-      onTuneResults={() => {}}
-      onSaveRecommendationProfile={async () => {}}
-      onOpenRecommendationProfiles={() => {}}
-      onOpenKnowledgeNebula={() => {}}
-      isSavingRecommendationProfile={false}
-      saveRecommendationProfileMessage={null}
-      authPanel={authPanel}
       onReset={() => {}}
       matchInputMode="natural-language"
       naturalLanguageQuery="想要静音、好清洁的"
