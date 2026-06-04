@@ -620,6 +620,7 @@ export function HomePage({
             ".female-mvp-holo-grid",
             ".female-mvp-stage-backdrop",
             ".female-mvp-orbit-path",
+            ".female-mvp-starmap-scan",
           ].join(", "),
         )
         .forEach((element) => {
@@ -634,6 +635,49 @@ export function HomePage({
     }
 
     const ctx = gsap.context(() => {
+      const idleRepeat = repeat === Infinity ? -1 : repeat;
+      const startFemaleMvpIdleMotion = () => {
+        gsap.to(".female-mvp-astronaut-image", {
+          x: "0.1rem",
+          y: "-0.46rem",
+          z: 34,
+          rotation: 1.6,
+          duration: getGsapDuration(3.6, motionState),
+          ease: "sine.inOut",
+          repeat: idleRepeat,
+          yoyo: true,
+        });
+
+        gsap.to(".female-mvp-orbit-planet", {
+          x: (index) => ["0.1rem", "0.14rem", "-0.16rem", "-0.12rem"][index] ?? "0.1rem",
+          y: (index) => ["-0.22rem", "-0.3rem", "-0.24rem", "-0.26rem"][index] ?? "-0.24rem",
+          rotation: (index) => [0.8, -0.6, 1.2, -1][index] ?? 0.8,
+          duration: (index) => getGsapDuration([3.35, 3.55, 3.45, 3.7][index] ?? 3.45, motionState),
+          delay: (index) => [0, 0.18, 0.34, 0.5][index] ?? 0,
+          ease: "sine.inOut",
+          repeat: idleRepeat,
+          yoyo: true,
+        });
+
+        gsap.to(".female-mvp-planet-label", {
+          y: -2,
+          autoAlpha: 0.82,
+          duration: getGsapDuration(3.8, motionState),
+          ease: "sine.inOut",
+          repeat: idleRepeat,
+          stagger: getGsapDuration(0.16, motionState),
+          yoyo: true,
+        });
+
+        gsap.to(".female-mvp-stage-backdrop", {
+          scale: 1.012,
+          duration: getGsapDuration(5.6, motionState),
+          ease: "sine.inOut",
+          repeat: idleRepeat,
+          yoyo: true,
+        });
+      };
+
       const timeline = gsap.timeline({
         defaults: { ease: "sine.out" },
         onComplete: () => {
@@ -642,6 +686,7 @@ export function HomePage({
             .forEach((element) => {
               element.dataset.introHidden = "false";
             });
+          startFemaleMvpIdleMotion();
         },
       });
 
@@ -653,6 +698,7 @@ export function HomePage({
         .set(".female-mvp-planet-label", { autoAlpha: 0 })
         .set(".female-mvp-route-spark", { autoAlpha: 0 })
         .set(".female-mvp-stage-backdrop", { autoAlpha: 0, scale: 0.98 })
+        .set(".female-mvp-starmap-scan", { autoAlpha: 0, scale: 0.86, rotation: -10 })
         .set(".female-mvp-orbit-path", { autoAlpha: 0, strokeDasharray: 720, strokeDashoffset: 720 })
         .set(".female-mvp-game-lobby-stage", { autoAlpha: 1, y: -14 })
         .set(".female-mvp-display-plinth", { autoAlpha: 0.34 })
@@ -660,53 +706,94 @@ export function HomePage({
         .set(".female-mvp-lens-ribbon", { autoAlpha: 0.18 })
         .set(".female-mvp-mission-node", { autoAlpha: 0, y: 6, scale: 0.98 })
         .set(".female-mvp-cabin-orbit-rail", { scaleX: 0.35, autoAlpha: 0 })
-        .set(".female-mvp-astronaut-image", { autoAlpha: 0, scale: 0.96, y: 12 })
+        .set(".female-mvp-astronaut-image", { autoAlpha: 0, scale: 0.9, y: 26, z: 34, rotation: -2.4 })
+        .addLabel("orbitScan")
         .to(".female-mvp-stage-backdrop", {
           autoAlpha: 1,
           scale: 1,
-          duration: getGsapDuration(0.6, motionState),
+          duration: getGsapDuration(0.52, motionState),
         })
+        .to(
+          ".female-mvp-starmap-scan",
+          {
+            autoAlpha: 0.9,
+            scale: 1.08,
+            rotation: 4,
+            duration: getGsapDuration(0.7, motionState),
+            ease: "sine.inOut",
+          },
+          "<0.04",
+        )
         .to(
           ".female-mvp-orbit-path",
           {
-            autoAlpha: 0.16,
+            autoAlpha: 0.22,
             strokeDashoffset: 0,
-            duration: getGsapDuration(0.55, motionState),
+            duration: getGsapDuration(0.72, motionState),
             ease: "sine.inOut",
           },
-          "<0.1",
+          "<0.02",
         )
+        .addLabel("planetDiscovery", ">-0.34")
         .to(
           ".female-mvp-orbit-planet",
           {
             autoAlpha: 0.86,
             scale: 1,
-            stagger: getGsapDuration(0.1, motionState),
-            duration: getGsapDuration(0.55, motionState),
+            filter: "brightness(1.08) saturate(1.06)",
+            stagger: getGsapDuration(0.13, motionState),
+            duration: getGsapDuration(0.46, motionState),
+            ease: "back.out(1.45)",
           },
-          "<",
+          "planetDiscovery",
         )
+        .to(
+          ".female-mvp-orbit-planet",
+          {
+            filter: "brightness(1) saturate(1)",
+            duration: getGsapDuration(0.42, motionState),
+            stagger: getGsapDuration(0.05, motionState),
+            ease: "sine.out",
+          },
+          ">-0.18",
+        )
+        .to(
+          ".female-mvp-starmap-scan",
+          {
+            autoAlpha: 0,
+            scale: 1.18,
+            duration: getGsapDuration(0.34, motionState),
+            ease: "sine.out",
+          },
+          ">-0.46",
+        )
+        .addLabel("lunaArrival", ">-0.3");
+
+      // Phase 2: Astronaut drifts in after the star map wakes up
+      timeline
+        .to(
+          ".female-mvp-astronaut-image",
+          {
+            autoAlpha: 1,
+            scale: 1,
+            y: 0,
+            rotation: 0,
+            duration: getGsapDuration(0.68, motionState),
+            ease: "back.out(1.18)",
+          },
+          "lunaArrival",
+        )
+        .addLabel("labelReveal", ">-0.24")
         .to(
           ".female-mvp-planet-label",
           {
             autoAlpha: 0.74,
-            stagger: getGsapDuration(0.1, motionState),
-            duration: getGsapDuration(0.45, motionState),
+            y: -2,
+            stagger: getGsapDuration(0.09, motionState),
+            duration: getGsapDuration(0.4, motionState),
           },
-          "<0.12",
+          "labelReveal",
         );
-
-      // Phase 2: Astronaut drifts in gently
-      timeline.to(
-        ".female-mvp-astronaut-image",
-        {
-          autoAlpha: 1,
-          scale: 1,
-          y: 0,
-          duration: getGsapDuration(0.52, motionState),
-        },
-        "<0.05",
-      );
 
       // Phase 3: CTA and navigation fade in
       timeline
@@ -752,7 +839,7 @@ export function HomePage({
     }, femaleMvpHomeRef);
 
     return () => ctx.revert();
-  }, [prefersReducedMotion, shouldAnimate]);
+  }, [prefersReducedMotion, repeat, shouldAnimate]);
 
   const handleFemaleMvpStart = () => {
     if (isFemaleMvpLaunching) return;
@@ -1006,6 +1093,7 @@ export function HomePage({
                     d={FEMALE_MVP_ORBIT_PATH}
                   />
                 </svg>
+                <span className="female-mvp-starmap-scan" />
                 {FEMALE_MVP_HOME_PLANETS.map((planet) => {
                   const pos = FEMALE_MVP_FINAL_PLANET_POSITION[planet.id];
                   return (
@@ -1079,13 +1167,14 @@ export function HomePage({
               </h1>
               <p className="female-mvp-copy-line mx-auto mt-4 max-w-[20rem] text-[13px] leading-7 text-slate-600 sm:max-w-md sm:text-base">
                 <span>按感受、场景和偏好</span>
-                <span>问答、直说，或抽一份小幸运</span>
+                <span>问答、直说、筛选，或抽一份小幸运</span>
               </p>
 
               <div className="female-mvp-mode-dock female-mvp-mission-nodes mt-5">
                 {[
                   "问答",
                   "直说",
+                  "筛选",
                   "幸运",
                 ].map((mode) => (
                   <span

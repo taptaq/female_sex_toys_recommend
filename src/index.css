@@ -2193,28 +2193,6 @@ textarea:disabled {
   }
 }
 
-@keyframes female-mvp-planet-float {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(var(--planet-rotate-start, -1deg));
-  }
-
-  50% {
-    transform: translate(-50%, -50%) translate3d(var(--planet-float-x, 0.12rem), var(--planet-float-y, -0.28rem), 0) rotate(var(--planet-rotate-end, 1deg));
-  }
-}
-
-@keyframes female-mvp-astronaut-bob {
-  0%,
-  100% {
-    transform: translate3d(0, 0, var(--astronaut-depth-z, 0px)) rotate(var(--astronaut-bob-rotate-start, -0.8deg));
-  }
-
-  50% {
-    transform: translate3d(var(--astronaut-bob-x, 0), var(--astronaut-bob-y, -0.28rem), var(--astronaut-depth-z, 0px)) rotate(var(--astronaut-bob-rotate-end, 0.8deg));
-  }
-}
-
 @keyframes female-mvp-astronaut-shimmer {
   0%,
   58%,
@@ -2230,6 +2208,17 @@ textarea:disabled {
   86% {
     opacity: 0;
     transform: translate3d(58%, 0, 0) rotate(-11deg);
+  }
+}
+
+@keyframes female-mvp-astronaut-bob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, var(--astronaut-depth-z, 0px)) rotate(var(--astronaut-bob-rotate-start, -0.8deg));
+  }
+
+  50% {
+    transform: translate3d(var(--astronaut-bob-x, 0), var(--astronaut-bob-y, -0.28rem), var(--astronaut-depth-z, 0px)) rotate(var(--astronaut-bob-rotate-end, 0.8deg));
   }
 }
 
@@ -2471,6 +2460,24 @@ textarea:disabled {
   74% {
     opacity: 0.86;
     transform: rotate(-2deg) scale(1.04);
+  }
+}
+
+@keyframes female-mvp-mode-library-scan {
+  0%,
+  100% {
+    opacity: 0.42;
+    transform: translate3d(0, 0, 0) scale(0.9) rotate(0deg);
+  }
+
+  38% {
+    opacity: 0.88;
+    transform: translate3d(0.12rem, -0.08rem, 0) scale(1.06) rotate(5deg);
+  }
+
+  68% {
+    opacity: 0.64;
+    transform: translate3d(-0.08rem, 0.1rem, 0) scale(0.98) rotate(-3deg);
   }
 }
 
@@ -3141,6 +3148,7 @@ textarea:disabled {
 
 .female-mvp-home:not(.ambient-motion-paused) .female-mvp-stage-backdrop,
 .female-mvp-home:not(.ambient-motion-paused) .female-mvp-orbit-path,
+.female-mvp-home:not(.ambient-motion-paused) .female-mvp-starmap-scan,
 .female-mvp-home:not(.ambient-motion-paused) .female-mvp-copy-reveal,
 .female-mvp-home:not(.ambient-motion-paused) .female-mvp-nav-reveal {
   visibility: hidden;
@@ -3163,6 +3171,29 @@ textarea:disabled {
   stroke-linecap: round;
   stroke-dasharray: 1 18;
   filter: none;
+}
+
+.female-mvp-starmap-scan {
+  position: absolute;
+  left: 50%;
+  top: 51%;
+  z-index: 1;
+  width: min(78%, 19rem);
+  aspect-ratio: 1.55;
+  pointer-events: none;
+  border-radius: 999px;
+  background:
+    linear-gradient(96deg, transparent 7%, rgba(255, 255, 255, 0.46) 45%, rgba(125, 211, 252, 0.2) 51%, transparent 68%),
+    radial-gradient(ellipse at 50% 52%, rgba(255, 255, 255, 0.38), rgba(244, 114, 182, 0.1) 42%, transparent 70%);
+  filter:
+    blur(0.08rem)
+    drop-shadow(0 0 1.1rem rgba(125, 211, 252, 0.2))
+    drop-shadow(0 0 1.4rem rgba(244, 114, 182, 0.12));
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
 }
 
 .female-mvp-route-spark {
@@ -3246,7 +3277,6 @@ textarea:disabled {
   transform-origin: 50% 60%;
   transform-style: preserve-3d;
   opacity: 0.74;
-  animation: female-mvp-planet-float var(--planet-float-duration, 6.4s) ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -3418,16 +3448,12 @@ textarea:disabled {
 
 .female-mvp-astronaut-image {
   --astronaut-depth-z: 34px;
-  --astronaut-bob-x: 0.1rem;
-  --astronaut-bob-y: -0.46rem;
-  --astronaut-bob-rotate-start: -1.25deg;
-  --astronaut-bob-rotate-end: 1.6deg;
   display: block;
   width: 100%;
   height: auto;
   transform-origin: 50% 58%;
   transform: translateZ(34px);
-  animation: female-mvp-astronaut-bob 7.2s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .female-mvp-astronaut-shimmer {
@@ -3855,7 +3881,7 @@ textarea:disabled {
   position: relative;
   display: grid;
   width: min(100%, 21rem);
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.1rem;
   padding: 0.2rem;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -4260,6 +4286,14 @@ textarea:disabled {
   animation: female-mvp-mode-lucky-spark 3.2s steps(4, end) infinite;
 }
 
+.female-mvp-mode-planet-button-library[aria-pressed="true"] .female-mvp-mode-planet-aura {
+  background:
+    linear-gradient(90deg, transparent 14%, rgba(125, 211, 252, 0.2) 15% 16%, transparent 17% 34%, rgba(244, 114, 182, 0.15) 35% 36%, transparent 37%),
+    linear-gradient(0deg, transparent 12%, rgba(255, 255, 255, 0.34) 13% 14%, transparent 15% 32%, rgba(125, 211, 252, 0.18) 33% 34%, transparent 35%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.46), transparent 64%);
+  animation: female-mvp-mode-library-scan 4.2s ease-in-out infinite;
+}
+
 .female-mvp-mode-planet-image {
   display: block;
   width: 100%;
@@ -4280,6 +4314,10 @@ textarea:disabled {
 
 .female-mvp-mode-planet-button-lucky[aria-pressed="true"] .female-mvp-mode-planet-image {
   animation-duration: 4.9s;
+}
+
+.female-mvp-mode-planet-button-library[aria-pressed="true"] .female-mvp-mode-planet-image {
+  animation-duration: 5.9s;
 }
 
 .female-mvp-mode-portal {
@@ -4454,6 +4492,12 @@ textarea:disabled {
   --luna-guide-x: -6.85rem;
   --luna-guide-y: -3.37rem;
   transform: translate3d(-6.85rem, -3.37rem, 0);
+}
+
+.female-mvp-mode-luna-guide-library {
+  --luna-guide-x: -7.05rem;
+  --luna-guide-y: -3.12rem;
+  transform: translate3d(-7.05rem, -3.12rem, 0);
 }
 
 .female-mvp-mode-luna-image {

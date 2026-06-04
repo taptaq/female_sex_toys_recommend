@@ -17,6 +17,7 @@ test("match mode page renders quiz and natural language entry options", () => {
       onSelectQuizMode={() => {}}
       onSelectNaturalLanguageMode={() => {}}
       onSelectLuckyMode={() => {}}
+      onSelectLibraryMode={() => {}}
       onBackHome={() => {}}
     />,
   );
@@ -34,6 +35,7 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /用几个温柔问题校准感受/);
   assert.match(html, /直接说/);
   assert.match(html, /幸运抽取/);
+  assert.match(html, /手动筛选/);
   assert.match(html, /female-mvp-mode-page/);
   assert.match(html, /female-mvp-mode-orbit-stage/);
   assert.match(html, /female-mvp-mode-orbit-ring/);
@@ -48,6 +50,7 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /\/assets\/luna-planets\/modes\/quiz\.png/);
   assert.match(html, /\/assets\/luna-planets\/modes\/talk\.png/);
   assert.match(html, /\/assets\/luna-planets\/modes\/lucky\.png/);
+  assert.match(html, /\/assets\/luna-planets\/modes\/library\.png/);
   assert.match(html, /\/assets\/luna-astronaut\/mode-guide\.png/);
   assert.match(html, /\/assets\/luna-astronaut\/mode-dive\.png/);
   assert.match(html, /\/assets\/luna-astronaut\/mode-portal\.png/);
@@ -129,6 +132,7 @@ test("match mode Luna can enter from the active planet when returning from an in
       onSelectQuizMode={() => {}}
       onSelectNaturalLanguageMode={() => {}}
       onSelectLuckyMode={() => {}}
+      onSelectLibraryMode={() => {}}
       onBackHome={() => {}}
     />,
   );
@@ -195,5 +199,7 @@ test("match mode does not mount a duplicate cosmos background behind its own sta
 
   assert.match(matchModeRouteBlock, /<MatchModePage/);
   assert.match(matchModeRouteBlock, /female-mvp-soft-shell/);
+  assert.match(matchModeRouteBlock, /onSelectLibraryMode=\{\(\) => \{/);
+  assert.match(matchModeRouteBlock, /navigateTo\("\/library"\);/);
   assert.doesNotMatch(matchModeRouteBlock, /<ThemeCosmosLayer/);
 });

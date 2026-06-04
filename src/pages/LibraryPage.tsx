@@ -395,9 +395,9 @@ export function LibraryPage({
           <button
             onClick={onReload}
             disabled={isLoading}
-            className="mt-4 inline-flex items-center justify-center rounded-full border border-cyan-400/50 bg-cyan-500/20 px-5 py-2 text-[12px] font-semibold tracking-[0.18em] text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.16)] hover:border-cyan-300/70 hover:bg-cyan-400/25 hover:text-white disabled:border-slate-700 disabled:bg-slate-900/40 disabled:text-slate-500 transition-all"
+            className="mt-4 inline-flex items-center justify-center rounded-full border border-cyan-400/50 bg-cyan-500/20 px-5 py-2 text-[12px] font-semibold tracking-[0.14em] text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.16)] transition-all hover:border-cyan-300/70 hover:bg-cyan-400/25 hover:text-white disabled:border-slate-700 disabled:bg-slate-900/40 disabled:text-slate-500"
           >
-            {isLoading ? "正在同步装备库..." : "重新同步装备库"}
+            {isLoading ? "正在同步最新产品库..." : "同步最新产品库"}
           </button>
         </div>
 

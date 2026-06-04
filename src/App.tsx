@@ -2259,6 +2259,10 @@ ${JSON.stringify(context.backupCandidates)}
             onSelectQuizMode={handleStartQuizMode}
             onSelectNaturalLanguageMode={handleStartNaturalLanguageMode}
             onSelectLuckyMode={handleStartLuckyMode}
+            onSelectLibraryMode={() => {
+              setMatchModeEntrance("planet");
+              navigateTo("/library");
+            }}
             onBackHome={() => navigateTo("/")}
           />
         </div>

@@ -97,7 +97,7 @@ test("female MVP home exposes one clear mobile matching path", () => {
   assert.doesNotMatch(html, /找到适合你的第一颗小星球/);
   assert.doesNotMatch(html, /找到适合你的第一件装备/);
   assert.match(html, /让 Luna 帮我看看/);
-  assert.match(html, /问答、直说，或抽一份小幸运/);
+  assert.match(html, /问答、直说、筛选，或抽一份小幸运/);
   assert.doesNotMatch(html, /3 分钟轻问答/);
   assert.match(html, /女性向/);
   assert.doesNotMatch(html, /还没准备开始，也可以先快速看看/);
@@ -332,10 +332,17 @@ test("female MVP home uses a gentle 3-phase entrance animation", () => {
   assert.match(homePageSource, /\.to\(\s*"\.female-mvp-stage-backdrop"[\s\S]*autoAlpha: 1/);
   assert.match(homePageSource, /\.set\("\.female-mvp-orbit-planet", \{ autoAlpha: 0, scale: 0\.92, xPercent: -50, yPercent: -50 \}\)/);
   assert.match(homePageSource, /\.set\("\.female-mvp-route-spark", \{ autoAlpha: 0 \}\)/);
+  assert.match(homePageSource, /\.addLabel\("orbitScan"\)/);
+  assert.match(homePageSource, /\.addLabel\("planetDiscovery"/);
+  assert.match(homePageSource, /\.addLabel\("lunaArrival"/);
+  assert.match(homePageSource, /\.addLabel\("labelReveal"/);
+  assert.match(homePageSource, /female-mvp-starmap-scan/);
   assert.match(homePageSource, /\.to\(\s*"\.female-mvp-nav-reveal"[\s\S]*autoAlpha: 1/);
   assert.match(homePageSource, /\.to\(\s*"\.female-mvp-astronaut-image"[\s\S]*autoAlpha: 1/);
+  assert.match(homePageSource, /\.to\(\s*"\.female-mvp-orbit-planet"[\s\S]*filter: "brightness\(1\.08\) saturate\(1\.06\)"/);
   assert.match(cssSource, /\.female-mvp-launch-shell \{[\s\S]*margin-top: clamp\(-0\.8rem, -1\.4svh, -0\.25rem\);/);
   assert.match(cssSource, /\.female-mvp-stage-backdrop \{/);
+  assert.match(cssSource, /\.female-mvp-starmap-scan \{/);
 });
 
 test("female MVP home keeps the final equipment cabin from inheriting the oversized launch width", () => {
@@ -487,7 +494,7 @@ test("female MVP home keeps astronaut and planet proportions balanced for mobile
   assert.match(cssSource, /\.female-mvp-orbit-planet \{[\s\S]*transform: translate\(-50%, -50%\);/);
   assert.match(homeOrbitPlanetBlock, /will-change: transform, opacity;/);
   assert.match(homeOrbitPlanetBlock, /opacity: 0\.74;/);
-  assert.match(homeOrbitPlanetBlock, /animation: female-mvp-planet-float/);
+  assert.doesNotMatch(homeOrbitPlanetBlock, /animation: female-mvp-planet-float/);
   assert.match(cssSource, /\.female-mvp-orbit-planet-image \{[\s\S]*translateZ\(var\(--planet-depth, 22px\)\)/);
   assert.match(cssSource, /\.female-mvp-orbit-map \{[\s\S]*rotateX\(42deg\)/);
   assert.match(cssSource, /\.female-mvp-route-spark \{[\s\S]*display: none;/);
@@ -498,17 +505,25 @@ test("female MVP home keeps astronaut and planet proportions balanced for mobile
 
 test("female MVP home gives Luna only low-frequency gentle idle details", () => {
   const html = renderHomePage();
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
   const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
   assert.match(html, /female-mvp-astronaut-shimmer/);
   assert.match(html, /female-mvp-astronaut-thruster/);
+  assert.match(homePageSource, /startFemaleMvpIdleMotion/);
+  assert.match(homePageSource, /gsap\.to\("\.female-mvp-astronaut-image"/);
+  assert.match(homePageSource, /gsap\.to\("\.female-mvp-orbit-planet"/);
+  assert.match(homePageSource, /gsap\.to\("\.female-mvp-planet-label"/);
+  assert.match(homePageSource, /repeat: idleRepeat/);
+  assert.match(homePageSource, /x: "0\.1rem"/);
+  assert.match(homePageSource, /y: "-0\.46rem"/);
+  assert.match(homePageSource, /rotation: 1\.6/);
   assert.match(cssSource, /@keyframes female-mvp-astronaut-shimmer/);
   assert.match(cssSource, /@keyframes female-mvp-thruster-breathe/);
-  assert.match(cssSource, /--astronaut-bob-y: -0\.46rem;/);
-  assert.match(cssSource, /--astronaut-bob-x: 0\.1rem;/);
-  assert.match(cssSource, /--astronaut-bob-rotate-end: 1\.6deg;/);
-  assert.match(cssSource, /translate3d\(var\(--astronaut-bob-x, 0\), var\(--astronaut-bob-y, -0\.28rem\), var\(--astronaut-depth-z, 0px\)\)/);
-  assert.match(cssSource, /\.female-mvp-astronaut-image \{[\s\S]*animation: female-mvp-astronaut-bob 7\.2s ease-in-out infinite;/);
+  assert.doesNotMatch(cssSource, /\.female-mvp-astronaut-image \{[\s\S]*animation: female-mvp-astronaut-bob 7\.2s ease-in-out infinite;/);
   assert.match(cssSource, /\.female-mvp-astronaut-shimmer \{[\s\S]*animation: female-mvp-astronaut-shimmer 6\.8s ease-in-out infinite;/);
   assert.match(cssSource, /\.female-mvp-astronaut-thruster \{[\s\S]*animation: female-mvp-thruster-breathe 8\.4s ease-in-out infinite;/);
   assert.doesNotMatch(cssSource, /female-mvp-speed-pulse 0\.52s/);
@@ -709,11 +724,11 @@ test("female MVP home frames Luna's journey as a calm guided check-in without cr
   assert.doesNotMatch(html, /今日/);
   assert.match(html, /找到适合你的装备/);
   assert.match(html, /按感受、场景和偏好/);
-  assert.match(html, /问答、直说，或抽一份小幸运/);
+  assert.match(html, /问答、直说、筛选，或抽一份小幸运/);
   assert.match(html, /female-mvp-copy-line/);
   assert.match(html, /让 Luna 帮我看看/);
   assert.match(html, /隐私友好 · 本地体验/);
-  assert.equal(countMatches(html, /class="female-mvp-mission-node"/g), 3);
+  assert.equal(countMatches(html, /class="female-mvp-mission-node"/g), 4);
   assert.equal(countMatches(html, /female-mvp-trust-strip/g), 1);
 });
 
@@ -726,7 +741,7 @@ test("female MVP home gives the briefing panel more vertical rhythm", () => {
   assert.match(missionCardBlock, /padding: 1\.55rem 1rem 1\.36rem;/);
   assert.match(cssSource, /\.female-mvp-briefing-line \{/);
   assert.match(cssSource, /\.female-mvp-mode-dock \{/);
-  assert.match(modeDockBlock, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(modeDockBlock, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/);
   assert.match(modeDockBlock, /border-radius: 999px;/);
   assert.match(modeDockBlock, /padding: 0\.2rem;/);
   assert.match(cssSource, /\.female-mvp-copy-line \{[\s\S]*gap: 0\.2rem;/);

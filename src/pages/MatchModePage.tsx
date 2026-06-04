@@ -33,6 +33,16 @@ const MATCH_MODE_OPTIONS = [
     cta: "抽取今日幸运",
     asset: "/assets/luna-planets/modes/lucky.png",
   },
+  {
+    id: "library",
+    eyebrow: "手选",
+    title: "手动筛选",
+    description: "直接进入产品库，按类型、品牌、价格和声音阈值自己慢慢筛。",
+    meta: "自主比较 · 适合想自己挑",
+    guide: "你来挑，我帮你排好。",
+    cta: "进入产品库",
+    asset: "/assets/luna-planets/modes/library.png",
+  },
 ] as const;
 
 type MatchModeId = (typeof MATCH_MODE_OPTIONS)[number]["id"];
@@ -53,6 +63,7 @@ export function MatchModePage({
   onSelectQuizMode,
   onSelectNaturalLanguageMode,
   onSelectLuckyMode,
+  onSelectLibraryMode,
   onBackHome,
 }: {
   pageVariants: any;
@@ -60,6 +71,7 @@ export function MatchModePage({
   onSelectQuizMode: () => void;
   onSelectNaturalLanguageMode: () => void;
   onSelectLuckyMode: () => void;
+  onSelectLibraryMode: () => void;
   onBackHome: () => void;
 }) {
   const [activeModeId, setActiveModeId] = useState<MatchModeId>("quiz");
@@ -72,6 +84,7 @@ export function MatchModePage({
     quiz: onSelectQuizMode,
     "natural-language": onSelectNaturalLanguageMode,
     lucky: onSelectLuckyMode,
+    library: onSelectLibraryMode,
   } satisfies Record<MatchModeId, () => void>;
 
   const rotateMode = (direction: -1 | 1) => {
