@@ -68,6 +68,20 @@ test("match mode Luna guide docks left and dives into the active planet center",
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
   const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
 
+  assert.match(pageSource, /import gsap from "gsap";/);
+  assert.match(pageSource, /usePagePerformanceState/);
+  assert.match(pageSource, /getGsapDuration/);
+  assert.match(pageSource, /shouldRunGsapMotion/);
+  assert.match(pageSource, /runMatchModeEntranceMotion/);
+  assert.match(pageSource, /runMatchModeActiveFocusMotion/);
+  assert.match(pageSource, /runMatchModeLaunchMotion/);
+  assert.match(pageSource, /gsap\.timeline\(\{[\s\S]*?defaults: \{ ease: "sine\.out" \}/);
+  assert.match(pageSource, /\.addLabel\("modeOrbitWake"\)/);
+  assert.match(pageSource, /\.addLabel\("modeLunaDock"/);
+  assert.match(pageSource, /\.addLabel\("modeLaunchFocus"\)/);
+  assert.match(pageSource, /\.addLabel\("modeLaunchWarp"/);
+  assert.match(pageSource, /\.to\(\s*"\.female-mvp-mode-planet-button-active \.female-mvp-mode-planet-image"/);
+  assert.match(pageSource, /\.to\(\s*"\.female-mvp-mode-selected-panel"/);
   assert.match(source, /\.female-mvp-mode-portal\s*\{[\s\S]*?top: 38%;/);
   assert.match(source, /\.female-mvp-mode-luna-guide\s*\{[\s\S]*?transform: translate3d\(-7rem, -3\.1rem, 0\);/);
   assert.match(source, /@keyframes female-mvp-mode-luna-enter-left/);
@@ -103,8 +117,8 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(source, /\.female-mvp-mode-luna-guide-from-home \.female-mvp-mode-luna-bubble\s*\{[\s\S]*?animation: female-mvp-mode-luna-bubble-reveal 520ms ease-out 1540ms both;/);
   const launchingGuideBlock = source.match(/\.female-mvp-mode-luna-guide-launching\s*\{[^}]*\}/)?.[0] ?? "";
   assert.doesNotMatch(launchingGuideBlock, /transform: translate3d/);
-  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: female-mvp-mode-luna-guide-handoff 260ms/);
-  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-dive\s*\{[\s\S]*?animation: female-mvp-mode-luna-dive 960ms/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-guide\s*\{[\s\S]*?animation: none;/);
+  assert.match(source, /\.female-mvp-mode-luna-guide-launching \.female-mvp-mode-luna-image-dive\s*\{[\s\S]*?animation: none;/);
   assert.doesNotMatch(source, /female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active\s*\{[\s\S]*?animation: female-mvp-mode-launch-pulse/);
   assert.match(pageSource, /window\.setTimeout\(\(\) => \{[\s\S]*?\}, 980\);/);
   assert.match(source, /@keyframes female-mvp-mode-launch-speedline-flight/);
@@ -116,9 +130,12 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(source, /\.female-mvp-mode-planet-button-quiz\[aria-pressed="true"\] \.female-mvp-mode-planet-aura\s*\{[\s\S]*?animation: female-mvp-mode-quiz-calibrate/);
   assert.match(source, /\.female-mvp-mode-planet-button-natural-language\[aria-pressed="true"\] \.female-mvp-mode-planet-aura\s*\{[\s\S]*?animation: female-mvp-mode-talk-signal/);
   assert.match(source, /\.female-mvp-mode-planet-button-lucky\[aria-pressed="true"\] \.female-mvp-mode-planet-aura\s*\{[\s\S]*?animation: female-mvp-mode-lucky-spark/);
-  assert.match(source, /\.female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active \.female-mvp-mode-planet-image\s*\{[\s\S]*?animation: female-mvp-mode-active-planet-warp 960ms/);
-  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-speedline\s*\{[\s\S]*?animation: female-mvp-mode-launch-speedline-flight 720ms/);
-  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-iris\s*\{[\s\S]*?animation: female-mvp-mode-launch-iris-warp 960ms/);
+  assert.doesNotMatch(source, /\.female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active \.female-mvp-mode-planet-image\s*\{[\s\S]*?animation: female-mvp-mode-active-planet-warp 960ms/);
+  assert.doesNotMatch(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-speedline\s*\{[\s\S]*?animation: female-mvp-mode-launch-speedline-flight 720ms/);
+  assert.doesNotMatch(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-iris\s*\{[\s\S]*?animation: female-mvp-mode-launch-iris-warp 960ms/);
+  assert.match(source, /\.female-mvp-mode-page-launching \.female-mvp-mode-planet-button-active \.female-mvp-mode-planet-image\s*\{[\s\S]*?animation: none;/);
+  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-speedline\s*\{[\s\S]*?animation: none;/);
+  assert.match(source, /\.female-mvp-mode-launch-warp-active \.female-mvp-mode-launch-iris\s*\{[\s\S]*?animation: none;/);
   assert.match(source, /46%\s*\{[\s\S]*?transform: translate3d\(4\.5rem, -1\.4rem, 0\) rotate\(20deg\) scale\(0\.62\);/);
   assert.match(source, /72%\s*\{[\s\S]*?transform: translate3d\(6\.28rem, -0\.74rem, 0\) rotate\(26deg\) scale\(0\.3\);/);
   assert.match(source, /100%\s*\{[\s\S]*?transform: translate3d\(7\.2rem, -0\.08rem, 0\) rotate\(30deg\) scale\(0\.1\);/);
@@ -163,7 +180,7 @@ test("match mode selected panel sits lower below the active planet", () => {
 test("match mode touch tracking does not trigger extra React renders", () => {
   const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
 
-  assert.match(pageSource, /import \{ useRef, useState \} from "react";/);
+  assert.match(pageSource, /import \{ useEffect, useRef, useState \} from "react";/);
   assert.match(pageSource, /const touchStartXRef = useRef<number \| null>\(null\);/);
   assert.doesNotMatch(pageSource, /const \[touchStartX/);
   assert.doesNotMatch(pageSource, /setTouchStartX/);

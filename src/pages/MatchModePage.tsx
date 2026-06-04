@@ -1,6 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 import { motion } from "motion/react";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { getGsapDuration, shouldRunGsapMotion } from "../lib/gsap-motion.ts";
+import { usePagePerformanceState } from "../lib/page-performance.ts";
 
 const MATCH_MODE_OPTIONS = [
   {
@@ -74,8 +77,11 @@ export function MatchModePage({
   onSelectLibraryMode: () => void;
   onBackHome: () => void;
 }) {
+  const { repeat, shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const [activeModeId, setActiveModeId] = useState<MatchModeId>("quiz");
   const [launchingModeId, setLaunchingModeId] = useState<MatchModeId | null>(null);
+  const modePageRef = useRef<HTMLElement | null>(null);
+  const didRunEntranceMotionRef = useRef(false);
   const touchStartXRef = useRef<number | null>(null);
   const activeIndex = MATCH_MODE_OPTIONS.findIndex((mode) => mode.id === activeModeId);
   const activeMode = MATCH_MODE_OPTIONS[activeIndex] ?? MATCH_MODE_OPTIONS[0];
@@ -87,6 +93,390 @@ export function MatchModePage({
     library: onSelectLibraryMode,
   } satisfies Record<MatchModeId, () => void>;
 
+  const runMatchModeLaunchMotion = () => {
+    const root = modePageRef.current;
+    if (!root) return;
+
+    const motionState = { shouldAnimate, prefersReducedMotion };
+    if (!shouldRunGsapMotion(motionState)) return;
+
+    gsap.context(() => {
+      gsap.killTweensOf([
+        ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image",
+        ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-aura",
+        ".female-mvp-mode-portal",
+        ".female-mvp-mode-launch-warp",
+        ".female-mvp-mode-launch-speedline",
+        ".female-mvp-mode-launch-iris",
+        ".female-mvp-mode-luna-image-guide",
+        ".female-mvp-mode-luna-image-dive",
+        ".female-mvp-mode-luna-bubble",
+      ]);
+
+      gsap.timeline({
+        defaults: { ease: "sine.out" },
+      })
+        .addLabel("modeLaunchFocus")
+        .to(
+          ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image",
+          {
+            y: -4,
+            rotation: 0.8,
+            scale: 1.055,
+            duration: getGsapDuration(0.34, motionState),
+            ease: "back.out(1.24)",
+          },
+          "modeLaunchFocus",
+        )
+        .to(
+          ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-aura",
+          {
+            autoAlpha: 1,
+            scale: 1.18,
+            duration: getGsapDuration(0.28, motionState),
+          },
+          "modeLaunchFocus",
+        )
+        .to(
+          ".female-mvp-mode-luna-bubble",
+          {
+            autoAlpha: 0,
+            y: -4,
+            duration: getGsapDuration(0.18, motionState),
+          },
+          "modeLaunchFocus",
+        )
+        .to(
+          ".female-mvp-mode-luna-image-guide",
+          {
+            autoAlpha: 0,
+            x: "0.14rem",
+            y: "0.03rem",
+            rotation: 1.8,
+            scale: 0.978,
+            duration: getGsapDuration(0.26, motionState),
+          },
+          "modeLaunchFocus",
+        )
+        .fromTo(
+          ".female-mvp-mode-luna-image-dive",
+          { autoAlpha: 0.08, x: "0.08rem", y: "0.02rem", rotation: 0, scale: 1 },
+          {
+            autoAlpha: 1,
+            x: "0.72rem",
+            y: "-0.14rem",
+            rotation: 5,
+            scale: 0.98,
+            duration: getGsapDuration(0.16, motionState),
+          },
+          "modeLaunchFocus+=0.06",
+        )
+        .addLabel("modeLaunchWarp", "modeLaunchFocus+=0.18")
+        .fromTo(
+          ".female-mvp-mode-portal",
+          { autoAlpha: 0, scale: 0.54, rotation: -10, xPercent: -50, yPercent: -50 },
+          {
+            autoAlpha: 0.92,
+            scale: 0.92,
+            rotation: 7,
+            duration: getGsapDuration(0.3, motionState),
+          },
+          "modeLaunchWarp",
+        )
+        .to(
+          ".female-mvp-mode-portal",
+          {
+            autoAlpha: 0,
+            scale: 1.32,
+            rotation: 24,
+            duration: getGsapDuration(0.46, motionState),
+          },
+          ">",
+        )
+        .set(".female-mvp-mode-launch-warp", { autoAlpha: 1 }, "modeLaunchWarp")
+        .fromTo(
+          ".female-mvp-mode-launch-speedline",
+          { autoAlpha: 0, x: "-0.85rem", scaleX: 0.46 },
+          {
+            autoAlpha: (index) => [0.68, 0.82, 0.52][index] ?? 0.68,
+            x: "4.5rem",
+            scaleX: 1.18,
+            duration: getGsapDuration(0.72, motionState),
+            stagger: getGsapDuration(0.052, motionState),
+          },
+          "modeLaunchWarp+=0.02",
+        )
+        .to(
+          ".female-mvp-mode-launch-speedline",
+          {
+            autoAlpha: 0,
+            duration: getGsapDuration(0.12, motionState),
+            stagger: getGsapDuration(0.04, motionState),
+          },
+          ">-0.16",
+        )
+        .fromTo(
+          ".female-mvp-mode-launch-iris",
+          { autoAlpha: 0, scale: 0.18, rotation: -10, xPercent: -50, yPercent: -50 },
+          {
+            keyframes: [
+              { autoAlpha: 0, scale: 0.18, rotation: -10, duration: getGsapDuration(0.28, motionState) },
+              { autoAlpha: 0.84, scale: 0.54, rotation: 4, duration: getGsapDuration(0.18, motionState) },
+              { autoAlpha: 0.58, scale: 1.02, rotation: 16, duration: getGsapDuration(0.18, motionState) },
+              { autoAlpha: 0, scale: 1.34, rotation: 26, duration: getGsapDuration(0.18, motionState) },
+            ],
+          },
+          "modeLaunchWarp+=0.08",
+        )
+        .to(
+          ".female-mvp-mode-luna-image-dive",
+          {
+            keyframes: [
+              { x: "2.5rem", y: "-1.2rem", rotation: 12, scale: 0.84, autoAlpha: 1, duration: getGsapDuration(0.16, motionState) },
+              { x: "4.5rem", y: "-1.4rem", rotation: 20, scale: 0.62, autoAlpha: 1, duration: getGsapDuration(0.18, motionState) },
+              { x: "6.28rem", y: "-0.74rem", rotation: 26, scale: 0.3, autoAlpha: 0.52, duration: getGsapDuration(0.24, motionState) },
+              { x: "7.2rem", y: "-0.08rem", rotation: 30, scale: 0.1, autoAlpha: 0, duration: getGsapDuration(0.18, motionState) },
+            ],
+          },
+          "modeLaunchWarp+=0.02",
+        )
+        .to(
+          ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image",
+          {
+            y: 0,
+            rotation: -0.2,
+            scale: 1.02,
+            duration: getGsapDuration(0.36, motionState),
+          },
+          "modeLaunchWarp+=0.38",
+        );
+    }, root);
+  };
+
+  useEffect(() => {
+    const root = modePageRef.current;
+    if (!root) return;
+
+    const motionState = { shouldAnimate, prefersReducedMotion };
+    const revealMatchModeMotionTargets = () => {
+      root
+        .querySelectorAll<HTMLElement>(
+          [
+            ".female-mvp-mode-back",
+            ".female-mvp-mode-hero",
+            ".female-mvp-mode-orbit-ring",
+            ".female-mvp-mode-orbit-control",
+            ".female-mvp-mode-planet-button",
+            ".female-mvp-mode-luna-guide",
+            ".female-mvp-mode-luna-image-guide",
+            ".female-mvp-mode-luna-bubble",
+            ".female-mvp-mode-selected-panel",
+            ".female-mvp-mode-start-button",
+          ].join(", "),
+        )
+        .forEach((element) => {
+          element.style.opacity = "";
+          element.style.visibility = "";
+          element.style.transform = "";
+        });
+    };
+
+    if (!shouldRunGsapMotion(motionState)) {
+      revealMatchModeMotionTargets();
+      didRunEntranceMotionRef.current = true;
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      const runMatchModeEntranceMotion = () => {
+        didRunEntranceMotionRef.current = true;
+
+        const timeline = gsap.timeline({
+          defaults: { ease: "sine.out" },
+        });
+
+        timeline
+          .set(".female-mvp-mode-back", { autoAlpha: 0, y: -8 })
+          .set(".female-mvp-mode-hero", { autoAlpha: 0, y: 12 })
+          .set(".female-mvp-mode-orbit-ring", { autoAlpha: 0, scale: 0.86 })
+          .set(".female-mvp-mode-orbit-control", { autoAlpha: 0, scale: 0.88 })
+          .set(".female-mvp-mode-planet-button", { autoAlpha: 0, scale: 0.82 })
+          .set(".female-mvp-mode-luna-guide", { autoAlpha: 0 })
+          .set(".female-mvp-mode-luna-image-guide", { scale: 0.88, y: 12, rotation: -4 })
+          .set(".female-mvp-mode-luna-bubble", { autoAlpha: 0, x: 8, y: 3 })
+          .set(".female-mvp-mode-selected-panel", { autoAlpha: 0, y: 12 })
+          .set(".female-mvp-mode-start-button", { autoAlpha: 0, y: 8 })
+          .to(".female-mvp-mode-back", {
+            autoAlpha: 1,
+            y: 0,
+            duration: getGsapDuration(0.28, motionState),
+          })
+          .to(
+            ".female-mvp-mode-hero",
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: getGsapDuration(0.36, motionState),
+            },
+            "<0.08",
+          )
+          .addLabel("modeOrbitWake")
+          .to(
+            ".female-mvp-mode-orbit-ring",
+            {
+              autoAlpha: 1,
+              scale: 1,
+              stagger: getGsapDuration(0.08, motionState),
+              duration: getGsapDuration(0.48, motionState),
+            },
+            "modeOrbitWake",
+          )
+          .to(
+            ".female-mvp-mode-planet-button",
+            {
+              autoAlpha: 1,
+              scale: 1,
+              stagger: getGsapDuration(0.08, motionState),
+              duration: getGsapDuration(0.5, motionState),
+              ease: "back.out(1.3)",
+            },
+            "modeOrbitWake+=0.08",
+          )
+          .to(
+            ".female-mvp-mode-orbit-control",
+            {
+              autoAlpha: 1,
+              scale: 1,
+              duration: getGsapDuration(0.3, motionState),
+            },
+            "<0.12",
+          )
+          .addLabel("modeLunaDock", ">-0.26")
+          .to(
+            ".female-mvp-mode-luna-guide",
+            {
+              autoAlpha: 1,
+              duration: getGsapDuration(0.18, motionState),
+            },
+            "modeLunaDock",
+          )
+          .to(
+            ".female-mvp-mode-luna-image-guide",
+            {
+              scale: 1,
+              y: 0,
+              rotation: 0,
+              duration: getGsapDuration(0.48, motionState),
+              ease: "back.out(1.12)",
+            },
+            "modeLunaDock",
+          )
+          .to(
+            ".female-mvp-mode-luna-bubble",
+            {
+              autoAlpha: 0.92,
+              x: 0,
+              y: 0,
+              duration: getGsapDuration(0.3, motionState),
+            },
+            "modeLunaDock+=0.16",
+          )
+          .to(
+            ".female-mvp-mode-selected-panel",
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: getGsapDuration(0.36, motionState),
+            },
+            "modeLunaDock+=0.12",
+          )
+          .to(
+            ".female-mvp-mode-start-button",
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: getGsapDuration(0.32, motionState),
+            },
+            "<0.08",
+          );
+      };
+
+      if (!didRunEntranceMotionRef.current) {
+        runMatchModeEntranceMotion();
+      }
+    }, root);
+
+    return () => ctx.revert();
+  }, [prefersReducedMotion, shouldAnimate]);
+
+  useEffect(() => {
+    const root = modePageRef.current;
+    if (!root || !didRunEntranceMotionRef.current || launchingModeId) return;
+
+    const motionState = { shouldAnimate, prefersReducedMotion };
+    if (!shouldRunGsapMotion(motionState)) return;
+
+    const idleRepeat = repeat === Infinity ? -1 : repeat;
+    const ctx = gsap.context(() => {
+      const runMatchModeActiveFocusMotion = () => {
+        gsap.timeline({ defaults: { ease: "sine.out" } })
+          .fromTo(
+            ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image",
+            { scale: 0.94, rotation: -1.4 },
+            {
+              scale: 1,
+              rotation: 0,
+              duration: getGsapDuration(0.34, motionState),
+              ease: "back.out(1.4)",
+            },
+          )
+          .fromTo(
+            ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-aura",
+            { autoAlpha: 0.35, scale: 0.84 },
+            {
+              autoAlpha: 1,
+              scale: 1,
+              duration: getGsapDuration(0.38, motionState),
+            },
+            "<",
+          )
+          .fromTo(
+            ".female-mvp-mode-luna-image-guide",
+            { y: -3, rotation: -2 },
+            {
+              y: 0,
+              rotation: 0,
+              duration: getGsapDuration(0.42, motionState),
+            },
+            "<0.04",
+          )
+          .fromTo(
+            ".female-mvp-mode-selected-panel",
+            { autoAlpha: 0.78, y: 5 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: getGsapDuration(0.3, motionState),
+            },
+            "<0.05",
+          );
+
+        gsap.to(".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image", {
+          y: -2,
+          duration: getGsapDuration(3.6, motionState),
+          ease: "sine.inOut",
+          repeat: idleRepeat,
+          yoyo: true,
+          overwrite: "auto",
+        });
+      };
+
+      runMatchModeActiveFocusMotion();
+    }, root);
+
+    return () => ctx.revert();
+  }, [activeModeId, launchingModeId, prefersReducedMotion, repeat, shouldAnimate]);
+
   const rotateMode = (direction: -1 | 1) => {
     if (launchingModeId) return;
     const nextIndex =
@@ -97,6 +487,7 @@ export function MatchModePage({
   const startActiveMode = () => {
     if (launchingModeId) return;
     setLaunchingModeId(activeMode.id);
+    runMatchModeLaunchMotion();
     window.setTimeout(() => {
       handlers[activeMode.id]();
     }, 980);
@@ -104,6 +495,7 @@ export function MatchModePage({
 
   return (
     <motion.main
+      ref={modePageRef}
       key="match-mode"
       variants={pageVariants}
       initial="initial"

@@ -4200,7 +4200,7 @@ textarea:disabled {
 }
 
 .female-mvp-mode-page-launching .female-mvp-mode-planet-button-active .female-mvp-mode-planet-image {
-  animation: female-mvp-mode-active-planet-warp 960ms cubic-bezier(0.2, 0.9, 0.18, 1) both;
+  animation: none;
 }
 
 .female-mvp-mode-planet-button-prev {
@@ -4341,7 +4341,7 @@ textarea:disabled {
 }
 
 .female-mvp-mode-portal-active {
-  animation: female-mvp-mode-portal-open 820ms ease-in-out both;
+  animation: none;
 }
 
 .female-mvp-mode-launch-warp {
@@ -4397,7 +4397,7 @@ textarea:disabled {
 }
 
 .female-mvp-mode-launch-warp-active .female-mvp-mode-launch-speedline {
-  animation: female-mvp-mode-launch-speedline-flight 720ms ease-out both;
+  animation: none;
 }
 
 .female-mvp-mode-launch-warp-active .female-mvp-mode-launch-speedline-two {
@@ -4427,7 +4427,7 @@ textarea:disabled {
 }
 
 .female-mvp-mode-launch-warp-active .female-mvp-mode-launch-iris {
-  animation: female-mvp-mode-launch-iris-warp 960ms cubic-bezier(0.18, 0.82, 0.22, 1) both;
+  animation: none;
 }
 
 .female-mvp-mode-luna-guide {
@@ -4571,11 +4571,11 @@ textarea:disabled {
 }
 
 .female-mvp-mode-luna-guide-launching .female-mvp-mode-luna-image-guide {
-  animation: female-mvp-mode-luna-guide-handoff 260ms cubic-bezier(0.24, 0.78, 0.2, 1) both;
+  animation: none;
 }
 
 .female-mvp-mode-luna-guide-launching .female-mvp-mode-luna-image-dive {
-  animation: female-mvp-mode-luna-dive 960ms cubic-bezier(0.18, 0.84, 0.2, 1) both;
+  animation: none;
 }
 
 .female-mvp-mode-planet-label {
