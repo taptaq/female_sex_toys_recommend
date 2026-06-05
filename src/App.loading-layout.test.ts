@@ -25,14 +25,20 @@ test("loading route uses a lightweight data preparation page before the final ma
 test("favorite auth prompt uses the female MVP auth shell instead of the legacy dark panel", () => {
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
   const favoriteAuthBlock = source.slice(
-    source.indexOf("{isFavoriteAuthOpen ? ("),
-    source.indexOf("{isFavoritesModalOpen ? ("),
+    source.indexOf("const favoriteAuthOverlay = isFavoriteAuthOpen ? ("),
+    source.indexOf("if (DEBUG_FORCE_MATCHING_LOADING_PAGE)"),
+  );
+  const libraryRouteBlock = source.slice(
+    source.indexOf('if (currentRoute === "/library")'),
+    source.indexOf("const shellRoute = shellRouteState.route"),
   );
 
   assert.match(favoriteAuthBlock, /<HomeAuthOverlay variant="femaleMvp"/);
   assert.match(favoriteAuthBlock, /female-mvp-auth-modal-shell/);
   assert.match(favoriteAuthBlock, /female-mvp-auth-orbit-glow/);
   assert.match(favoriteAuthBlock, /登录后即可收藏喜欢的装备/);
+  assert.match(libraryRouteBlock, /<LibraryPage/);
+  assert.match(libraryRouteBlock, /\{favoriteAuthOverlay\}/);
   assert.doesNotMatch(
     favoriteAuthBlock,
     /className="mt-3 w-full rounded-full border border-white\/10 bg-white\/\[0\.035\]/,

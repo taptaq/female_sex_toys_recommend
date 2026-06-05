@@ -2229,6 +2229,46 @@ ${JSON.stringify(context.backupCandidates)}
     void fetchProducts({ preferCachedResult: true });
   }, [isFavoritesModalOpen, favoriteProductIds.size, allProducts.length, isLoading]);
 
+  const authPanel = {
+    isConfigured: isSupabaseAuthConfigured(),
+    userLabel:
+      (typeof supabaseSession?.user?.user_metadata?.username === "string"
+        ? supabaseSession.user.user_metadata.username
+        : "") || (supabaseSession?.user?.email ?? null),
+    statusMessage: authStatusMessage,
+    isSubmitting: isSubmittingAuth,
+    onSubmit: handleAuthSubmit,
+    onSignOut: handleSignOut,
+  };
+
+  const favoriteAuthOverlay = isFavoriteAuthOpen ? (
+    <HomeAuthOverlay variant="femaleMvp" onClose={() => setIsFavoriteAuthOpen(false)}>
+      <div className="female-mvp-auth-modal-shell">
+        <span className="female-mvp-auth-orbit-glow" aria-hidden="true" />
+        <div className="female-mvp-auth-modal-header">
+          <span> Luna 私密舱 </span>
+          <p>{authPanel.userLabel ? "同步你的收藏记录" : "登录后即可收藏喜欢的装备"}</p>
+        </div>
+        <AuthPanel {...authPanel} surface="modal" />
+        <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-500">
+          登录后即可收藏全息装备库和匹配结果中的产品。
+        </p>
+        {favoriteActionError ? (
+          <p className="mt-2 text-center text-xs font-semibold leading-5 text-rose-500">
+            {favoriteActionError}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setIsFavoriteAuthOpen(false)}
+          className="female-mvp-auth-modal-close"
+        >
+          暂时不用
+        </button>
+      </div>
+    </HomeAuthOverlay>
+  ) : null;
+
   if (DEBUG_FORCE_MATCHING_LOADING_PAGE) {
     return (
       <MatchingPage
@@ -2356,6 +2396,7 @@ ${JSON.stringify(context.backupCandidates)}
             onToggleFavorite={handleToggleFavorite}
           />
         </div>
+        {favoriteAuthOverlay}
       </div>
     );
   }
@@ -2375,17 +2416,6 @@ ${JSON.stringify(context.backupCandidates)}
   const isFemaleMvpResultsRoute = effectiveShellRoute === "/results" && isFemaleMvp;
   const isFemaleMvpSoftShellRoute =
     isFemaleMvpHomeRoute || isFemaleMvpQuizRoute || isFemaleMvpResultsRoute;
-  const authPanel = {
-    isConfigured: isSupabaseAuthConfigured(),
-    userLabel:
-      (typeof supabaseSession?.user?.user_metadata?.username === "string"
-        ? supabaseSession.user.user_metadata.username
-        : "") || (supabaseSession?.user?.email ?? null),
-    statusMessage: authStatusMessage,
-    isSubmitting: isSubmittingAuth,
-    onSubmit: handleAuthSubmit,
-    onSignOut: handleSignOut,
-  };
   const shellContainerClassName =
     isFemaleMvpHomeRoute
       ? "max-w-none"
@@ -2526,33 +2556,7 @@ ${JSON.stringify(context.backupCandidates)}
         />
       </div>
 
-      {isFavoriteAuthOpen ? (
-        <HomeAuthOverlay variant="femaleMvp" onClose={() => setIsFavoriteAuthOpen(false)}>
-          <div className="female-mvp-auth-modal-shell">
-            <span className="female-mvp-auth-orbit-glow" aria-hidden="true" />
-            <div className="female-mvp-auth-modal-header">
-              <span> Luna 私密舱 </span>
-              <p>{authPanel.userLabel ? "同步你的收藏记录" : "登录后即可收藏喜欢的装备"}</p>
-            </div>
-            <AuthPanel {...authPanel} surface="modal" />
-            <p className="mt-3 text-center text-xs font-semibold leading-5 text-slate-500">
-              登录后即可收藏全息装备库和匹配结果中的产品。
-            </p>
-            {favoriteActionError ? (
-              <p className="mt-2 text-center text-xs font-semibold leading-5 text-rose-500">
-                {favoriteActionError}
-              </p>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setIsFavoriteAuthOpen(false)}
-              className="female-mvp-auth-modal-close"
-            >
-              暂时不用
-            </button>
-          </div>
-        </HomeAuthOverlay>
-      ) : null}
+      {favoriteAuthOverlay}
 
       {isFavoritesModalOpen ? (
         <HomeAuthOverlay onClose={() => setIsFavoritesModalOpen(false)}>

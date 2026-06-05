@@ -38,34 +38,35 @@ test("product card surfaces a clearer gender label outside the image area", () =
     <ProductCardContent product={makeProduct({ gender: "female" })} />,
   );
 
-  assert.match(html, /适用对象/);
   assert.match(html, /女性向/);
   assert.doesNotMatch(html, /女用/);
 });
 
-test("product card shows a compact brand brief block when brand metadata exists", () => {
+test("product card keeps brand detail copy off the card surface", () => {
   const html = renderToStaticMarkup(
-    <ProductCardContent product={makeProduct()} />,
+    <ProductCardContent product={makeProduct()} onViewDetails={() => {}} />,
   );
 
-  assert.match(html, /当前品牌/);
-  assert.match(html, /Brand · 美国/);
-  assert.match(html, /偏入门友好与轻决策成本的品牌。/);
-  assert.match(html, /风格更直接、轻量，也更适合快速开始。/);
+  assert.match(html, /查看详情信息/);
+  assert.doesNotMatch(html, /当前品牌/);
+  assert.doesNotMatch(html, /偏入门友好与轻决策成本的品牌。/);
+  assert.doesNotMatch(html, /风格更直接、轻量，也更适合快速开始。/);
 });
 
-test("product card can derive a compact brand brief from the brand name when cached metadata is missing", () => {
+test("product card does not derive brand brief copy on the compact surface", () => {
   const html = renderToStaticMarkup(
     <ProductCardContent
       product={makeProduct({
         brand: "Lovense",
         brandBrief: null,
       })}
+      onViewDetails={() => {}}
     />,
   );
 
-  assert.match(html, /当前品牌/);
   assert.match(html, /Lovense/);
+  assert.match(html, /查看详情信息/);
+  assert.doesNotMatch(html, /当前品牌/);
 });
 
 test("product card falls back to a subtype placeholder image when image placeholder is empty", () => {

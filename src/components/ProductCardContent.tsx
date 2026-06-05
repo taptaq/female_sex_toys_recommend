@@ -1,18 +1,18 @@
-import { Heart, VolumeX, Droplets, Zap } from "lucide-react";
+import { ArrowRight, Heart, VolumeX, Droplets, Zap } from "lucide-react";
 import { Product } from "../data/mock.ts";
-import { resolveBrandBrief } from "../lib/brand-brief.ts";
 import { getProductDisplayName } from "../lib/product-display-name.ts";
-import { BrandBriefCard } from "./BrandBriefCard.tsx";
 import { ProductImage } from "./ProductImage.tsx";
 
 export function ProductCardContent({
   product,
   isFavorited = false,
   onToggleFavorite,
+  onViewDetails,
 }: {
   product: Product;
   isFavorited?: boolean;
   onToggleFavorite?: (product: Product) => void;
+  onViewDetails?: (product: Product) => void;
 }) {
   const displayName = getProductDisplayName(product);
   const audienceLabel =
@@ -23,15 +23,20 @@ export function ProductCardContent({
         : "通用型";
   const audienceToneClassName =
     product.gender === "male"
-      ? "border-blue-400/25 bg-blue-500/12 text-blue-100"
+      ? "border-blue-200 bg-blue-50 text-blue-700"
       : product.gender === "female"
-        ? "border-rose-300/28 bg-rose-400/14 text-rose-50"
-        : "border-violet-300/24 bg-violet-400/14 text-violet-50";
-  const resolvedBrandBrief = resolveBrandBrief(product.brandBrief, product.brand);
+        ? "border-rose-200 bg-rose-50 text-rose-700"
+        : "border-violet-200 bg-violet-50 text-violet-700";
+  const typeLabel =
+    product.physicalForm === "internal"
+      ? "入体"
+      : product.physicalForm === "composite"
+        ? "复合"
+        : "外部";
 
   return (
     <>
-      <div className="aspect-[4/3] w-full overflow-hidden relative border-b border-white/5 bg-black/20">
+      <div className="aspect-square w-full overflow-hidden relative border-b border-sky-50 bg-slate-50 sm:aspect-[4/3]">
         <ProductImage
           imageValue={product.imagePlaceholder}
           typeCode={product.typeCode}
@@ -39,10 +44,10 @@ export function ProductCardContent({
           gender={product.gender}
           physicalForm={product.physicalForm}
           alt={displayName}
-          iconClassName="w-8 h-8 text-white/20"
-          imageClassName="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
+          iconClassName="w-8 h-8 text-slate-300"
+          imageClassName="w-full h-full object-cover opacity-95 group-hover:opacity-100 transition-all duration-700 group-hover:scale-105"
         />
-        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+        <div className="absolute right-2 top-2 flex flex-col gap-1 items-end sm:right-3 sm:top-3">
           {onToggleFavorite ? (
             <button
               type="button"
@@ -52,82 +57,44 @@ export function ProductCardContent({
                 event.stopPropagation();
                 onToggleFavorite(product);
               }}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition-colors ${
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition-colors sm:h-9 sm:w-9 ${
                 isFavorited
-                  ? "border-rose-300/45 bg-rose-400/18 text-rose-100"
-                  : "border-white/18 bg-slate-950/78 text-white/85 hover:border-cyan-300/45 hover:text-white"
+                  ? "border-rose-200 bg-white/90 text-rose-500"
+                  : "border-white/70 bg-white/82 text-slate-500 hover:border-rose-200 hover:text-rose-500"
               }`}
             >
-              <Heart className={`h-4.5 w-4.5 ${isFavorited ? "fill-current" : ""}`} />
+              <Heart className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${isFavorited ? "fill-current" : ""}`} />
             </button>
           ) : null}
         </div>
       </div>
-      <div className="p-5 flex flex-col flex-1">
-        <div className="flex justify-between items-start mb-1">
-          <h3 className="text-lg font-medium text-white leading-tight group-hover:text-cyan-100 transition-colors">
-            {displayName}
-          </h3>
-          <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-400 shrink-0 ml-2">
-            {product.brand}
-          </span>
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <div className="mb-1.5 min-w-0 sm:mb-2">
+          <div className="min-w-0">
+            <span className="block truncate text-[9px] font-black uppercase tracking-[0.14em] text-sky-600 sm:text-[10px] sm:tracking-[0.18em]">
+              {product.brand}
+            </span>
+            <h3 className="mt-1 line-clamp-2 text-sm font-black leading-snug text-slate-900 transition-colors group-hover:text-sky-700 sm:text-base">
+              {displayName}
+            </h3>
+          </div>
         </div>
-        <span className="text-xl font-semibold text-cyan-400/90 mb-4 tracking-wide">
+        <span className="mb-2 text-lg font-black tracking-wide text-rose-500 sm:mb-3 sm:text-xl">
           ¥{product.price}
         </span>
 
-        <div className="text-[10px] text-slate-500 mb-2 flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-cyan-500/40"></div>
-          <span>材质: {product.material}</span>
-        </div>
-
-        <div className="mb-3">
+        <div className="mb-2 flex flex-wrap gap-1 sm:mb-3 sm:gap-1.5">
           <span
-            className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-medium tracking-[0.08em] ${audienceToneClassName}`}
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black tracking-[0.04em] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-[11px] sm:tracking-[0.06em] ${audienceToneClassName}`}
           >
-            <span className="text-[10px] uppercase tracking-[0.18em] opacity-70">
-              适用对象
-            </span>
             <span>{audienceLabel}</span>
+          </span>
+          <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-black text-sky-800 sm:px-2.5 sm:py-1 sm:text-[11px]">
+            {typeLabel}
           </span>
         </div>
 
-        <div className="mb-3">
-          <BrandBriefCard brief={resolvedBrandBrief} compact />
-        </div>
-
-        {product.personaAnalysis && (
-          <div className="mb-3 p-2 rounded bg-cyan-950/40 border border-cyan-500/20 group/tooltip relative cursor-help">
-            <h4 className="text-[9px] text-cyan-500 mb-0.5 tracking-wider font-mono">
-              适用人群
-            </h4>
-            <p className="text-[10px] text-cyan-100/70 leading-relaxed line-clamp-3">
-              {product.personaAnalysis}
-            </p>
-            <div className="opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 absolute z-50 bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-[calc(100%+32px)] p-3 bg-slate-900/95 border border-cyan-500/50 rounded-lg shadow-2xl shadow-cyan-900/30 backdrop-blur-md pointer-events-none">
-              <p className="text-[10.5px] text-cyan-50 leading-relaxed">
-                {product.personaAnalysis}
-              </p>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-cyan-500/50"></div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-slate-900"></div>
-            </div>
-          </div>
-        )}
-
-        {product.tags && product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-4">
-            {product.tags.map((tag, index) => (
-              <span
-                key={index}
-                className="text-[9px] bg-indigo-500/10 text-indigo-300/70 border border-indigo-500/20 px-1.5 py-0.5 rounded-md"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-2 mt-auto pt-2">
+        <div className="mt-auto flex flex-wrap gap-1.5 pt-1.5 sm:gap-2 sm:pt-2">
           {onToggleFavorite ? (
             <button
               type="button"
@@ -136,29 +103,44 @@ export function ProductCardContent({
                 event.stopPropagation();
                 onToggleFavorite(product);
               }}
-              className={`inline-flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded-full border transition-colors ${
+              className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-mono transition-colors sm:gap-1.5 sm:px-2.5 sm:py-1.5 sm:text-[10px] ${
                 isFavorited
-                  ? "border-rose-300/35 bg-rose-400/16 text-rose-100"
-                  : "border-cyan-300/18 bg-cyan-300/10 text-cyan-100 hover:border-cyan-200/35 hover:text-white"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : "border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300 hover:text-sky-800"
               }`}
             >
-              <Heart className={`w-3 h-3 ${isFavorited ? "fill-current" : ""}`} />
+              <Heart className={`h-3 w-3 ${isFavorited ? "fill-current" : ""}`} />
               {isFavorited ? "已收藏" : "收藏"}
             </button>
           ) : null}
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-white/5 border border-white/5 px-2 py-1 rounded">
-            <VolumeX className="w-3 h-3 text-cyan-500/70" />
+          <div className="flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-1 text-[9px] font-mono font-semibold text-slate-600 sm:gap-1.5 sm:px-2 sm:text-[10px]">
+            <VolumeX className="w-3 h-3 text-sky-600" />
             {product.maxDb == null ? "无噪音参数" : `<${product.maxDb}dB`}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-white/5 border border-white/5 px-2 py-1 rounded">
-            <Droplets className="w-3 h-3 text-cyan-500/70" />
+          <div className="flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-1 text-[9px] font-mono font-semibold text-slate-600 sm:gap-1.5 sm:px-2 sm:text-[10px]">
+            <Droplets className="w-3 h-3 text-sky-600" />
             {product.waterproof == null ? "无防水参数" : `IPX${product.waterproof}`}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-white/5 border border-white/5 px-2 py-1 rounded">
-            <Zap className="w-3 h-3 text-cyan-500/70" />
+          <div className="flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-1 text-[9px] font-mono font-semibold text-slate-600 sm:gap-1.5 sm:px-2 sm:text-[10px]">
+            <Zap className="w-3 h-3 text-sky-600" />
             {product.motorType === "gentle" ? "柔和波段" : "强感波段"}
           </div>
         </div>
+
+        {onViewDetails ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onViewDetails(product);
+            }}
+            className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-white px-2 py-1.5 text-[10px] font-black tracking-[0.04em] text-sky-700 shadow-[0_0.7rem_1.4rem_rgba(125,211,252,0.12)] transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-800 sm:mt-4 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs sm:tracking-[0.08em]"
+          >
+            查看详情信息
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
       </div>
     </>
   );

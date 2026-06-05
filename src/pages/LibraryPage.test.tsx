@@ -3,7 +3,7 @@ import test from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { Product } from "../data/mock.ts";
-import { LibraryPage } from "./LibraryPage.tsx";
+import { LibraryPage, LibraryProductDetailModal } from "./LibraryPage.tsx";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -54,16 +54,18 @@ test("library page keeps primary filters visible and moves admin-like filters be
     />,
   );
 
-  assert.match(html, /适用对象/);
   assert.match(html, /价格区间/);
+  assert.match(html, /出品地区/);
+  assert.match(html, /不限产地/);
   assert.match(html, /静音阈值/);
   assert.match(html, /高级筛选/);
   assert.match(html, /重置筛选/);
   assert.match(html, /library-filter-trigger/);
   assert.match(html, /library-filter-options/);
   assert.doesNotMatch(html, /<select/);
+  assert.doesNotMatch(html, /适用对象/);
+  assert.doesNotMatch(html, /全部性别/);
   assert.doesNotMatch(html, /品牌厂商/);
-  assert.doesNotMatch(html, /出品地区/);
   assert.doesNotMatch(html, /材质偏好/);
 });
 
@@ -102,7 +104,7 @@ test("library page keeps reset button disabled when filters are already at defau
   );
 });
 
-test("library page enables reset button once any filter is active", () => {
+test("library page ignores legacy gender filter state when deciding reset availability", () => {
   const html = renderToStaticMarkup(
     <LibraryPage
       allProducts={[makeProduct()]}
@@ -131,17 +133,18 @@ test("library page enables reset button once any filter is active", () => {
   );
 
   assert.match(html, /重置筛选/);
-  assert.doesNotMatch(
+  assert.match(
     html,
     /<button[^>]*disabled=""[^>]*>\s*重置筛选\s*<\/button>/,
   );
 });
 
-test("library page shows only in-stock male type options when male gender is selected", () => {
+test("library page ignores legacy gender filter state when deriving type options", () => {
   const html = renderToStaticMarkup(
     <LibraryPage
       allProducts={[
         makeProduct({ id: "m1", gender: "male", typeCode: "masturbator", name: "Cup One" }),
+        makeProduct({ id: "f1", gender: "female", typeCode: "suction", name: "Suction One" }),
       ]}
       filterGender="male"
       filterType="all"
@@ -168,9 +171,7 @@ test("library page shows only in-stock male type options when male gender is sel
 
   assert.match(html, /类型/);
   assert.match(html, /飞机杯/);
-  assert.doesNotMatch(html, /前列腺探索/);
-  assert.doesNotMatch(html, /护理与周边/);
-  assert.doesNotMatch(html, /吮吸类/);
+  assert.match(html, /吮吸类/);
 });
 
 test("library page filters care accessory products by subtype", () => {
@@ -417,16 +418,19 @@ test("library page keeps a calmer mobile-first shell and lighter filter density"
     />,
   );
 
-  assert.match(source, /p-4/);
-  assert.match(source, /sm:p-6 md:p-8/);
+  assert.match(source, /female-mvp-library-page/);
+  assert.match(source, /bg-\[#fff7fb\]/);
+  assert.match(source, /px-4 py-\[calc\(0\.75rem\+env\(safe-area-inset-top\)\)\]/);
   assert.match(source, /relative z-10 w-full max-w-5xl pb-20/);
   assert.match(source, /sm:pb-24/);
-  assert.match(source, /text-center mb-8 sm:mb-10/);
-  assert.match(source, /text-2xl font-light tracking-\[0\.2em\] text-white mb-2 sm:text-3xl sm:tracking-widest/);
-  assert.match(source, /glass-panel relative z-20 rounded-\[1\.35rem\] p-4 mb-8 border border-white\/5 bg-white\/5 sm:rounded-2xl sm:p-6 sm:mb-10/);
+  assert.match(source, /female-mvp-library-hero/);
+  assert.match(source, /Luna 产品库/);
+  assert.match(source, /按类型、品牌和预算慢慢筛选/);
+  assert.match(source, /female-mvp-library-filter-panel/);
+  assert.match(source, /rounded-\[1\.35rem\] border border-white\/70 bg-white\/70/);
   assert.match(source, /grid grid-cols-1 gap-4/);
   assert.match(source, /sm:gap-6 md:grid-cols-3/);
-  assert.match(source, /mt-4 border-t border-white\/8 pt-4 sm:mt-5/);
+  assert.match(source, /mt-4 border-t border-sky-100\/80 pt-4 sm:mt-5/);
   assert.match(source, /mt-4/);
   assert.match(source, /grid grid-cols-1 gap-4/);
   assert.match(source, /sm:gap-6 md:grid-cols-3/);
@@ -458,11 +462,79 @@ test("library page product grid and back-to-top affordance stay mobile-friendly"
     />,
   );
 
-  assert.match(source, /relative z-0 grid grid-cols-1 gap-4/);
-  assert.match(source, /sm:grid-cols-2 sm:gap-6 lg:grid-cols-3/);
-  assert.match(source, /glass-panel rounded-\[1\.35rem\] overflow-hidden flex flex-col group hover:border-cyan-500\/40 transition-all hover:bg-white\/5 sm:rounded-2xl/);
+  assert.match(source, /female-mvp-library-grid relative z-0 grid grid-cols-2 gap-3/);
+  assert.match(source, /sm:gap-6 lg:grid-cols-3/);
+  assert.match(source, /rounded-\[1rem\] overflow-hidden flex flex-col group border border-white\/70 bg-white\/75/);
   assert.match(source, /fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full/);
+  assert.match(source, /bg-slate-950\/70/);
+  assert.match(source, /text-white/);
   assert.match(source, /sm:bottom-8 sm:right-8/);
+});
+
+test("library page cards open in-app details instead of linking the whole card", () => {
+  const source = renderToStaticMarkup(
+    <LibraryPage
+      allProducts={[
+        makeProduct({
+          sourceUrl: "https://example.com/product-detail",
+          link: "https://fallback.example.com/product",
+        }),
+      ]}
+      filterGender="all"
+      filterType="all"
+      filterSubtype="all"
+      filterBrand="all"
+      filterOrigin="all"
+      filterMaterial="all"
+      filterPriceRange="all"
+      filterMaxDb={70}
+      isLoading={false}
+      error={null}
+      onReload={() => {}}
+      onFilterGenderChange={() => {}}
+      onFilterSubtypeChange={() => {}}
+      onFilterBrandChange={() => {}}
+      onFilterOriginChange={() => {}}
+      onFilterMaterialChange={() => {}}
+      onFilterPriceRangeChange={() => {}}
+      onFilterMaxDbChange={() => {}}
+      onBack={() => {}}
+    />,
+  );
+
+  assert.match(source, /查看详情信息/);
+  assert.doesNotMatch(source, /href="https:\/\/example\.com\/product-detail"/);
+  assert.doesNotMatch(source, /target="_blank"/);
+});
+
+test("library product detail modal separates product information from the external detail link", () => {
+  const source = renderToStaticMarkup(
+    <LibraryProductDetailModal
+      product={makeProduct({
+        sourceUrl: "https://example.com/product-detail",
+        brandBrief: {
+          brandName: "Test Brand",
+          brandSlug: "test-brand",
+          countryLabel: "USA",
+          positioning: "偏入门友好的品牌。",
+          styleSummary: "风格轻巧清晰。",
+        },
+        personaAnalysis: "适合想先低压力探索的用户。",
+        rawDescription: "[参数信息]\n材质: 硅胶\n[图文提取]\n动力规格: 柔和震动",
+        tags: ["静音", "亲肤"],
+      })}
+      onClose={() => {}}
+    />,
+  );
+
+  assert.match(source, /role="dialog"/);
+  assert.match(source, /产品详情信息/);
+  assert.match(source, /品牌信息/);
+  assert.match(source, /适配提示/);
+  assert.match(source, /产品详情摘要/);
+  assert.match(source, /打开产品详情链接/);
+  assert.match(source, /href="https:\/\/example\.com\/product-detail"/);
+  assert.doesNotMatch(source, /查看详情信息/);
 });
 
 test("library page shows only in-stock subtype options after a supported top-level type is selected", () => {

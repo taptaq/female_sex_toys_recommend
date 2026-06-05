@@ -34,7 +34,7 @@ test("app shell renders the theme cosmos layer across loading library and routed
   const appSource = fs.readFileSync(path.resolve(root, "src/App.tsx"), "utf8");
 
   assert.match(appSource, /ThemeCosmosLayer/);
-  assert.match(appSource, /variant="matching"/);
+  assert.match(appSource, /themeCosmosVariant[\s\S]*"matching"/);
   assert.match(appSource, /variant="library"/);
   assert.match(appSource, /themeCosmosVariant/);
   assert.doesNotMatch(appSource, /app-ambient absolute top-\[-10%\]/);
@@ -77,6 +77,10 @@ test("page modules inherit theme accent tokens instead of locking to one cyan pa
   assert.match(cssSource, /\.theme-synced-page \[class\*=" ring-cyan"\]/);
   assert.match(cssSource, /\.theme-synced-page \[class\^="accent-cyan"\]/);
   assert.match(cssSource, /\.theme-synced-page \[class\*=" accent-cyan"\]/);
+  assert.match(cssSource, /\.theme-synced-page \.female-mvp-library-page \[class\^="text-sky"\]/);
+  assert.match(cssSource, /\.theme-synced-page \.female-mvp-library-page \[class\*=" text-sky"\]/);
+  assert.match(cssSource, /\.theme-synced-page \.female-mvp-library-page \[class\^="bg-sky"\]/);
+  assert.match(cssSource, /\.theme-synced-page \.female-mvp-library-page \[class\^="border-sky"\]/);
   assert.doesNotMatch(cssSource, /\[class\*="bg-cyan"\]/);
   assert.doesNotMatch(cssSource, /\[class\*="hover:bg-cyan"\]/);
 });
