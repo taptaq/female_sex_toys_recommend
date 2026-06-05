@@ -8,7 +8,6 @@ type SupabaseAuthEnv = {
 type SupabaseAuthClient = ReturnType<typeof createClient>;
 
 let cachedClient: SupabaseAuthClient | null = null;
-const INTERNAL_AUTH_EMAIL_DOMAIN = "users.inner-space.com";
 
 function readRuntimeEnv(): SupabaseAuthEnv {
   return ((import.meta as ImportMeta & { env?: SupabaseAuthEnv }).env ?? {}) as SupabaseAuthEnv;
@@ -46,14 +45,6 @@ export function getSupabaseClient() {
   return cachedClient;
 }
 
-export function buildInternalAuthEmailFromUsername(username: string) {
-  const normalizedUsername = username.trim().toLowerCase();
-  const usernameHex = Array.from(normalizedUsername)
-    .map((character) => character.charCodeAt(0).toString(16).padStart(2, "0"))
-    .join("");
-  return `u_${usernameHex}@${INTERNAL_AUTH_EMAIL_DOMAIN}`;
-}
-
 export function getReadableSupabaseAuthErrorMessage(
   mode: "signup" | "signin",
   message: string,
@@ -61,37 +52,37 @@ export function getReadableSupabaseAuthErrorMessage(
   const normalizedMessage = message.trim().toLowerCase();
 
   if (normalizedMessage.includes("email not confirmed")) {
-    return "这个用户名对应的内部账号还处于未确认状态。请到 Supabase Auth > Users 删除该账号后重新注册，或直接换一个新用户名。";
+    return "这个邮箱账号还未完成确认。请先检查邮箱确认邮件，或在 Supabase Auth > Users 中确认该账号状态。";
   }
 
   if (normalizedMessage.includes("user already registered")) {
     return mode === "signup"
-      ? "用户名已被占用，请换一个新的用户名。"
-      : "这个用户名已经存在，但当前密码不匹配。";
+      ? "这个邮箱已注册，请直接登录或换一个邮箱。"
+      : "这个邮箱已经存在，但当前密码不匹配。";
   }
 
   if (
     normalizedMessage.includes("email rate limit exceeded") ||
     normalizedMessage.includes("over_email_send_rate_limit")
   ) {
-    return "注册邮件触发过于频繁，Supabase 暂时限流了。请先到 Supabase Auth > Users 删除这个用户名对应的内部账号后再试，或换一个全新的用户名。";
+    return "注册邮件触发过于频繁，Supabase 暂时限流了。请稍后再试，或换一个邮箱。";
   }
 
   return message;
 }
 
-export async function registerUsernamePassword({
-  username,
+export async function registerEmailPassword({
+  email,
   password,
   fetcher = fetch,
 }: {
-  username: string;
+  email: string;
   password: string;
   fetcher?: typeof fetch;
 }) {
-  const normalizedUsername = username.trim();
-  if (!normalizedUsername || !password.trim()) {
-    throw new Error("请先填写用户名和密码。");
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || !password.trim()) {
+    throw new Error("请先填写邮箱和密码。");
   }
 
   const response = await fetcher("/api/auth/register", {
@@ -100,7 +91,7 @@ export async function registerUsernamePassword({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      username: normalizedUsername,
+      email: normalizedEmail,
       password,
     }),
   });
@@ -121,19 +112,22 @@ export async function registerUsernamePassword({
   return { success: true };
 }
 
-export async function signInWithUsernamePassword(username: string, password: string) {
+export async function signInWithEmailPassword(email: string, password: string) {
   const client = getSupabaseClient();
   if (!client) {
     throw new Error("Supabase 登录配置缺失，请先配置 VITE_SUPABASE_URL 和 VITE_SUPABASE_PUBLISHABLE_KEY");
   }
 
-  const email = buildInternalAuthEmailFromUsername(username);
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  const normalizedEmail = email.trim().toLowerCase();
+  const { data, error } = await client.auth.signInWithPassword({
+    email: normalizedEmail,
+    password,
+  });
   if (error) {
     throw new Error(
       getReadableSupabaseAuthErrorMessage(
         "signin",
-        error.message || "登录失败，请检查用户名和密码",
+        error.message || "登录失败，请检查邮箱和密码",
       ),
     );
   }

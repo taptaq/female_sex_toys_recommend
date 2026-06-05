@@ -25,6 +25,7 @@ const MATCH_MODE_OPTIONS = [
     guide: "你说，我来整理。",
     cta: "直接告诉 Luna",
     asset: "/assets/luna-planets/modes/talk.png",
+    isComingSoon: true,
   },
   {
     id: "lucky",
@@ -35,6 +36,7 @@ const MATCH_MODE_OPTIONS = [
     guide: "今天交给一点直觉。",
     cta: "抽取今日幸运",
     asset: "/assets/luna-planets/modes/lucky.png",
+    isComingSoon: true,
   },
   {
     id: "library",
@@ -86,6 +88,7 @@ export function MatchModePage({
   const activeIndex = MATCH_MODE_OPTIONS.findIndex((mode) => mode.id === activeModeId);
   const activeMode = MATCH_MODE_OPTIONS[activeIndex] ?? MATCH_MODE_OPTIONS[0];
   const isLaunching = launchingModeId === activeMode.id;
+  const isActiveModeComingSoon = Boolean("isComingSoon" in activeMode && activeMode.isComingSoon);
   const handlers = {
     quiz: onSelectQuizMode,
     "natural-language": onSelectNaturalLanguageMode,
@@ -485,7 +488,7 @@ export function MatchModePage({
   };
 
   const startActiveMode = () => {
-    if (launchingModeId) return;
+    if (launchingModeId || isActiveModeComingSoon) return;
     setLaunchingModeId(activeMode.id);
     runMatchModeLaunchMotion();
     window.setTimeout(() => {
@@ -644,11 +647,19 @@ export function MatchModePage({
           <button
             type="button"
             onClick={startActiveMode}
-            disabled={Boolean(launchingModeId)}
-            className="female-mvp-mode-start-button"
+            disabled={Boolean(launchingModeId) || isActiveModeComingSoon}
+            className={[
+              "female-mvp-mode-start-button",
+              isActiveModeComingSoon ? "female-mvp-mode-start-button-disabled" : "",
+            ].join(" ")}
           >
             {activeMode.cta}
           </button>
+          {isActiveModeComingSoon ? (
+            <p className="female-mvp-mode-coming-soon-note">
+              该功能后续开放，尽情期待
+            </p>
+          ) : null}
         </section>
 
         <p className="mt-auto pt-4 text-center text-xs font-bold tracking-[0.08em] text-slate-400">

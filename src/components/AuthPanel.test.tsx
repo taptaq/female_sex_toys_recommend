@@ -17,14 +17,14 @@ test("auth panel keeps inputs editable even before supabase config is ready", ()
   );
 
   assert.match(html, /需要配置 VITE_SUPABASE_URL 和 VITE_SUPABASE_PUBLISHABLE_KEY 后才能完成登录或注册/);
-  assert.match(html, /type="text"/);
+  assert.match(html, /type="email"/);
   assert.match(html, /type="password"/);
-  assert.doesNotMatch(html, /type="text"[^>]*disabled=""/);
+  assert.doesNotMatch(html, /type="email"[^>]*disabled=""/);
   assert.doesNotMatch(html, /type="password"[^>]*disabled=""/);
   assert.match(html, /type="submit"[^>]*disabled/);
 });
 
-test("auth panel uses username wording instead of email wording", () => {
+test("auth panel uses email wording for login and signup", () => {
   const html = renderToStaticMarkup(
     <AuthPanel
       isConfigured={true}
@@ -36,8 +36,9 @@ test("auth panel uses username wording instead of email wording", () => {
     />,
   );
 
-  assert.match(html, /用户名/);
-  assert.doesNotMatch(html, /邮箱/);
+  assert.match(html, /邮箱/);
+  assert.match(html, /autoComplete="email"|autocomplete="email"/);
+  assert.doesNotMatch(html, /用户名/);
 });
 
 test("auth panel modal surface is opaque instead of glassy", () => {

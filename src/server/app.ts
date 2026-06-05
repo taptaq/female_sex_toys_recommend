@@ -80,8 +80,8 @@ import {
   createDeleteFavoriteHandler,
   createListFavoritesHandler,
 } from "./user-favorites-route.js";
-import { createUsernameRegistrationHandler } from "./user-register-route.js";
-import { createUsernameRegistrationService } from "./user-register-service.js";
+import { createEmailRegistrationHandler } from "./email-register-route.js";
+import { createEmailRegistrationService } from "./email-register-service.js";
 
 dotenv.config();
 
@@ -156,8 +156,8 @@ const getBodyPersonaReportService = createLazyValue(() =>
     appAiService: getAppAiService(),
   }),
 );
-const getUsernameRegistrationService = createLazyValue(() =>
-  createUsernameRegistrationService({
+const getEmailRegistrationService = createLazyValue(() =>
+  createEmailRegistrationService({
     supabaseUrl: process.env.VITE_SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   }),
@@ -408,8 +408,8 @@ app.post(
   withLazyRouteHandler(
     ensureUserProfileRouteReady,
     () =>
-      createUsernameRegistrationHandler({
-        service: getUsernameRegistrationService(),
+      createEmailRegistrationHandler({
+        service: getEmailRegistrationService(),
         profileStore: getUserProfileStore(),
       }),
   ),

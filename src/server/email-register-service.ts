@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { buildInternalAuthEmailFromUsername } from "../lib/supabase-auth.js";
-
-export function createUsernameRegistrationService({
+export function createEmailRegistrationService({
   supabaseUrl,
   serviceRoleKey,
 }: {
@@ -10,7 +8,7 @@ export function createUsernameRegistrationService({
   serviceRoleKey: string | undefined;
 }) {
   return {
-    async createUsernameUser(username: string, password: string) {
+    async createEmailUser(email: string, password: string) {
       if (!supabaseUrl || !serviceRoleKey) {
         throw new Error("Supabase service role configuration is missing");
       }
@@ -22,16 +20,16 @@ export function createUsernameRegistrationService({
         },
       });
 
-      const email = buildInternalAuthEmailFromUsername(username);
+      const normalizedEmail = email.trim().toLowerCase();
       const { data, error } = await adminClient.auth.admin.createUser({
-        email,
+        email: normalizedEmail,
         password,
         email_confirm: true,
         user_metadata: {
-          username,
+          email: normalizedEmail,
         },
         app_metadata: {
-          display_name: username,
+          display_name: normalizedEmail,
         },
       });
 

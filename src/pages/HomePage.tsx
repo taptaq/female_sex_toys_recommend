@@ -316,7 +316,7 @@ function HomeAuthEntry({
     userLabel: string | null;
     statusMessage: string | null;
     isSubmitting: boolean;
-    onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+    onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
     onSignOut: () => Promise<void>;
   };
   onOpenProfiles: () => void;
@@ -472,7 +472,7 @@ function FemaleMvpAuthEntry({
     userLabel: string | null;
     statusMessage: string | null;
     isSubmitting: boolean;
-    onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+    onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
     onSignOut: () => Promise<void>;
   };
   buttonRef: Ref<HTMLButtonElement>;
@@ -557,7 +557,7 @@ export function HomePage({
     userLabel: string | null;
     statusMessage: string | null;
     isSubmitting: boolean;
-    onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+    onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
     onSignOut: () => Promise<void>;
   };
 }) {

@@ -98,8 +98,8 @@ import {
   getCurrentSupabaseSession,
   isSupabaseAuthConfigured,
   onSupabaseAuthStateChange,
-  registerUsernamePassword,
-  signInWithUsernamePassword,
+  registerEmailPassword,
+  signInWithEmailPassword,
   signOutOfSupabase,
 } from "./lib/supabase-auth";
 import type { AuthPanelMode } from "./components/AuthPanel";
@@ -1578,12 +1578,12 @@ ${JSON.stringify(context.backupCandidates)}
 
   async function handleAuthSubmit(
     mode: AuthPanelMode,
-    username: string,
+    email: string,
     password: string,
   ) {
-    const normalizedUsername = username.trim();
-    if (!normalizedUsername || !password.trim()) {
-      setAuthStatusMessage("请先填写用户名和密码。");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password.trim()) {
+      setAuthStatusMessage("请先填写邮箱和密码。");
       return;
     }
 
@@ -1592,12 +1592,12 @@ ${JSON.stringify(context.backupCandidates)}
 
     try {
       if (mode === "signup") {
-        await registerUsernamePassword({
-          username: normalizedUsername,
+        await registerEmailPassword({
+          email: normalizedEmail,
           password,
         });
-        const loginResult = await signInWithUsernamePassword(
-          normalizedUsername,
+        const loginResult = await signInWithEmailPassword(
+          normalizedEmail,
           password,
         );
 
@@ -1612,7 +1612,7 @@ ${JSON.stringify(context.backupCandidates)}
         return;
       }
 
-      const data = await signInWithUsernamePassword(normalizedUsername, password);
+      const data = await signInWithEmailPassword(normalizedEmail, password);
 
       if (data.session) {
         setSupabaseSession(data.session);
@@ -2391,7 +2391,7 @@ ${JSON.stringify(context.backupCandidates)}
               setFilterPriceRange("all");
               setFilterMaxDb(DEFAULT_LIBRARY_FILTER_MAX_DB);
             }}
-            onBack={() => navigateTo(getReturnRoute())}
+            onBack={() => navigateTo("/match-mode")}
             favoriteProductIds={favoriteProductIds}
             onToggleFavorite={handleToggleFavorite}
           />

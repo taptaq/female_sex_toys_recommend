@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildInternalAuthEmailFromUsername,
   getSupabaseAuthConfig,
   getReadableSupabaseAuthErrorMessage,
   isSupabaseAuthConfigured,
-  registerUsernamePassword,
+  registerEmailPassword,
 } from "./supabase-auth.ts";
 
 test("isSupabaseAuthConfigured requires both url and anon key", () => {
@@ -39,39 +38,32 @@ test("getSupabaseAuthConfig trims configured values", () => {
   );
 });
 
-test("buildInternalAuthEmailFromUsername hides the raw username behind a stable synthetic email", () => {
-  assert.equal(
-    buildInternalAuthEmailFromUsername("  Nebula_User  "),
-    "u_6e6562756c615f75736572@users.inner-space.com",
-  );
-});
-
-test("getReadableSupabaseAuthErrorMessage explains unconfirmed hidden-email accounts in Chinese", () => {
+test("getReadableSupabaseAuthErrorMessage explains unconfirmed email accounts in Chinese", () => {
   assert.equal(
     getReadableSupabaseAuthErrorMessage("signin", "Email not confirmed"),
-    "这个用户名对应的内部账号还处于未确认状态。请到 Supabase Auth > Users 删除该账号后重新注册，或直接换一个新用户名。",
+    "这个邮箱账号还未完成确认。请先检查邮箱确认邮件，或在 Supabase Auth > Users 中确认该账号状态。",
   );
 });
 
-test("getReadableSupabaseAuthErrorMessage maps duplicate users to username conflict wording", () => {
+test("getReadableSupabaseAuthErrorMessage maps duplicate users to email conflict wording", () => {
   assert.equal(
     getReadableSupabaseAuthErrorMessage("signup", "User already registered"),
-    "用户名已被占用，请换一个新的用户名。",
+    "这个邮箱已注册，请直接登录或换一个邮箱。",
   );
 });
 
 test("getReadableSupabaseAuthErrorMessage explains email send rate limits in Chinese", () => {
   assert.equal(
     getReadableSupabaseAuthErrorMessage("signup", "email rate limit exceeded"),
-    "注册邮件触发过于频繁，Supabase 暂时限流了。请先到 Supabase Auth > Users 删除这个用户名对应的内部账号后再试，或换一个全新的用户名。",
+    "注册邮件触发过于频繁，Supabase 暂时限流了。请稍后再试，或换一个邮箱。",
   );
 });
 
-test("registerUsernamePassword calls the server-side registration endpoint", async () => {
+test("registerEmailPassword calls the server-side registration endpoint", async () => {
   let captured: unknown;
 
-  const result = await registerUsernamePassword({
-    username: "taptaq",
+  const result = await registerEmailPassword({
+    email: " Taptaq@example.COM ",
     password: "secret-pass",
     fetcher: async (url, init) => {
       captured = { url, init };
@@ -84,5 +76,5 @@ test("registerUsernamePassword calls the server-side registration endpoint", asy
 
   assert.deepEqual(result, { success: true });
   assert.match(JSON.stringify(captured), /\/api\/auth\/register/);
-  assert.match(JSON.stringify(captured), /taptaq/);
+  assert.match(JSON.stringify(captured), /taptaq@example\.com/);
 });

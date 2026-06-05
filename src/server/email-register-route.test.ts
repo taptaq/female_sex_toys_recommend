@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { Request, Response } from "express";
 
-import { createUsernameRegistrationHandler } from "./user-register-route.ts";
+import { createEmailRegistrationHandler } from "./email-register-route.ts";
 
 function createMockRequest(body: unknown) {
   return { body } as Request;
@@ -30,13 +30,13 @@ function createMockResponse() {
   };
 }
 
-test("username registration handler creates a confirmed hidden-email user", async () => {
+test("email registration handler creates a confirmed email user", async () => {
   let captured: unknown;
   let profileUpsert: unknown;
-  const handler = createUsernameRegistrationHandler({
+  const handler = createEmailRegistrationHandler({
     service: {
-      createUsernameUser: async (username, password) => {
-        captured = { username, password };
+      createEmailUser: async (email, password) => {
+        captured = { email, password };
         return { success: true, userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00" };
       },
     },
@@ -49,23 +49,23 @@ test("username registration handler creates a confirmed hidden-email user", asyn
 
   const mockResponse = createMockResponse();
   await handler(
-    createMockRequest({ username: "taptaq", password: "secret-pass" }),
+    createMockRequest({ email: " Taptaq@example.COM ", password: "secret-pass" }),
     mockResponse.response,
   );
 
   assert.equal(mockResponse.readStatusCode(), 201);
   assert.deepEqual(mockResponse.readJsonPayload(), { success: true });
-  assert.deepEqual(captured, { username: "taptaq", password: "secret-pass" });
+  assert.deepEqual(captured, { email: "taptaq@example.com", password: "secret-pass" });
   assert.deepEqual(profileUpsert, {
     userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
-    username: "taptaq",
+    username: "taptaq@example.com",
   });
 });
 
-test("username registration handler rejects missing credentials", async () => {
-  const handler = createUsernameRegistrationHandler({
+test("email registration handler rejects missing credentials", async () => {
+  const handler = createEmailRegistrationHandler({
     service: {
-      createUsernameUser: async () => ({
+      createEmailUser: async () => ({
         success: true,
         userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
       }),
@@ -74,12 +74,12 @@ test("username registration handler rejects missing credentials", async () => {
 
   const mockResponse = createMockResponse();
   await handler(
-    createMockRequest({ username: "", password: "" }),
+    createMockRequest({ email: "", password: "" }),
     mockResponse.response,
   );
 
   assert.equal(mockResponse.readStatusCode(), 400);
   assert.deepEqual(mockResponse.readJsonPayload(), {
-    error: "Username and password are required",
+    error: "Email and password are required",
   });
 });

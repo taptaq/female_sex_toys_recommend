@@ -49,7 +49,7 @@ type AppRouteRendererProps = {
     userLabel: string | null;
     statusMessage: string | null;
     isSubmitting: boolean;
-    onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+    onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
     onSignOut: () => Promise<void>;
   };
   recommendationProfiles: SavedRecommendationProfile[];

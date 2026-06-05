@@ -177,6 +177,25 @@ test("match mode selected panel sits lower below the active planet", () => {
   assert.match(source, /\.female-mvp-mode-selected-panel\s*\{[\s\S]*?margin-top: 1\.5rem;/);
 });
 
+test("match mode keeps direct talk and lucky draw disabled until they are opened", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+  const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
+  const naturalLanguageOptionBlock =
+    pageSource.match(/\{\s*id: "natural-language"[\s\S]*?\n  \},/)?.[0] ?? "";
+  const luckyOptionBlock =
+    pageSource.match(/\{\s*id: "lucky"[\s\S]*?\n  \},/)?.[0] ?? "";
+
+  assert.match(naturalLanguageOptionBlock, /isComingSoon: true/);
+  assert.match(luckyOptionBlock, /isComingSoon: true/);
+  assert.match(pageSource, /const isActiveModeComingSoon = Boolean/);
+  assert.match(pageSource, /if \(launchingModeId \|\| isActiveModeComingSoon\) return;/);
+  assert.match(pageSource, /disabled=\{Boolean\(launchingModeId\) \|\| isActiveModeComingSoon\}/);
+  assert.match(pageSource, /female-mvp-mode-start-button-disabled/);
+  assert.match(pageSource, /该功能后续开放，尽情期待/);
+  assert.match(source, /\.female-mvp-mode-start-button-disabled,/);
+  assert.match(source, /\.female-mvp-mode-coming-soon-note\s*\{/);
+});
+
 test("match mode touch tracking does not trigger extra React renders", () => {
   const pageSource = fs.readFileSync(path.resolve(process.cwd(), "src/pages/MatchModePage.tsx"), "utf8");
 

@@ -9,7 +9,7 @@ type AuthPanelProps = {
   statusMessage: string | null;
   isSubmitting: boolean;
   surface?: "embedded" | "modal";
-  onSubmit: (mode: AuthPanelMode, username: string, password: string) => Promise<void>;
+  onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
   onSignOut: () => Promise<void>;
 };
 
@@ -23,7 +23,7 @@ export function AuthPanel({
   onSignOut,
 }: AuthPanelProps) {
   const [mode, setMode] = useState<AuthPanelMode>("signin");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const panelClassName =
     surface === "modal"
@@ -67,7 +67,7 @@ export function AuthPanel({
       className={panelClassName}
       onSubmit={(event) => {
         event.preventDefault();
-        void onSubmit(mode, username, password);
+        void onSubmit(mode, email, password);
       }}
     >
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -77,7 +77,7 @@ export function AuthPanel({
             登录后保存推荐档案
           </p>
           <p className="mt-1 text-xs leading-5 text-cyan-100/55">
-            前台只展示用户名
+            使用邮箱登录或注册
           </p>
         </div>
         <button
@@ -91,11 +91,11 @@ export function AuthPanel({
 
       <div className="grid gap-2 sm:grid-cols-2">
         <input
-          type="text"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          placeholder="用户名"
-          autoComplete="username"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="邮箱"
+          autoComplete="email"
           disabled={isSubmitting}
           className="rounded-xl border border-white/10 bg-slate-950/45 px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-300/40 disabled:cursor-not-allowed disabled:opacity-55"
         />

@@ -39,6 +39,8 @@ test("favorite auth prompt uses the female MVP auth shell instead of the legacy 
   assert.match(favoriteAuthBlock, /登录后即可收藏喜欢的装备/);
   assert.match(libraryRouteBlock, /<LibraryPage/);
   assert.match(libraryRouteBlock, /\{favoriteAuthOverlay\}/);
+  assert.match(libraryRouteBlock, /onBack=\{\(\) => navigateTo\("\/match-mode"\)\}/);
+  assert.doesNotMatch(libraryRouteBlock, /navigateTo\(getReturnRoute\(\)\)/);
   assert.doesNotMatch(
     favoriteAuthBlock,
     /className="mt-3 w-full rounded-full border border-white\/10 bg-white\/\[0\.035\]/,
