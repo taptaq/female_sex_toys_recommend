@@ -145,13 +145,13 @@ export function HomeFeedbackModalView({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 px-4 py-8 backdrop-blur-xl"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-sky-950/18 px-4 py-8 backdrop-blur-xl"
       onClick={onClose}
       role="presentation"
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-xl rounded-[1.7rem] border border-cyan-300/18 bg-slate-950 p-5 text-left shadow-[0_0_90px_rgba(8,47,73,0.38)] sm:p-6"
+        className="w-full max-w-xl rounded-[1.7rem] border border-sky-100 bg-white/95 p-5 text-left text-slate-900 shadow-[0_1.5rem_4rem_rgba(125,211,252,0.2)] sm:p-6"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={onDialogKeyDown}
         role="dialog"
@@ -162,11 +162,11 @@ export function HomeFeedbackModalView({
         <div className="mb-4">
           <h2
             id="home-feedback-modal-title"
-            className="text-lg font-medium tracking-[0.16em] text-white"
+            className="text-lg font-black tracking-[0.16em] text-slate-950"
           >
             意见反馈
           </h2>
-          <p className="mt-1 text-xs leading-5 text-cyan-100/55">
+          <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
             告诉我们哪里不顺手、哪里还可以更清楚，后续会继续补齐提交流程。
           </p>
         </div>
@@ -177,7 +177,7 @@ export function HomeFeedbackModalView({
             onSubmit();
           }}
         >
-          <label className="block text-sm font-medium text-cyan-50" htmlFor="home-feedback-message">
+          <label className="block text-sm font-black text-sky-700" htmlFor="home-feedback-message">
             反馈内容
           </label>
           <textarea
@@ -189,12 +189,12 @@ export function HomeFeedbackModalView({
             disabled={isSubmitting}
             rows={5}
             placeholder="欢迎告诉我们你想吐槽、补充或期待的内容"
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm leading-6 text-white outline-none transition-colors placeholder:text-slate-600 focus:border-cyan-300/40 disabled:cursor-not-allowed disabled:opacity-55"
+            className="mt-2 w-full rounded-2xl border border-sky-100 bg-white/86 px-4 py-3 text-sm font-semibold leading-6 text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-sky-300 disabled:cursor-not-allowed disabled:opacity-55"
           />
 
           <div className="mt-4">
             <label
-              className="block text-sm font-medium text-cyan-50"
+              className="block text-sm font-black text-sky-700"
               htmlFor="home-feedback-screenshots"
             >
               截图上传（可选，最多 3 张）
@@ -209,16 +209,16 @@ export function HomeFeedbackModalView({
                 onFileSelect(event.target.files);
                 event.currentTarget.value = "";
               }}
-              className="mt-2 block w-full rounded-xl border border-dashed border-white/12 bg-white/[0.025] px-3 py-3 text-xs text-slate-300 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-300/12 file:px-3 file:py-1.5 file:text-xs file:text-cyan-50 disabled:cursor-not-allowed disabled:opacity-55"
+              className="mt-2 block w-full rounded-xl border border-dashed border-sky-200 bg-sky-50/64 px-3 py-3 text-xs font-semibold text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-sky-500 file:px-3 file:py-1.5 file:text-xs file:font-black file:text-white disabled:cursor-not-allowed disabled:opacity-55"
             />
 
-            <div className="mt-3 rounded-2xl border border-white/8 bg-white/[0.025] p-3">
+            <div className="mt-3 rounded-2xl border border-sky-100 bg-white/72 p-3">
               {screenshotPreviews.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-3">
                   {screenshotPreviews.map((preview, index) => (
                     <div
                       key={`${preview}-${index}`}
-                      className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80"
+                      className="overflow-hidden rounded-2xl border border-sky-100 bg-sky-50"
                     >
                       <img
                         src={preview}
@@ -229,7 +229,7 @@ export function HomeFeedbackModalView({
                         type="button"
                         onClick={() => onRemoveScreenshot(index)}
                         disabled={isSubmitting}
-                        className="w-full border-t border-white/10 px-3 py-2 text-xs text-slate-300 transition-colors hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-55"
+                        className="w-full border-t border-sky-100 px-3 py-2 text-xs font-black text-sky-600 transition-colors hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-55"
                       >
                         移除截图
                       </button>
@@ -237,23 +237,23 @@ export function HomeFeedbackModalView({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs leading-5 text-slate-400">预览区域会显示已选截图。</p>
+                <p className="text-xs font-semibold leading-5 text-slate-500">预览区域会显示已选截图。</p>
               )}
             </div>
           </div>
 
           {submitError ? (
-            <p className="mt-3 text-xs leading-5 text-rose-200/85">{submitError}</p>
+            <p className="mt-3 text-xs font-semibold leading-5 text-rose-600">{submitError}</p>
           ) : null}
           {submitSuccess ? (
-            <p className="mt-3 text-xs leading-5 text-emerald-200/85">{submitSuccess}</p>
+            <p className="mt-3 text-xs font-semibold leading-5 text-emerald-700">{submitSuccess}</p>
           ) : null}
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
             <button
               type="submit"
               disabled={isSubmitting || !message.trim()}
-              className="rounded-full border border-cyan-300/25 bg-cyan-300/12 px-4 py-2 text-xs font-medium tracking-wider text-cyan-50 transition-colors hover:border-cyan-200/45 hover:bg-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-55"
+              className="rounded-full border border-sky-200 bg-sky-500 px-4 py-2 text-xs font-black tracking-wider text-white shadow-[0_0.8rem_1.8rem_rgba(14,165,233,0.18)] transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-55"
             >
               {isSubmitting ? "提交中..." : "提交反馈"}
             </button>
@@ -261,7 +261,7 @@ export function HomeFeedbackModalView({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="rounded-full border border-white/10 bg-white/[0.035] px-4 py-2 text-xs text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-55"
+              className="rounded-full border border-sky-200 bg-white/86 px-4 py-2 text-xs font-black text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-55"
             >
               暂不反馈
             </button>

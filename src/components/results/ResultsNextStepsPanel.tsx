@@ -29,16 +29,16 @@ export function ResultsNextStepsPanel({
         {nextStepGroups.map((group) => (
           <div
             key={group.id}
-            className="rounded-2xl border border-white/8 bg-black/10 p-3"
+            className="rounded-2xl border border-amber-100 bg-white/72 p-3"
           >
-            <h3 className="mb-2 text-sm font-medium text-amber-200">
+            <h3 className="mb-2 text-sm font-black text-amber-700">
               {group.title}
             </h3>
             <ul className="space-y-2">
               {group.items.map((tip, index) => (
                 <li
                   key={`${group.id}-${index}`}
-                  className="flex items-start gap-2 text-sm leading-6 text-amber-100/85"
+                  className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-600"
                 >
                   <span className="mt-1 shrink-0 text-amber-300">•</span>
                   <span className="break-words">{tip}</span>

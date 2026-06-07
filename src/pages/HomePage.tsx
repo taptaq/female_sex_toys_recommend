@@ -281,8 +281,8 @@ export function HomeAuthOverlay({
     <div
       className={
         isFemaleMvpVariant
-          ? "female-mvp-auth-overlay fixed inset-0 z-50 flex items-end justify-center bg-slate-950/28 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8 backdrop-blur-md"
-          : "fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 px-4 py-8 backdrop-blur-xl"
+          ? "female-mvp-auth-overlay fixed inset-0 z-50 flex items-end justify-center bg-sky-950/18 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-8 backdrop-blur-md"
+          : "fixed inset-0 z-50 flex items-center justify-center bg-sky-950/18 px-4 py-8 backdrop-blur-xl"
       }
       onClick={onClose}
       role="presentation"
@@ -1301,7 +1301,7 @@ export function HomePage({
             </div>
           </div>
 
-          <div className="glass-panel relative flex w-full flex-col items-center overflow-hidden rounded-[1.75rem] p-6 text-center shadow-[0_24px_90px_rgba(2,8,23,0.42)] sm:rounded-3xl sm:p-8">
+          <div className="glass-panel relative flex w-full flex-col items-center overflow-hidden rounded-[1.75rem] p-6 text-center shadow-[0_1.5rem_4rem_rgba(125,211,252,0.18)] sm:rounded-3xl sm:p-8">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent opacity-50"></div>
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.08),transparent_34%),linear-gradient(115deg,transparent,rgba(255,255,255,0.035),transparent_42%)]" />
 

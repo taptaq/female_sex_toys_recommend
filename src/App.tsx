@@ -49,6 +49,7 @@ import {
 } from "./lib/result-tuning";
 import {
   buildRecommendationProfilePayload,
+  deleteRecommendationProfile,
   listRecommendationProfiles,
   type SavedRecommendationProfile,
   saveRecommendationProfile,
@@ -464,6 +465,8 @@ export default function App() {
   const [isLoadingRecommendationProfiles, setIsLoadingRecommendationProfiles] =
     useState(false);
   const [recommendationProfilesError, setRecommendationProfilesError] =
+    useState<string | null>(null);
+  const [deletingRecommendationProfileId, setDeletingRecommendationProfileId] =
     useState<string | null>(null);
   const [themeId, setThemeId] = useState<AppThemeId>(() => readStoredAppTheme());
   const themeSwitchRunRef = useRef(0);
@@ -1790,6 +1793,40 @@ ${JSON.stringify(context.backupCandidates)}
     }
   }
 
+  async function handleDeleteRecommendationProfile(profileId: string) {
+    if (deletingRecommendationProfileId === profileId) {
+      return;
+    }
+
+    const authToken =
+      supabaseSession?.access_token ||
+      (await getCurrentSupabaseSession())?.access_token ||
+      "";
+
+    if (!authToken) {
+      setRecommendationProfilesError("需要登录后才能删除匹配档案。");
+      return;
+    }
+
+    setDeletingRecommendationProfileId(profileId);
+    setRecommendationProfilesError(null);
+    const previousProfiles = recommendationProfiles;
+    setRecommendationProfiles((profiles) =>
+      profiles.filter((profile) => profile.id !== profileId),
+    );
+
+    try {
+      await deleteRecommendationProfile({ authToken, profileId });
+    } catch (error) {
+      setRecommendationProfiles(previousProfiles);
+      setRecommendationProfilesError(
+        error instanceof Error ? error.message : "删除匹配档案失败，请稍后重试。",
+      );
+    } finally {
+      setDeletingRecommendationProfileId(null);
+    }
+  }
+
   const calculateResults = async (
     currentAnswers: AnswerState = answers,
     activeQs: Question[] = activeQuestions,
@@ -2415,7 +2452,10 @@ ${JSON.stringify(context.backupCandidates)}
     currentRoute === "/quiz" && step < activeQuestions.length && isFemaleMvp;
   const isFemaleMvpResultsRoute = effectiveShellRoute === "/results" && isFemaleMvp;
   const isFemaleMvpSoftShellRoute =
-    isFemaleMvpHomeRoute || isFemaleMvpQuizRoute || isFemaleMvpResultsRoute;
+    isFemaleMvpHomeRoute ||
+    isFemaleMvpQuizRoute ||
+    isFemaleMvpResultsRoute ||
+    effectiveShellRoute === "/profiles";
   const shellContainerClassName =
     isFemaleMvpHomeRoute
       ? "max-w-none"
@@ -2457,6 +2497,8 @@ ${JSON.stringify(context.backupCandidates)}
       ? "h-dvh min-h-dvh p-0"
     : isFemaleMvpResultsRoute
       ? "min-h-screen p-0"
+    : effectiveShellRoute === "/profiles"
+      ? "h-dvh min-h-dvh p-0"
     : isFemaleMvpHomeRoute
       ? "h-dvh min-h-dvh p-0"
     : "min-h-screen p-4 sm:p-6 md:p-8";
@@ -2533,7 +2575,11 @@ ${JSON.stringify(context.backupCandidates)}
             quizReturnToResultsState ? handleBackToResultsFromQuiz : undefined
           }
           onJumpToQuestion={handleJumpToQuizQuestion}
+          onSaveRecommendationProfile={handleSaveRecommendationProfile}
+          isSavingRecommendationProfile={isSavingRecommendationProfile}
+          saveRecommendationProfileMessage={saveRecommendationProfileMessage}
           onReloadRecommendationProfiles={() => void fetchRecommendationProfiles()}
+          onDeleteRecommendationProfile={handleDeleteRecommendationProfile}
           authPanel={authPanel}
           recommendationProfiles={recommendationProfiles}
           isLoadingRecommendationProfiles={isLoadingRecommendationProfiles}
@@ -2559,37 +2605,39 @@ ${JSON.stringify(context.backupCandidates)}
       {favoriteAuthOverlay}
 
       {isFavoritesModalOpen ? (
-        <HomeAuthOverlay onClose={() => setIsFavoritesModalOpen(false)}>
-          <div className="w-full max-w-4xl rounded-[1.7rem] border border-cyan-300/18 bg-slate-950 p-5 text-left shadow-[0_0_90px_rgba(8,47,73,0.38)] sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4 border-b border-cyan-100/10 pb-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[linear-gradient(165deg,rgba(255,248,250,0.98),rgba(239,249,255,0.96)_52%,rgba(253,242,248,0.94))] text-slate-900">
+          <div className="min-h-dvh w-full px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-5xl px-4 sm:px-0">
+            <div className="sticky top-0 z-10 mb-5 flex flex-col gap-3 border-b border-sky-100 bg-white/78 p-5 backdrop-blur-xl sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-6">
               <div className="min-w-0">
-                <p className="mb-2 text-[10px] tracking-[0.28em] text-cyan-200/45">
+                <p className="mb-2 text-[10px] font-black tracking-[0.28em] text-sky-500/76">
                   FAVORITES
                 </p>
-                <h2 className="text-lg font-medium text-white sm:text-xl">
+                <h2 className="text-lg font-black text-slate-950 sm:text-xl">
                   我的收藏
                 </h2>
-                <p className="mt-2 text-xs leading-5 text-slate-400">
+                <p className="mt-2 text-xs font-semibold leading-5 text-slate-600">
                   这里会集中展示你在全息装备库和匹配结果中收藏过的产品。
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsFavoritesModalOpen(false)}
-                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] p-2 text-slate-300 transition-colors hover:bg-white/[0.08] hover:text-white"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center self-end rounded-full border border-sky-200 bg-white/86 p-2 text-sky-500 transition-colors hover:bg-sky-50 sm:self-start"
+                aria-label="关闭我的收藏"
               >
-                关闭
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
             {isLoading && favoriteProducts.length === 0 ? (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center text-sm text-slate-400">
+              <div className="rounded-2xl border border-sky-100 bg-white/70 p-8 text-center text-sm font-bold text-slate-500">
                 正在读取收藏产品...
               </div>
             ) : favoriteProducts.length === 0 ? (
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center">
-                <p className="text-sm text-white">还没有收藏产品</p>
-                <p className="mt-2 text-xs leading-5 text-slate-400">
+              <div className="rounded-2xl border border-sky-100 bg-white/70 p-8 text-center">
+                <p className="text-sm font-black text-slate-900">还没有收藏产品</p>
+                <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
                   你可以在全息装备库或匹配结果中点击收藏，之后会显示在这里。
                 </p>
               </div>
@@ -2597,52 +2645,54 @@ ${JSON.stringify(context.backupCandidates)}
               <div className="grid gap-3 sm:grid-cols-2">
                 {favoriteProducts.map((product) => {
                   const productUrl = product.sourceUrl || product.link;
-                  const card = (
-                    <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all hover:border-cyan-300/24 hover:bg-cyan-300/[0.05]">
+                  return (
+                    <div
+                      key={product.id}
+                      className="rounded-2xl border border-sky-100 bg-white/78 p-4 shadow-[0_0.75rem_2.2rem_rgba(125,211,252,0.11)] transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white"
+                    >
                       <div className="mb-2 flex items-center justify-between gap-3">
-                        <span className="rounded-full border border-cyan-300/16 bg-cyan-300/8 px-2.5 py-1 text-[11px] text-cyan-100/75">
+                        <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-black text-sky-600">
                           {product.brand}
                         </span>
-                        <span className="text-sm text-cyan-300">¥{product.price}</span>
+                        <span className="text-base font-black text-rose-500">¥{product.price}</span>
                       </div>
-                      <h3 className="text-base font-medium leading-6 text-white">
+                      <h3 className="text-base font-black leading-6 text-slate-950">
                         {getProductDisplayName(product)}
                       </h3>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
                         材质：{product.material} · {product.gender === "male" ? "男性向" : product.gender === "female" ? "女性向" : "通用型"}
                       </p>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          void handleRemoveFavoriteFromModal(product);
-                        }}
-                        className="mt-4 inline-flex items-center gap-1 rounded-full border border-rose-300/18 bg-rose-400/10 px-3 py-1.5 text-xs text-rose-100 transition-colors hover:bg-rose-400/16"
-                      >
-                        取消收藏
-                      </button>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {productUrl ? (
+                          <a
+                            href={productUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-600 transition-colors hover:bg-sky-100"
+                          >
+                            查看产品详情
+                          </a>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            void handleRemoveFavoriteFromModal(product);
+                          }}
+                          className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-500 transition-colors hover:bg-rose-100"
+                        >
+                          取消收藏
+                        </button>
+                      </div>
                     </div>
-                  );
-
-                  return productUrl ? (
-                    <a
-                      key={product.id}
-                      href={productUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                    >
-                      {card}
-                    </a>
-                  ) : (
-                    <div key={product.id}>{card}</div>
                   );
                 })}
               </div>
             )}
           </div>
-        </HomeAuthOverlay>
+          </div>
+        </div>
       ) : null}
     </div>
   );

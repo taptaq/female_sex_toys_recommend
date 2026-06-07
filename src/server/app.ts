@@ -60,6 +60,7 @@ import {
   ensureRecommendationSessionSchema,
 } from "./recommendation-session-store.js";
 import {
+  createDeleteUserRecommendationProfileHandler,
   createListUserRecommendationProfilesHandler,
   createSaveUserRecommendationProfileHandler,
 } from "./user-recommendation-route.js";
@@ -220,6 +221,13 @@ const getSaveRecommendationProfileHandler = createLazyValue(() =>
 const getListRecommendationProfilesHandler = createLazyValue(() =>
   createListUserRecommendationProfilesHandler({
     encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
+    jwtSecret: process.env.JWT_SECRET,
+    authVerifier: getSupabaseAccessTokenVerifier(),
+    store: getUserRecommendationStore(),
+  }),
+);
+const getDeleteRecommendationProfileHandler = createLazyValue(() =>
+  createDeleteUserRecommendationProfileHandler({
     jwtSecret: process.env.JWT_SECRET,
     authVerifier: getSupabaseAccessTokenVerifier(),
     store: getUserRecommendationStore(),
@@ -524,6 +532,13 @@ app.get(
   withLazyRouteHandler(
     ensureUserRecommendationRouteReady,
     getListRecommendationProfilesHandler,
+  ),
+);
+app.delete(
+  "/api/user/recommendation-profiles/:profileId",
+  withLazyRouteHandler(
+    ensureUserRecommendationRouteReady,
+    getDeleteRecommendationProfileHandler,
   ),
 );
 app.get(

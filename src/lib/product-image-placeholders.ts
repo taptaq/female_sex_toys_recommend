@@ -222,7 +222,7 @@ function resolvePlaceholderSubtypeCode(
 const DEFAULT_GRADIENT_PLACEHOLDERS: Record<string, ProductImagePlaceholder> = {
   default: {
     type: 'gradient',
-    value: 'bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-cyan-950/90',
+    value: 'bg-gradient-to-br from-sky-50 via-white to-rose-50',
     description: '默认渐变背景'
   },
   female: {
@@ -232,7 +232,7 @@ const DEFAULT_GRADIENT_PLACEHOLDERS: Record<string, ProductImagePlaceholder> = {
   },
   male: {
     type: 'gradient',
-    value: 'bg-gradient-to-br from-slate-950/50 to-blue-900/30',
+    value: 'bg-gradient-to-br from-sky-50 to-blue-100/70',
     description: '男性向渐变背景'
   },
   care: {

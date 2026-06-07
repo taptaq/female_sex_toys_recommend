@@ -11,6 +11,7 @@ export type UserRecommendationStore = {
   listEncryptedProfiles: (
     userId: string,
   ) => Promise<UserRecommendationProfileRow[]>;
+  deleteProfile: (userId: string, profileId: string) => Promise<void>;
 };
 
 export type UserRecommendationProfileMetadata = {
@@ -149,6 +150,20 @@ export function createUserRecommendationStore({
           encryptedPayload: profileRow.encrypted_payload,
         };
       });
+    },
+    async deleteProfile(userId, profileId) {
+      await pool.query(
+        `
+          UPDATE public.user_recommendation_profiles
+          SET
+            deleted_at = now(),
+            updated_at = now()
+          WHERE user_id = $1
+            AND id = $2
+            AND deleted_at IS NULL
+        `,
+        [userId, profileId],
+      );
     },
   };
 }

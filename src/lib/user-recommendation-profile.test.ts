@@ -4,6 +4,7 @@ import test from "node:test";
 import type { RankedProduct } from "./app-shell.ts";
 import {
   buildRecommendationProfilePayload,
+  deleteRecommendationProfile,
   listRecommendationProfiles,
   saveRecommendationProfile,
 } from "./user-recommendation-profile.ts";
@@ -279,4 +280,40 @@ test("listRecommendationProfiles fetches saved equipment matching profiles", asy
   assert.match(JSON.stringify(captured), /GET/);
   assert.match(JSON.stringify(captured), /Bearer signed-token/);
   assert.equal(result.profiles[0]?.title, "我的装备匹配档案");
+});
+
+test("deleteRecommendationProfile deletes a saved profile with bearer authorization", async () => {
+  let captured: unknown;
+
+  await deleteRecommendationProfile({
+    authToken: "signed-token",
+    profileId: "profile-1",
+    fetcher: async (url, init) => {
+      captured = { url, init };
+      return { ok: true, json: async () => ({ ok: true }) } as Response;
+    },
+  });
+
+  assert.match(JSON.stringify(captured), /\/api\/user\/recommendation-profiles\/profile-1/);
+  assert.match(JSON.stringify(captured), /DELETE/);
+  assert.match(JSON.stringify(captured), /Bearer signed-token/);
+});
+
+test("deleteRecommendationProfile refuses to call the API without a token", async () => {
+  let fetchCount = 0;
+
+  await assert.rejects(
+    () =>
+      deleteRecommendationProfile({
+        authToken: "",
+        profileId: "profile-1",
+        fetcher: async () => {
+          fetchCount += 1;
+          return { ok: true, json: async () => ({}) } as Response;
+        },
+      }),
+    /需要登录后才能删除匹配档案/,
+  );
+
+  assert.equal(fetchCount, 0);
 });

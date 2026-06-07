@@ -55,7 +55,8 @@ test("auth panel modal surface is opaque instead of glassy", () => {
   );
 
   assert.match(html, /auth-panel-modal/);
-  assert.match(html, /bg-slate-950/);
+  assert.match(html, /bg-white\/95/);
+  assert.doesNotMatch(html, /bg-slate-950/);
   assert.doesNotMatch(html, /bg-cyan-400\/\[/);
 });
 

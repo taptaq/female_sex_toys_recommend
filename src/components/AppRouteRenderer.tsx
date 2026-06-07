@@ -43,7 +43,11 @@ type AppRouteRendererProps = {
   onBackHome: () => void;
   onBackResults?: () => void;
   onJumpToQuestion?: (questionIndex: number) => void;
+  onSaveRecommendationProfile: () => void | Promise<void>;
+  isSavingRecommendationProfile: boolean;
+  saveRecommendationProfileMessage: string | null;
   onReloadRecommendationProfiles: () => void;
+  onDeleteRecommendationProfile: (profileId: string) => void | Promise<void>;
   authPanel: {
     isConfigured: boolean;
     userLabel: string | null;
@@ -94,7 +98,11 @@ export function AppRouteRenderer({
   onBackHome,
   onBackResults,
   onJumpToQuestion,
+  onSaveRecommendationProfile,
+  isSavingRecommendationProfile,
+  saveRecommendationProfileMessage,
   onReloadRecommendationProfiles,
+  onDeleteRecommendationProfile,
   authPanel,
   recommendationProfiles,
   isLoadingRecommendationProfiles,
@@ -167,6 +175,9 @@ export function AppRouteRenderer({
           isRecalibratingResults={isRecalibratingResults}
           onBackHome={onBackHome}
           onReset={onReset}
+          onSaveRecommendationProfile={onSaveRecommendationProfile}
+          isSavingRecommendationProfile={isSavingRecommendationProfile}
+          saveRecommendationProfileMessage={saveRecommendationProfileMessage}
           matchInputMode={matchInputMode}
           naturalLanguageQuery={naturalLanguageQuery}
           favoriteProductIds={favoriteProductIds}
@@ -183,6 +194,7 @@ export function AppRouteRenderer({
           userLabel={authPanel.userLabel}
           onBack={onBackProfiles}
           onReload={onReloadRecommendationProfiles}
+          onDeleteProfile={onDeleteRecommendationProfile}
         />
       )}
 

@@ -304,6 +304,9 @@ type ResultsPageProps = {
   isRecalibratingResults: boolean;
   onBackHome?: () => void;
   onReset: () => void;
+  onSaveRecommendationProfile?: () => void | Promise<void>;
+  isSavingRecommendationProfile?: boolean;
+  saveRecommendationProfileMessage?: string | null;
   matchInputMode?: "quiz" | "natural-language";
   naturalLanguageQuery?: string;
   favoriteProductIds?: Set<string>;
@@ -321,6 +324,9 @@ export function ResultsPage({
   isRecalibratingResults,
   onBackHome,
   onReset,
+  onSaveRecommendationProfile,
+  isSavingRecommendationProfile = false,
+  saveRecommendationProfileMessage = null,
   matchInputMode = "quiz",
   naturalLanguageQuery = "",
   favoriteProductIds = new Set(),
@@ -508,7 +514,7 @@ export function ResultsPage({
     }
   }
   const resultsPrimaryPanelClassName =
-    "results-report-panel relative z-10 overflow-hidden rounded-[1.75rem] border border-cyan-200/14 bg-slate-950/56 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.2)] sm:p-6";
+    "results-report-panel relative z-10 overflow-hidden rounded-[1.75rem] border border-sky-100 bg-white/82 p-5 shadow-[0_1.4rem_3.5rem_rgba(125,211,252,0.16)] backdrop-blur-xl sm:p-6";
 
   return (
     <motion.div
@@ -540,7 +546,7 @@ export function ResultsPage({
           {visibleResultTags.map((tag, index) => (
             <span
               key={index}
-              className="px-2 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] text-slate-300"
+              className="rounded border border-sky-100 bg-white/72 px-2 py-0.5 text-[10px] font-bold text-slate-500"
             >
               {tag}
             </span>
@@ -550,7 +556,7 @@ export function ResultsPage({
               type="button"
               onClick={() => setAreResultTagsExpanded(true)}
               aria-label={`展开剩余 ${hiddenResultTagCount} 个匹配标签`}
-              className="rounded border border-cyan-300/20 bg-cyan-300/12 px-2 py-0.5 text-[10px] font-bold text-cyan-100/80 transition-colors hover:border-cyan-300/35 hover:bg-cyan-300/18"
+              className="rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-600 transition-colors hover:bg-sky-100"
             >
               +{hiddenResultTagCount}
             </button>
@@ -776,10 +782,22 @@ export function ResultsPage({
 
       <div
         className={[
-          "mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2",
+          "mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3",
           "female-mvp-result-actions",
         ].filter(Boolean).join(" ")}
       >
+        {onSaveRecommendationProfile ? (
+          <button
+            onClick={() => void onSaveRecommendationProfile()}
+            disabled={isRecalibratingResults || isSavingRecommendationProfile}
+            className={[
+              "w-full rounded-xl border border-rose-300/22 bg-rose-400/12 py-4 text-sm font-black text-rose-100 transition-colors hover:bg-rose-400/18 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-rose-400/12",
+              "female-mvp-result-actions__button female-mvp-result-actions__button--save",
+            ].filter(Boolean).join(" ")}
+          >
+            {isSavingRecommendationProfile ? "正在保存档案..." : "保存到匹配档案"}
+          </button>
+        ) : null}
         {onBackHome ? (
           <button
             onClick={onBackHome}
@@ -803,6 +821,11 @@ export function ResultsPage({
           {resetButtonLabel}
         </button>
       </div>
+      {saveRecommendationProfileMessage ? (
+        <p className="mx-auto mt-3 max-w-xl text-center text-xs font-bold leading-5 text-slate-300">
+          {saveRecommendationProfileMessage}
+        </p>
+      ) : null}
     </motion.div>
   );
 }

@@ -127,23 +127,83 @@ export function createListUserRecommendationProfilesHandler({
 
     try {
       const rows = await store.listEncryptedProfiles(userId);
-      const profiles = rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        summary: row.summary,
-        topProductIds: row.topProductIds,
-        savedAt: row.savedAt,
-        payload: decryptPrivateJson(
-          row.encryptedPayload as EncryptedPrivateJson,
-          encryptionKey,
-        ),
-      }));
+      const profiles = rows.flatMap((row) => {
+        try {
+          return [
+            {
+              id: row.id,
+              title: row.title,
+              summary: row.summary,
+              topProductIds: row.topProductIds,
+              savedAt: row.savedAt,
+              payload: decryptPrivateJson(
+                row.encryptedPayload as EncryptedPrivateJson,
+                encryptionKey,
+              ),
+            },
+          ];
+        } catch (error) {
+          console.warn(
+            "⚠️ [Server/UserRecommendation] 跳过无法解密的推荐档案:",
+            row.id,
+            getErrorMessage(error),
+          );
+          return [];
+        }
+      });
 
       res.json({ profiles });
     } catch (error) {
       console.error("❌ [Server/UserRecommendation] 读取推荐档案失败:", error);
       res.status(500).json({
         error: "Recommendation profile list failed",
+        details: getErrorMessage(error),
+      });
+    }
+  };
+}
+
+export function createDeleteUserRecommendationProfileHandler({
+  jwtSecret,
+  authVerifier,
+  store,
+}: {
+  jwtSecret: string | undefined;
+  authVerifier?: AccessTokenVerifier;
+  store: Pick<UserRecommendationStore, "deleteProfile">;
+}) {
+  return async (req: Request, res: Response) => {
+    const authorizationHeader = Array.isArray(req.headers.authorization)
+      ? req.headers.authorization[0]
+      : req.headers.authorization;
+    const userId = await resolveBearerUserId({
+      authorizationHeader,
+      jwtSecret,
+      authVerifier,
+    });
+
+    if (!userId) {
+      res.status(401).json({
+        error: "Login is required to delete recommendation profiles",
+      });
+      return;
+    }
+
+    const profileId = typeof req.params.profileId === "string"
+      ? req.params.profileId.trim()
+      : "";
+    if (!profileId) {
+      res.status(400).json({ error: "Missing recommendation profile id" });
+      return;
+    }
+
+    try {
+      await store.deleteProfile(userId, profileId);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("❌ [Server/UserRecommendation] 删除推荐档案失败:", error);
+      res.status(500).json({
+        error: "Recommendation profile delete failed",
         details: getErrorMessage(error),
       });
     }

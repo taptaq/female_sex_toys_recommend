@@ -181,3 +181,40 @@ export async function listRecommendationProfiles({
 
   return (await response.json()) as { profiles: SavedRecommendationProfile[] };
 }
+
+export async function deleteRecommendationProfile({
+  authToken,
+  profileId,
+  fetcher = fetch,
+}: {
+  authToken: string;
+  profileId: string;
+  fetcher?: typeof fetch;
+}) {
+  if (!authToken.trim()) {
+    throw new Error("需要登录后才能删除匹配档案");
+  }
+
+  const normalizedProfileId = profileId.trim();
+  if (!normalizedProfileId) {
+    throw new Error("缺少要删除的匹配档案");
+  }
+
+  const response = await fetcher(
+    `/api/user/recommendation-profiles/${encodeURIComponent(normalizedProfileId)}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      await readApiErrorMessage(response, "删除匹配档案失败，请稍后重试"),
+    );
+  }
+
+  return (await response.json().catch(() => ({ ok: true }))) as { ok: boolean };
+}

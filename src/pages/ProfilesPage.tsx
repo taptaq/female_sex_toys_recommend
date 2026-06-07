@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ArrowLeft, Clock, FileText, LockKeyhole, PackageSearch, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowLeft, Clock, FileText, LockKeyhole, PackageSearch, Trash2, X } from "lucide-react";
 import { BrandBriefCard } from "../components/BrandBriefCard.tsx";
 import type { Product } from "../data/mock.ts";
 import { resolveBrandBrief } from "../lib/brand-brief.ts";
@@ -225,6 +226,7 @@ export function ProfilesPage({
   initialSelectedProfile = null,
   onBack,
   onReload,
+  onDeleteProfile,
 }: {
   profiles: SavedRecommendationProfile[];
   products?: Product[];
@@ -234,6 +236,7 @@ export function ProfilesPage({
   initialSelectedProfile?: SavedRecommendationProfile | null;
   onBack: () => void;
   onReload: () => void;
+  onDeleteProfile?: (profileId: string) => void | Promise<void>;
 }) {
   const [selectedProfile, setSelectedProfile] =
     useState<SavedRecommendationProfile | null>(initialSelectedProfile);
@@ -272,36 +275,223 @@ export function ProfilesPage({
         ["电机", selectedProfile.payload.answers.motorType],
       ] as const)
     : [];
+  const selectedProfileDetail = selectedProfile ? (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[linear-gradient(165deg,rgba(255,248,250,0.98),rgba(239,249,255,0.96)_52%,rgba(253,242,248,0.94))] text-slate-900">
+      <div className="min-h-dvh w-full px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col rounded-[1.75rem] border border-white/70 bg-white/72 p-4 shadow-[0_1.4rem_4rem_rgba(125,211,252,0.18)] backdrop-blur-2xl sm:p-6">
+          <div className="sticky top-0 z-10 mb-5 flex flex-col gap-3 border-b border-sky-100 bg-white/78 px-1 py-4 backdrop-blur-xl sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-1 sm:py-5">
+          <div className="min-w-0">
+            <p className="mb-2 text-[10px] font-black tracking-[0.28em] text-sky-500/76">
+              ARCHIVE DETAIL
+            </p>
+            <h2 className="text-lg font-black text-slate-950 sm:text-xl">
+              {selectedProfile.title}
+            </h2>
+            <p className="mt-2 text-xs font-bold text-slate-500">
+              {formatSavedAt(selectedProfile.savedAt)}
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+              这里保留的是那次做决定时的语境，不只是字段记录。
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedProfile(null)}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center self-end rounded-full border border-sky-200 bg-white/86 p-2 text-sky-500 transition-colors hover:bg-sky-50 sm:self-start"
+            aria-label="关闭档案详情"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="grid flex-1 content-start gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="space-y-4">
+            {selectedProfileSummary.length > 0 && (
+              <section className="rounded-2xl border border-sky-200 bg-sky-50/72 p-4">
+                <h3 className="mb-3 text-sm font-black text-slate-900">
+                  这次为什么会得到这组推荐
+                </h3>
+                <div className="space-y-2">
+                  {selectedProfileSummary.map((line) => (
+                    <p
+                      key={line}
+                      className="text-sm font-semibold leading-6 text-slate-700"
+                    >
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <BrandBriefCard brief={selectedProfileBrandBrief} />
+
+            {selectedProfile.payload.matchInputMode === "natural-language" &&
+            typeof selectedProfile.payload.naturalLanguageQuery === "string" &&
+            selectedProfile.payload.naturalLanguageQuery.trim() ? (
+              <section className="rounded-2xl border border-fuchsia-100 bg-fuchsia-50/72 p-4">
+                <h3 className="mb-3 text-sm font-black text-slate-900">
+                  当时原始描述
+                </h3>
+                <p className="text-sm font-semibold leading-6 text-slate-700">
+                  {selectedProfile.payload.naturalLanguageQuery}
+                </p>
+              </section>
+            ) : null}
+
+            <section className="rounded-2xl border border-sky-100 bg-white/72 p-4">
+              <h3 className="mb-3 text-sm font-black text-slate-900">
+                决策快照
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {selectedProfileSnapshot.map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-sky-100 bg-sky-50/58 px-3 py-3"
+                  >
+                    <p className="text-[10px] font-black tracking-[0.2em] text-sky-500/78">
+                      {item.label}
+                    </p>
+                    <p className="mt-1.5 text-sm font-semibold leading-6 text-slate-700">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-sky-100 bg-white/72 p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-slate-900">
+                <LockKeyhole className="h-4 w-4 text-sky-500" />
+                那次决策的硬约束
+              </h3>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {selectedAnswerEntries.map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="rounded-xl border border-sky-100 bg-sky-50/50 px-3 py-2"
+                  >
+                    <p className="text-[10px] font-black tracking-[0.2em] text-sky-500/72">
+                      {label}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-700">
+                      {formatAnswerCondition(label, value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <div className="space-y-4 xl:space-y-3">
+            <section className="rounded-2xl border border-sky-100 bg-white/72 p-4">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-slate-900">
+                <FileText className="h-4 w-4 text-sky-500" />
+                那次留下的偏好线索
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {dedupeDisplayTags(selectedProfile.payload.answers.tags || []).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-black text-sky-600"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-sky-100 bg-white/72 p-4">
+              <h3 className="mb-3 text-sm font-black text-slate-900">
+                那次先看这几条路线
+              </h3>
+              <div className="space-y-2">
+                {selectedProfileRecommendedRouteItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-sky-100 bg-sky-50/50 px-3 py-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-rose-100 bg-rose-50 px-2 py-0.5 text-[10px] font-black text-rose-500">
+                        {item.label}
+                      </span>
+                      <p className="text-sm font-bold text-slate-900">
+                        {item.name}
+                      </p>
+                    </div>
+                    <p className="mt-1.5 text-xs font-semibold leading-5 text-slate-500">
+                      {item.reason}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {selectedProfile.payload.bodyPersona ? (
+              <section className="rounded-2xl border border-sky-100 bg-sky-50/72 p-4">
+                <p className="text-[11px] font-black tracking-[0.22em] text-sky-500/78">
+                  身体人格快照
+                </p>
+                <h3 className="mt-2 text-base font-black text-slate-900">
+                  {selectedProfile.payload.bodyPersona.title}
+                </h3>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  {selectedProfile.payload.bodyPersona.hiddenRouteSummary}
+                </p>
+              </section>
+            ) : null}
+
+            {selectedProfile.payload.shoppingGuidance.length > 0 && (
+              <section className="rounded-2xl border border-amber-100 bg-amber-50/72 p-4">
+                <h3 className="mb-2 text-sm font-black text-slate-900">
+                  那次下单前提醒
+                </h3>
+                <ul className="space-y-2">
+                  {selectedProfile.payload.shoppingGuidance.map((item, index) => (
+                    <li
+                      key={index}
+                      className="text-xs font-semibold leading-5 text-slate-600"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
-    <div className="profiles-vault-shell relative isolate w-full overflow-hidden rounded-[2rem] border border-cyan-100/10 bg-slate-950/72 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.22)] sm:p-7">
-      <div className="profiles-vault-grid pointer-events-none absolute inset-0 -z-10 opacity-45" />
-      <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-32 left-10 -z-10 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl" />
+    <div className="profiles-vault-shell relative isolate flex min-h-dvh w-full flex-col overflow-hidden rounded-[1.7rem] border border-white/70 bg-white/76 p-5 text-slate-900 shadow-[0_1.4rem_4rem_rgba(125,211,252,0.16)] backdrop-blur-2xl sm:p-7">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_8%,rgba(251,207,232,0.44),transparent_34%),radial-gradient(circle_at_88%_10%,rgba(186,230,253,0.56),transparent_34%),linear-gradient(165deg,rgba(255,255,255,0.86),rgba(240,249,255,0.68))]" />
 
       <div className="mb-8 flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <button
             type="button"
             onClick={onBack}
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs text-slate-300 transition-colors hover:bg-white/[0.07] hover:text-white"
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/76 px-3 py-1.5 text-xs font-black text-sky-500 shadow-[0_0.5rem_1.4rem_rgba(125,211,252,0.13)] transition-colors hover:border-sky-300 hover:bg-sky-50"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             返回
           </button>
-          <p className="mb-2 font-mono text-[10px] tracking-[0.32em] text-cyan-200/48">
+          <p className="mb-2 text-[10px] font-black tracking-[0.32em] text-sky-500/78">
             EQUIPMENT MATCHING ARCHIVE
           </p>
-          <h1 className="text-2xl font-light tracking-wide text-white">
+          <h1 className="text-2xl font-black tracking-wide text-slate-950">
             匹配档案
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">
             回看当时怎么选、为什么先看这类，以及现在重看该先比较什么。
           </p>
         </div>
 
-        <div className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045] px-4 py-3 text-xs text-cyan-100/68">
-          <div className="mb-1 flex items-center gap-2 text-cyan-50">
+        <div className="rounded-2xl border border-sky-200 bg-sky-50/76 px-4 py-3 text-xs font-bold text-slate-500">
+          <div className="mb-1 flex items-center gap-2 font-black text-sky-600">
             <LockKeyhole className="h-3.5 w-3.5" />
             已加密同步
           </div>
@@ -310,272 +500,106 @@ export function ProfilesPage({
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-300/18 bg-rose-400/10 p-4 text-sm text-rose-100">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/82 p-4 text-sm font-semibold text-rose-600">
           <p>{error}</p>
           <button
             type="button"
             onClick={onReload}
-            className="mt-3 rounded-full border border-rose-200/20 bg-rose-100/8 px-3 py-1.5 text-xs transition-colors hover:bg-rose-100/14"
+            className="mt-3 rounded-full border border-rose-200 bg-white/80 px-3 py-1.5 text-xs font-black transition-colors hover:bg-rose-100"
           >
             重新读取
           </button>
         </div>
       ) : isLoading ? (
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center text-sm text-slate-400">
+        <div className="rounded-2xl border border-sky-100 bg-white/70 p-8 text-center text-sm font-bold text-slate-500">
           正在读取匹配档案...
         </div>
       ) : profiles.length === 0 ? (
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-8 text-center">
-          <PackageSearch className="mx-auto mb-3 h-8 w-8 text-cyan-200/45" />
-          <p className="text-sm text-white">还没有保存过匹配档案</p>
-          <p className="mt-2 text-xs leading-5 text-slate-400">
+        <div className="rounded-2xl border border-sky-100 bg-white/70 p-8 text-center">
+          <PackageSearch className="mx-auto mb-3 h-8 w-8 text-sky-400" />
+          <p className="text-sm font-black text-slate-900">还没有保存过匹配档案</p>
+          <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
             完成一次匹配后，在结果页点击保存，就会出现在这里。
           </p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid flex-1 content-start gap-3">
           {profiles.map((profile) => {
             const preview = buildProfileListPreview(profile);
 
             return (
-            <button
+            <article
               key={profile.id}
-              type="button"
-              onClick={() => setSelectedProfile(profile)}
-              className="group rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-left transition-all hover:-translate-y-0.5 hover:border-cyan-300/24 hover:bg-cyan-300/[0.055]"
+              className="group rounded-2xl border border-sky-100 bg-white/78 p-4 text-left shadow-[0_0.75rem_2.2rem_rgba(125,211,252,0.11)] transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/16 bg-cyan-300/8 px-2.5 py-1 text-[11px] text-cyan-100/75">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-black text-sky-600">
                       <Clock className="h-3 w-3" />
                       {formatSavedAt(profile.savedAt)}
                     </span>
-                    <span className="rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-[11px] text-slate-400">
+                    <span className="rounded-full border border-rose-100 bg-rose-50/70 px-2.5 py-1 text-[11px] font-black text-rose-500">
                       {profile.topProductIds.length} 个推荐
                     </span>
                   </div>
-                  <h2 className="truncate text-base font-medium text-white">
+                  <h2 className="truncate text-base font-black text-slate-950">
                     {profile.title}
                   </h2>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-400">
+                  <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-slate-500">
                     {profile.summary || "已保存的装备匹配快照"}
                   </p>
                   <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <div className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2">
-                      <p className="text-[10px] tracking-[0.18em] text-cyan-200/45">
+                    <div className="rounded-xl border border-sky-100 bg-sky-50/58 px-3 py-2">
+                      <p className="text-[10px] font-black tracking-[0.18em] text-sky-500/72">
                         当时更在意
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-200">
+                      <p className="mt-1 text-xs font-bold leading-5 text-slate-700">
                         {preview.focus}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2">
-                      <p className="text-[10px] tracking-[0.18em] text-cyan-200/45">
+                    <div className="rounded-xl border border-rose-100 bg-rose-50/48 px-3 py-2">
+                      <p className="text-[10px] font-black tracking-[0.18em] text-rose-400/78">
                         先看路线
                       </p>
-                      <p className="mt-1 text-xs leading-5 text-slate-200">
+                      <p className="mt-1 text-xs font-bold leading-5 text-slate-700">
                         {preview.route}
                       </p>
                     </div>
                   </div>
                 </div>
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-cyan-300/18 bg-cyan-300/8 px-3 py-1.5 text-xs text-cyan-100/80 transition-colors group-hover:bg-cyan-300/12">
-                  回看这次判断
-                </span>
+                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProfile(profile)}
+                    className="inline-flex items-center justify-center gap-1 rounded-full border border-sky-200 bg-white/86 px-3 py-1.5 text-xs font-black text-sky-600 transition-colors hover:bg-sky-50"
+                  >
+                    回看这次判断
+                  </button>
+                  {onDeleteProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => void onDeleteProfile(profile.id)}
+                      className="inline-flex items-center justify-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-500 transition-colors hover:bg-rose-100"
+                      aria-label={`删除档案：${profile.title}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      删除档案
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </button>
+            </article>
           );
         })}
         </div>
       )}
 
-      {selectedProfile ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/86 px-4 py-6 backdrop-blur-xl">
-          <div className="max-h-[92dvh] w-full max-w-4xl overflow-y-auto rounded-[1.75rem] border border-cyan-100/14 bg-slate-950 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.34)] sm:p-6">
-            <div className="sticky top-0 z-10 mb-5 flex items-start justify-between gap-4 rounded-t-[1.4rem] border-b border-cyan-100/10 bg-slate-950/92 px-1 py-4 backdrop-blur-xl sm:px-1 sm:py-5">
-              <div className="min-w-0">
-                <p className="mb-2 text-[10px] tracking-[0.28em] text-cyan-200/45">
-                  ARCHIVE DETAIL
-                </p>
-                <h2 className="text-lg font-medium text-white sm:text-xl">
-                  {selectedProfile.title}
-                </h2>
-                <p className="mt-2 text-xs text-slate-500">
-                  {formatSavedAt(selectedProfile.savedAt)}
-                </p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  这里保留的是那次做决定时的语境，不只是字段记录。
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedProfile(null)}
-                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] p-2 text-slate-300 transition-colors hover:bg-white/[0.08] hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid gap-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <div className="space-y-4">
-                {selectedProfileSummary.length > 0 && (
-                  <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.055] p-4">
-                    <h3 className="mb-3 text-sm font-medium text-cyan-50">
-                      这次为什么会得到这组推荐
-                    </h3>
-                    <div className="space-y-2">
-                      {selectedProfileSummary.map((line) => (
-                        <p
-                          key={line}
-                          className="text-sm leading-6 text-cyan-50/78"
-                        >
-                          {line}
-                        </p>
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                <BrandBriefCard brief={selectedProfileBrandBrief} />
-
-                {selectedProfile.payload.matchInputMode === "natural-language" &&
-                typeof selectedProfile.payload.naturalLanguageQuery === "string" &&
-                selectedProfile.payload.naturalLanguageQuery.trim() ? (
-                  <section className="rounded-2xl border border-violet-300/14 bg-violet-300/[0.06] p-4">
-                    <h3 className="mb-3 text-sm font-medium text-violet-50">
-                      当时原始描述
-                    </h3>
-                    <p className="text-sm leading-6 text-violet-50/82">
-                      {selectedProfile.payload.naturalLanguageQuery}
-                    </p>
-                  </section>
-                ) : null}
-
-                <section className="rounded-2xl border border-cyan-300/12 bg-cyan-300/[0.045] p-4">
-                  <h3 className="mb-3 text-sm font-medium text-cyan-50">
-                    决策快照
-                  </h3>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {selectedProfileSnapshot.map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-xl border border-cyan-200/10 bg-slate-950/30 px-3 py-3"
-                      >
-                        <p className="text-[10px] tracking-[0.2em] text-cyan-200/48">
-                          {item.label}
-                        </p>
-                        <p className="mt-1.5 text-sm leading-6 text-cyan-50/82">
-                          {item.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-                    <LockKeyhole className="h-4 w-4 text-cyan-200/70" />
-                    那次决策的硬约束
-                  </h3>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {selectedAnswerEntries.map(([label, value]) => (
-                      <div
-                        key={label}
-                        className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-2"
-                      >
-                        <p className="text-[10px] tracking-[0.2em] text-cyan-200/45">
-                          {label}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-100">
-                          {formatAnswerCondition(label, value)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              <div className="space-y-4 xl:space-y-3">
-                <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <h3 className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-                    <FileText className="h-4 w-4 text-cyan-200/70" />
-                    那次留下的偏好线索
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {dedupeDisplayTags(selectedProfile.payload.answers.tags || []).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-cyan-300/14 bg-cyan-300/8 px-2.5 py-1 text-xs text-cyan-100/75"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                  <h3 className="mb-3 text-sm font-medium text-white">
-                    那次先看这几条路线
-                  </h3>
-                  <div className="space-y-2">
-                    {selectedProfileRecommendedRouteItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="rounded-xl border border-white/8 bg-white/[0.025] px-3 py-3"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-cyan-300/16 bg-cyan-300/8 px-2 py-0.5 text-[10px] text-cyan-100/75">
-                            {item.label}
-                          </span>
-                          <p className="text-sm text-slate-100">
-                            {item.name}
-                          </p>
-                        </div>
-                        <p className="mt-1.5 text-xs leading-5 text-slate-400">
-                          {item.reason}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-
-                {selectedProfile.payload.bodyPersona ? (
-                  <section className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.05] p-4">
-                    <p className="text-[11px] tracking-[0.22em] text-cyan-200/65">
-                      身体人格快照
-                    </p>
-                    <h3 className="mt-2 text-base text-white">
-                      {selectedProfile.payload.bodyPersona.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-slate-300">
-                      {selectedProfile.payload.bodyPersona.hiddenRouteSummary}
-                    </p>
-                  </section>
-                ) : null}
-
-                {selectedProfile.payload.shoppingGuidance.length > 0 && (
-                  <section className="rounded-2xl border border-amber-300/16 bg-amber-400/8 p-4">
-                    <h3 className="mb-2 text-sm font-medium text-amber-100">
-                      那次下单前提醒
-                    </h3>
-                    <ul className="space-y-2">
-                      {selectedProfile.payload.shoppingGuidance.map((item, index) => (
-                        <li
-                          key={index}
-                          className="text-xs leading-5 text-amber-100/75"
-                        >
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {selectedProfileDetail
+        ? typeof document === "undefined"
+          ? selectedProfileDetail
+          : createPortal(selectedProfileDetail, document.body)
+        : null}
     </div>
   );
 }

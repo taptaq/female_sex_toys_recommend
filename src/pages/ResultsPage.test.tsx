@@ -375,7 +375,7 @@ test("results page gives the core result shell roomier horizontal and panel padd
   );
   assert.match(
     source,
-    /results-report-panel relative z-10 overflow-hidden rounded-\[1\.75rem\] border border-cyan-200\/14 bg-slate-950\/56 p-5 shadow-\[0_24px_90px_rgba\(8,47,73,0\.2\)\] sm:p-6/,
+    /results-report-panel relative z-10 overflow-hidden rounded-\[1\.75rem\] border border-sky-100 bg-white\/82 p-5 shadow-\[0_1\.4rem_3\.5rem_rgba\(125,211,252,0\.16\)\] backdrop-blur-xl sm:p-6/,
   );
 });
 
@@ -703,7 +703,7 @@ test("female MVP folds practical cautions into the primary check card", () => {
   assert.doesNotMatch(html, /暂时不建议优先看/);
 });
 
-test("female MVP hides archive actions from the result page", () => {
+test("female MVP shows a save-to-profile action on the result page", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -714,15 +714,17 @@ test("female MVP hides archive actions from the result page", () => {
       recommendationTips={[]}
       isRecalibratingResults={false}
       onReset={() => {}}
+      onSaveRecommendationProfile={() => {}}
+      saveRecommendationProfileMessage="登录后可加密保存到云端"
     />,
   );
 
-  assert.doesNotMatch(html, /保存推荐档案/);
-  assert.doesNotMatch(html, /登录后可加密保存到云端/);
-  assert.doesNotMatch(html, /查看档案/);
+  assert.match(html, /保存到匹配档案/);
+  assert.match(html, /登录后可加密保存到云端/);
+  assert.match(html, /female-mvp-result-actions__button--save/);
 });
 
-test("female MVP hides archive actions even when the auth session is already active", () => {
+test("female MVP keeps account controls out of the result page while saving profiles", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -733,15 +735,35 @@ test("female MVP hides archive actions even when the auth session is already act
       recommendationTips={[]}
       isRecalibratingResults={false}
       onReset={() => {}}
+      onSaveRecommendationProfile={() => {}}
+      isSavingRecommendationProfile
+      saveRecommendationProfileMessage="已登录，可加密保存并多端同步"
     />,
   );
 
-  assert.doesNotMatch(html, /已登录/);
+  assert.match(html, /正在保存档案/);
+  assert.match(html, /已登录，可加密保存并多端同步/);
   assert.doesNotMatch(html, /taptaq/);
   assert.doesNotMatch(html, /登录 \/ 注册/);
   assert.doesNotMatch(html, /退出登录/);
-  assert.doesNotMatch(html, /登录后可加密保存/);
-  assert.doesNotMatch(html, /保存推荐档案/);
+});
+
+test("app route renderer wires recommendation profile saving into results", () => {
+  const rendererSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/components/AppRouteRenderer.tsx"),
+    "utf8",
+  );
+  const appSource = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+
+  assert.match(rendererSource, /onSaveRecommendationProfile/);
+  assert.match(rendererSource, /isSavingRecommendationProfile/);
+  assert.match(rendererSource, /saveRecommendationProfileMessage/);
+  assert.match(rendererSource, /onDeleteRecommendationProfile/);
+  assert.match(rendererSource, /onDeleteProfile=\{onDeleteRecommendationProfile\}/);
+  assert.match(appSource, /onSaveRecommendationProfile=\{handleSaveRecommendationProfile\}/);
+  assert.match(appSource, /isSavingRecommendationProfile=\{isSavingRecommendationProfile\}/);
+  assert.match(appSource, /saveRecommendationProfileMessage=\{saveRecommendationProfileMessage\}/);
+  assert.match(appSource, /onDeleteRecommendationProfile=\{handleDeleteRecommendationProfile\}/);
 });
 
 test("female MVP prioritizes the primary recommendation and removes secondary controls", () => {
@@ -1308,7 +1330,7 @@ test("female MVP hides model selection details and regenerate recommendation ent
   assert.doesNotMatch(html, /mimo-v2\.5-free/);
 });
 
-test("results page offers separate restart and return-home actions", () => {
+test("results page offers separate restart and return-mode actions", () => {
   const html = renderToStaticMarkup(
     <ResultsPage
       pageVariants={{}}
@@ -1324,7 +1346,7 @@ test("results page offers separate restart and return-home actions", () => {
   );
 
   assert.match(html, /重新回答偏好问题/);
-  assert.match(html, /返回首页/);
+  assert.match(html, /返回选择模式/);
 });
 
 test("results page adapts the reset button copy for natural-language matching", () => {

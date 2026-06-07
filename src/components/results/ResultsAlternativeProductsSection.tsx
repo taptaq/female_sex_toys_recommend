@@ -26,7 +26,7 @@ export function ResultsAlternativeProductsSection({
   onToggleFavorite?: (product: RankedProduct) => void | Promise<void>;
 }) {
   return (
-    <section className="relative z-10 rounded-2xl border border-white/8 bg-white/[0.025] p-4 sm:p-5">
+    <section className="relative z-10 rounded-2xl border border-sky-100 bg-white/72 p-4 sm:p-5">
       <div className="space-y-4">
         {canBrowseSimilarLibraryProducts ? (
           <div className="rounded-2xl border border-cyan-300/12 bg-cyan-400/[0.05] p-4">
@@ -61,9 +61,9 @@ export function ResultsAlternativeProductsSection({
                 href={productHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="glass-panel group flex flex-col rounded-2xl p-3 transition-transform duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:p-4"
+                className="glass-panel group flex flex-col rounded-2xl p-3 transition-transform duration-200 hover:-translate-y-0.5 hover:border-cyan-300/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-white sm:p-4"
               >
-                <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-black/20">
+                <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-sky-50/72">
                   {renderProductImage(product, "h-5 w-5 text-white/30")}
                 </div>
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
@@ -122,7 +122,7 @@ export function ResultsAlternativeProductsSection({
                 key={product.id}
                 className="glass-panel flex flex-col rounded-2xl p-3 sm:p-4"
               >
-                <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-black/20">
+                <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden rounded-xl bg-sky-50/72">
                   {renderProductImage(product, "h-5 w-5 text-white/30")}
                 </div>
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">

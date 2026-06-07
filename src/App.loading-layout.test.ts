@@ -46,3 +46,36 @@ test("favorite auth prompt uses the female MVP auth shell instead of the legacy 
     /className="mt-3 w-full rounded-full border border-white\/10 bg-white\/\[0\.035\]/,
   );
 });
+
+test("favorites modal uses the Luna light theme and keeps external product links explicit", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+  const favoritesModalStart = source.indexOf("{isFavoritesModalOpen ? (");
+  const favoritesModalBlock = source.slice(
+    favoritesModalStart,
+    source.indexOf("      ) : null}", favoritesModalStart),
+  );
+
+  assert.match(favoritesModalBlock, /我的收藏/);
+  assert.match(favoritesModalBlock, /bg-\[linear-gradient\(165deg,rgba\(255,248,250,0\.98\)/);
+  assert.match(favoritesModalBlock, /查看产品详情/);
+  assert.match(favoritesModalBlock, /text-slate-950/);
+  assert.match(favoritesModalBlock, /fixed inset-0 z-50 overflow-y-auto/);
+  assert.match(favoritesModalBlock, /min-h-dvh w-full/);
+  assert.match(favoritesModalBlock, /mx-auto w-full max-w-5xl px-4 sm:px-0/);
+  assert.match(favoritesModalBlock, /border-b border-sky-100 bg-white\/78 p-5/);
+  assert.doesNotMatch(favoritesModalBlock, /bg-slate-950 p-5/);
+  assert.doesNotMatch(favoritesModalBlock, /className="block"/);
+  assert.doesNotMatch(favoritesModalBlock, /<HomeAuthOverlay/);
+});
+
+test("profiles route uses the Luna soft shell instead of the dark global background", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
+  const softShellBlock = source.slice(
+    source.indexOf("const isFemaleMvpSoftShellRoute ="),
+    source.indexOf("const shellContainerClassName ="),
+  );
+
+  assert.match(softShellBlock, /effectiveShellRoute === "\/profiles"/);
+  assert.match(source, /isFemaleMvpSoftShellRoute \? "female-mvp-soft-shell" : ""/);
+  assert.match(source, /effectiveShellRoute === "\/profiles"\s*\?\s*"h-dvh min-h-dvh p-0"/);
+});

@@ -89,6 +89,8 @@ test("home feedback modal renders the required shell when open", () => {
   assert.match(blankHtml, /aria-labelledby="home-feedback-modal-title"/);
   assert.match(blankHtml, /tabindex="-1"/);
   assert.match(blankHtml, /type="submit"[^>]*disabled=""/);
+  assert.match(blankHtml, /bg-white\/95/);
+  assert.doesNotMatch(blankHtml, /bg-slate-950/);
   assert.doesNotMatch(filledHtml, /type="submit"[^>]*disabled=""/);
 });
 

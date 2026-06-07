@@ -466,8 +466,8 @@ test("library page product grid and back-to-top affordance stay mobile-friendly"
   assert.match(source, /sm:gap-6 lg:grid-cols-3/);
   assert.match(source, /rounded-\[1rem\] overflow-hidden flex flex-col group border border-white\/70 bg-white\/75/);
   assert.match(source, /fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full/);
-  assert.match(source, /bg-slate-950\/70/);
-  assert.match(source, /text-white/);
+  assert.match(source, /bg-white\/86/);
+  assert.match(source, /text-sky-600/);
   assert.match(source, /sm:bottom-8 sm:right-8/);
 });
 

@@ -309,7 +309,7 @@ export function LibraryProductDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/32 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-sky-950/18 px-3 py-3 backdrop-blur-sm sm:items-center sm:px-6"
       role="dialog"
       aria-modal="true"
       aria-labelledby="library-product-detail-title"
@@ -417,7 +417,7 @@ export function LibraryProductDetailModal({
                   href={productUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-4 py-3 text-sm font-black tracking-[0.08em] text-white shadow-[0_1rem_2rem_rgba(15,23,42,0.22)] transition-colors hover:bg-slate-800"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-sky-500 px-4 py-3 text-sm font-black tracking-[0.08em] text-white shadow-[0_1rem_2rem_rgba(14,165,233,0.18)] transition-colors hover:bg-sky-600"
                 >
                   打开产品详情链接
                   <ExternalLink className="h-4 w-4" />
@@ -950,7 +950,7 @@ export function LibraryPage({
         type="button"
         onClick={handleBackToTop}
         aria-label="回到顶部"
-        className={`fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full border border-white/30 bg-slate-950/70 px-4 py-2 text-xs font-black text-white shadow-[0_1rem_2rem_rgba(15,23,42,0.18)] backdrop-blur-md transition-all duration-300 hover:border-sky-200/70 hover:bg-slate-900/78 sm:bottom-8 sm:right-8 ${
+        className={`fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/86 px-4 py-2 text-xs font-black text-sky-600 shadow-[0_1rem_2rem_rgba(14,165,233,0.14)] backdrop-blur-md transition-all duration-300 hover:border-sky-300 hover:bg-sky-50 sm:bottom-8 sm:right-8 ${
           showBackToTop
             ? "translate-y-0 opacity-100 pointer-events-auto"
             : "translate-y-3 opacity-0 pointer-events-none"

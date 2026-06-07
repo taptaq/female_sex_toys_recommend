@@ -53,7 +53,7 @@ export function ResultsRecalibrationPanel({
             <h3 className="text-sm font-medium text-white">
               对当前结果不满意？可以直接换一组
             </h3>
-            <p className="mt-1 text-xs leading-5 text-slate-400">
+            <p className="mt-1 text-xs leading-5 text-slate-500">
               先告诉我们你想怎么换，这会被记录成一次轻量反馈，帮助后续校准结果。
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -82,7 +82,7 @@ export function ResultsRecalibrationPanel({
 
         {isOpen ? (
           <div className="space-y-4 border-t border-white/8 pt-4">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
+            <div className="rounded-2xl border border-sky-100 bg-white/72 px-4 py-3">
               <p className="text-sm text-white">这次你更想怎么换一版？</p>
               <div className="mt-3 grid gap-2 sm:grid-cols-3">
                 {RECOMMENDATION_REROLL_REASON_OPTIONS.map((option) => {
@@ -93,12 +93,12 @@ export function ResultsRecalibrationPanel({
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => onSelectReason(option.id)}
-                      className={[
-                        "rounded-2xl border px-3 py-3 text-left transition-colors",
-                        isSelected
-                          ? "border-cyan-300/35 bg-cyan-300/14 text-cyan-50"
-                          : "border-white/8 bg-black/10 text-slate-200 hover:border-cyan-300/24 hover:bg-cyan-300/[0.08]",
-                      ].join(" ")}
+                  className={[
+                    "rounded-2xl border px-3 py-3 text-left transition-colors",
+                    isSelected
+                      ? "border-cyan-300/35 bg-cyan-300/14 text-cyan-50"
+                      : "border-sky-100 bg-white/72 text-slate-600 hover:border-cyan-300/24 hover:bg-cyan-50",
+                  ].join(" ")}
                     >
                       <p className="text-xs font-medium">{option.label}</p>
                       <p className="mt-1 text-[11px] leading-5 text-slate-400">
@@ -110,7 +110,7 @@ export function ResultsRecalibrationPanel({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-left">
+            <div className="rounded-2xl border border-sky-100 bg-white/72 px-4 py-3 text-left">
               <p className="text-sm text-slate-200">
                 这次会保留当前问卷和候选范围，只重新整理推荐顺序、说明理由和选购建议。
               </p>

@@ -599,8 +599,13 @@ test("legacy home starfield background has been removed from the home page bundl
   assert.doesNotMatch(homePageSource, /home-space-/);
   assert.doesNotMatch(homePageSource, /APP_THEME_HOME_COSMOS_IMAGE_BY_ID/);
   assert.doesNotMatch(homePageSource, /useHomePhotoTransitionEffect/);
+  assert.doesNotMatch(homePageSource, /bg-slate-950\/88/);
+  assert.doesNotMatch(homePageSource, /shadow-\[0_24px_90px_rgba\(2,8,23,0\.42\)\]/);
   assert.doesNotMatch(cssSource, /home-space-/);
   assert.doesNotMatch(cssSource, /home-panel-scan/);
+  assert.doesNotMatch(cssSource, /--app-bg: #0b101e/);
+  assert.doesNotMatch(cssSource, /--app-bg: #151116/);
+  assert.doesNotMatch(cssSource, /--app-bg: #07130f/);
   assert.doesNotMatch(themeSource, /home-cosmos/);
   assert.doesNotMatch(themeSource, /preloadAppThemeHomeCosmos/);
   assert.doesNotMatch(mainSource, /preloadAllAppThemeHomeCosmos/);
@@ -618,7 +623,8 @@ test("home page freezes current ambient motion without legacy home-space selecto
   );
 
   assert.doesNotMatch(cssSource, /transition-duration: 0ms !important;/);
-  assert.match(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(180deg, #040713, #070b18 48%, #050816\);/);
+  assert.doesNotMatch(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(180deg, #040713, #070b18 48%, #050816\);/);
+  assert.match(cssSource, /\.theme-home-route \{[\s\S]*linear-gradient\(165deg, #fff8ea 0%, #ffe9f1 46%, #dff3ff 100%\);/);
   assert.match(appSource, /effectiveShellRoute === "\/" \? "theme-home-route" : ""/);
   assert.match(appSource, /const shouldRenderThemeCosmosLayer =[\s\S]*currentRoute !== "\/"[\s\S]*shellRoute !== "\/"[\s\S]*!isFemaleMvpQuizRoute[\s\S]*!isFemaleMvpResultsRoute;/);
   assert.match(appSource, /\{shouldRenderThemeCosmosLayer \? \(\s*<ThemeCosmosLayer variant=\{themeCosmosVariant\} \/>/);

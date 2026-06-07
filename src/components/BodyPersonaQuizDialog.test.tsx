@@ -25,11 +25,11 @@ test("BodyPersonaQuizDialog renders the ten-question flow shell", () => {
   assert.doesNotMatch(html, /-mx-5/);
   assert.doesNotMatch(html, /sticky top-0 z-10/);
   assert.match(html, /min-h-0 flex-1 overflow-y-auto/);
-  assert.match(html, /shrink-0 border-t border-cyan-100\/10/);
+  assert.match(html, /shrink-0 border-t border-sky-100/);
   assert.match(html, /px-4 pt-4 sm:px-6 sm:pt-6/);
   assert.match(html, /px-4 py-4 sm:px-6/);
   assert.equal(
-    html.includes("bg-slate-950 px-3 py-2"),
+    html.includes("bg-sky-950/18 px-3 py-2"),
     true,
   );
   assert.equal(
@@ -38,7 +38,7 @@ test("BodyPersonaQuizDialog renders the ten-question flow shell", () => {
   );
   assert.equal(html.includes("sm:h-[calc(100dvh-1rem)]"), true);
   assert.equal(
-    html.includes("shadow-[0_18px_38px_rgba(2,8,23,0.34)]"),
+    html.includes("shadow-[0_1rem_2.4rem_rgba(125,211,252,0.14)]"),
     true,
   );
 });

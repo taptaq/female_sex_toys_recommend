@@ -5,59 +5,59 @@
 }
 
 body {
-  background-color: var(--app-bg, #0b101e);
-  color: var(--app-text, #e2e8f0);
+  background-color: var(--app-bg, #fff8ea);
+  color: var(--app-text, #334155);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 :root,
 :root[data-theme="inner-space"] {
-  --app-bg: #0b101e;
-  --app-text: #e2e8f0;
+  --app-bg: #fff8ea;
+  --app-text: #334155;
   --theme-accent: 34 211 238;
   --theme-accent-strong: 103 232 249;
   --theme-accent-2: 99 102 241;
-  --theme-surface: rgba(255, 255, 255, 0.03);
-  --theme-surface-strong: rgba(15, 23, 42, 0.72);
-  --theme-border: rgba(255, 255, 255, 0.08);
-  --theme-border-accent: rgba(103, 232, 249, 0.2);
-  --theme-muted: rgba(148, 163, 184, 0.72);
+  --theme-surface: rgba(255, 255, 255, 0.7);
+  --theme-surface-strong: rgba(255, 255, 255, 0.88);
+  --theme-border: rgba(125, 211, 252, 0.26);
+  --theme-border-accent: rgba(103, 232, 249, 0.36);
+  --theme-muted: rgba(71, 85, 105, 0.78);
   --theme-glow: rgba(34, 211, 238, 0.18);
-  --theme-panel-shadow: rgba(2, 8, 23, 0.42);
-  --knowledge-detail-bg: #030612;
+  --theme-panel-shadow: rgba(125, 211, 252, 0.18);
+  --knowledge-detail-bg: #f7fbff;
 }
 
 :root[data-theme="soft-signal"] {
-  --app-bg: #151116;
-  --app-text: #f5edf0;
+  --app-bg: #fff7fb;
+  --app-text: #334155;
   --theme-accent: 244 167 167;
   --theme-accent-strong: 253 186 116;
   --theme-accent-2: 134 239 172;
-  --theme-surface: rgba(255, 247, 237, 0.055);
-  --theme-surface-strong: rgba(37, 26, 31, 0.78);
-  --theme-border: rgba(254, 226, 226, 0.12);
-  --theme-border-accent: rgba(244, 167, 167, 0.28);
-  --theme-muted: rgba(226, 196, 205, 0.72);
+  --theme-surface: rgba(255, 255, 255, 0.7);
+  --theme-surface-strong: rgba(255, 255, 255, 0.9);
+  --theme-border: rgba(251, 207, 232, 0.34);
+  --theme-border-accent: rgba(244, 167, 167, 0.34);
+  --theme-muted: rgba(100, 116, 139, 0.78);
   --theme-glow: rgba(244, 167, 167, 0.18);
-  --theme-panel-shadow: rgba(32, 14, 20, 0.42);
-  --knowledge-detail-bg: #151015;
+  --theme-panel-shadow: rgba(251, 207, 232, 0.2);
+  --knowledge-detail-bg: #fff7fb;
 }
 
 :root[data-theme="sync-field"] {
-  --app-bg: #07130f;
-  --app-text: #ecfdf5;
+  --app-bg: #f5fffb;
+  --app-text: #334155;
   --theme-accent: 45 212 191;
   --theme-accent-strong: 94 234 212;
   --theme-accent-2: 251 113 133;
-  --theme-surface: rgba(236, 253, 245, 0.045);
-  --theme-surface-strong: rgba(6, 31, 26, 0.8);
-  --theme-border: rgba(204, 251, 241, 0.1);
-  --theme-border-accent: rgba(45, 212, 191, 0.26);
-  --theme-muted: rgba(167, 243, 208, 0.66);
+  --theme-surface: rgba(255, 255, 255, 0.7);
+  --theme-surface-strong: rgba(255, 255, 255, 0.88);
+  --theme-border: rgba(153, 246, 228, 0.3);
+  --theme-border-accent: rgba(45, 212, 191, 0.32);
+  --theme-muted: rgba(71, 85, 105, 0.76);
   --theme-glow: rgba(45, 212, 191, 0.18);
-  --theme-panel-shadow: rgba(2, 20, 16, 0.46);
-  --knowledge-detail-bg: #06110d;
+  --theme-panel-shadow: rgba(153, 246, 228, 0.2);
+  --knowledge-detail-bg: #f4fff9;
 }
 
 .theme-synced-page {
@@ -74,8 +74,13 @@ body {
 
 .theme-home-route {
   background:
-    radial-gradient(ellipse at 50% 12%, rgba(14, 165, 233, 0.045), transparent 38%),
-    linear-gradient(180deg, #040713, #070b18 48%, #050816);
+    radial-gradient(circle at 16% 16%, rgba(255, 255, 255, 0.92) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 84% 18%, rgba(255, 255, 255, 0.84) 0 0.12rem, transparent 0.14rem),
+    radial-gradient(circle at 74% 72%, rgba(255, 255, 255, 0.72) 0 0.14rem, transparent 0.16rem),
+    radial-gradient(ellipse at 48% 10%, rgba(255, 255, 255, 0.78), transparent 42%),
+    radial-gradient(circle at 18% 24%, rgba(251, 207, 232, 0.78), transparent 32%),
+    radial-gradient(circle at 86% 20%, rgba(186, 230, 253, 0.72), transparent 34%),
+    linear-gradient(165deg, #fff8ea 0%, #ffe9f1 46%, #dff3ff 100%);
 }
 
 .female-mvp-soft-shell {
@@ -90,7 +95,14 @@ body {
 }
 
 .female-mvp-home-route {
-  background: inherit;
+  background:
+    radial-gradient(circle at 16% 16%, rgba(255, 255, 255, 0.92) 0 0.16rem, transparent 0.18rem),
+    radial-gradient(circle at 84% 18%, rgba(255, 255, 255, 0.84) 0 0.12rem, transparent 0.14rem),
+    radial-gradient(circle at 74% 72%, rgba(255, 255, 255, 0.72) 0 0.14rem, transparent 0.16rem),
+    radial-gradient(ellipse at 48% 10%, rgba(255, 255, 255, 0.78), transparent 42%),
+    radial-gradient(circle at 18% 24%, rgba(251, 207, 232, 0.78), transparent 32%),
+    radial-gradient(circle at 86% 20%, rgba(186, 230, 253, 0.72), transparent 34%),
+    linear-gradient(165deg, #fff8ea 0%, #ffe9f1 46%, #dff3ff 100%);
 }
 
 .female-mvp-results-route {
@@ -3599,7 +3611,6 @@ textarea:disabled {
 }
 
 .female-mvp-auth-entry {
-  max-width: 8.6rem;
   overflow: hidden;
   border: 1px solid rgba(186, 230, 253, 0.78);
   border-radius: 999px;
@@ -5487,10 +5498,6 @@ textarea:disabled {
 .female-mvp-results .bg-white\/\[0\.03\],
 .female-mvp-results .bg-white\/\[0\.035\] {
   background-color: rgba(255, 255, 255, 0.64) !important;
-}
-
-.female-mvp-results .bg-black\/10 {
-  background-color: rgba(255, 255, 255, 0.54) !important;
 }
 
 .female-mvp-results .female-mvp-result-share-card {

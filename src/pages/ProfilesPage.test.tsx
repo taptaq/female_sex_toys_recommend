@@ -124,6 +124,23 @@ test("profiles page renders saved equipment matching profiles", () => {
   assert.doesNotMatch(html, /我的收藏/);
 });
 
+test("profiles page exposes a delete action for each saved profile", () => {
+  const html = renderToStaticMarkup(
+    <ProfilesPage
+      profiles={[profile]}
+      isLoading={false}
+      error={null}
+      userLabel="taptaq"
+      onBack={() => {}}
+      onReload={() => {}}
+      onDeleteProfile={() => {}}
+    />,
+  );
+
+  assert.match(html, /删除档案/);
+  assert.match(html, /aria-label="删除档案：Nebula Pick 等 2 个推荐"/);
+});
+
 test("profiles page renders an empty state", () => {
   const html = renderToStaticMarkup(
     <ProfilesPage
@@ -167,7 +184,7 @@ test("profiles detail dedupes saved preference tags and localizes answer values"
   assert.equal(
     (
       html.match(
-        /<span class="rounded-full border border-cyan-300\/14 bg-cyan-300\/8 px-2\.5 py-1 text-xs text-cyan-100\/75">≥ IPX7 防水<\/span>/g,
+        /<span class="rounded-full border border-sky-200 bg-sky-50 px-2\.5 py-1 text-xs font-black text-sky-600">≥ IPX7 防水<\/span>/g,
       ) || []
     ).length,
     1,
@@ -310,10 +327,39 @@ test("profiles page gives mobile users a calmer stacked archive layout and a wid
   );
 
   assert.match(html, /gap-3 sm:gap-4/);
-  assert.match(html, /max-h-\[92dvh\] w-full max-w-4xl/);
-  assert.match(html, /grid gap-3 xl:grid-cols-\[minmax\(0,1\.1fr\)_minmax\(0,0\.9fr\)\]/);
+  assert.match(html, /profiles-vault-shell relative isolate flex min-h-dvh w-full flex-col/);
+  assert.match(html, /grid flex-1 content-start gap-3/);
+  assert.match(html, /fixed inset-0 z-50 overflow-y-auto/);
+  assert.match(html, /min-h-dvh w-full/);
+  assert.match(html, /mx-auto flex min-h-dvh w-full max-w-5xl flex-col/);
+  assert.match(html, /rounded-\[1\.75rem\] border border-white\/70 bg-white\/72 p-4/);
+  assert.match(html, /grid flex-1 content-start gap-3/);
+  assert.doesNotMatch(html, /max-h-\[92dvh\] w-full max-w-4xl/);
+  assert.match(html, /grid flex-1 content-start gap-3 xl:grid-cols-\[minmax\(0,1\.1fr\)_minmax\(0,0\.9fr\)\]/);
   assert.match(html, /sticky top-0 z-10 mb-5/);
-  assert.match(html, /w-full sm:w-auto/);
+  assert.match(html, /flex flex-col gap-3[\s\S]*sm:flex-row/);
+  assert.match(html, /h-9 w-9 shrink-0/);
+  assert.doesNotMatch(html, /w-full shrink-0[\s\S]*sm:w-auto/);
+});
+
+test("profiles page uses the Luna light-glass theme instead of the old dark vault", () => {
+  const html = renderToStaticMarkup(
+    <ProfilesPage
+      profiles={[detailedProfile]}
+      isLoading={false}
+      error={null}
+      userLabel="taptaq"
+      initialSelectedProfile={detailedProfile}
+      onBack={() => {}}
+      onReload={() => {}}
+    />,
+  );
+
+  assert.match(html, /bg-white\/76/);
+  assert.match(html, /text-slate-950/);
+  assert.match(html, /bg-\[linear-gradient\(165deg,rgba\(255,248,250,0\.98\)/);
+  assert.doesNotMatch(html, /bg-slate-950\/72/);
+  assert.doesNotMatch(html, /border-cyan-100\/10 bg-slate-950/);
 });
 
 test("profiles detail keeps dense secondary sections in a separate right rail on large screens while staying single-column on mobile", () => {

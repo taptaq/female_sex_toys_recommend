@@ -7,7 +7,7 @@ import {
 } from "../lib/product-image-placeholders.ts";
 
 const DEFAULT_FALLBACK_CLASS_NAME =
-  "bg-gradient-to-br from-slate-900/90 via-slate-800/95 to-cyan-950/90";
+  "bg-gradient-to-br from-sky-50 via-white to-rose-50";
 
 function isRenderableProductImageSource(value: string) {
   const trimmed = value.trim();

@@ -214,26 +214,26 @@ export function BodyPersonaResultPanel({
   const isUnlocked = status === "unlocked" && !!fullReport;
 
   return (
-    <section className="relative z-10 overflow-hidden rounded-[1.75rem] border border-cyan-200/14 bg-slate-950/56 p-5 shadow-[0_24px_90px_rgba(8,47,73,0.2)] sm:p-6">
+    <section className="relative z-10 overflow-hidden rounded-[1.75rem] border border-sky-100 bg-white/82 p-5 text-slate-900 shadow-[0_1.4rem_3.5rem_rgba(125,211,252,0.16)] backdrop-blur-xl sm:p-6">
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/45 to-transparent" />
       <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <div className="rounded-3xl border border-cyan-300/14 bg-cyan-300/[0.055] p-4">
-          <p className="text-[11px] tracking-[0.24em] text-cyan-200/68">
+        <div className="rounded-3xl border border-sky-100 bg-sky-50/72 p-4">
+          <p className="text-[11px] font-black tracking-[0.24em] text-sky-500/76">
             身体人格画像
           </p>
-          <h3 className="mt-2 text-xl font-medium text-white">
+          <h3 className="mt-2 text-xl font-black text-slate-950">
             {freeSummary.title}
           </h3>
-          <p className="mt-3 text-sm leading-6 text-slate-200">
+          <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
             {isUnlocked && fullReport?.portraitShort
               ? fullReport.portraitShort
               : freeSummary.blurb}
           </p>
-          <div className="mt-4 rounded-2xl border border-white/8 bg-white/[0.045] p-3">
-            <p className="text-[11px] tracking-wide text-cyan-100/80">
+          <div className="mt-4 rounded-2xl border border-sky-100 bg-white/78 p-3">
+            <p className="text-[11px] font-black tracking-wide text-sky-700">
               为什么会是这个类型
             </p>
-            <p className="mt-2 text-[13px] leading-6 text-slate-300">
+            <p className="mt-2 text-[13px] font-semibold leading-6 text-slate-600">
               {isUnlocked && fullReport?.whyYouAreThis
                 ? fullReport.whyYouAreThis
                 : freeSummary.why}
@@ -242,16 +242,16 @@ export function BodyPersonaResultPanel({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <div className="mb-2 flex items-center gap-2 text-cyan-100/84">
+          <div className="rounded-2xl border border-sky-100 bg-white/78 p-4">
+            <div className="mb-2 flex items-center gap-2 text-sky-700">
               <Sparkles className="h-3.5 w-3.5" />
-              <p className="text-[11px] tracking-wide">对这次结果的补充提示</p>
+              <p className="text-[11px] font-black tracking-wide">对这次结果的补充提示</p>
             </div>
             <ul className="space-y-1.5">
               {freeSummary.hints.map((hint, index) => (
                 <li
                   key={`${hint}-${index}`}
-                  className="text-[13px] leading-6 text-slate-300"
+                  className="text-[13px] font-semibold leading-6 text-slate-600"
                 >
                   {hint}
                 </li>
@@ -260,43 +260,43 @@ export function BodyPersonaResultPanel({
           </div>
 
           {isUnlocked && fullReport ? (
-            <div className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.05] p-4">
-              <p className="text-[11px] tracking-wide text-cyan-100/82">
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/72 p-4">
+              <p className="text-[11px] font-black tracking-wide text-sky-700">
                 完整星系人格档案已解锁
               </p>
-              <p className="mt-2 text-[13px] leading-6 text-slate-200">
+              <p className="mt-2 text-[13px] font-semibold leading-6 text-slate-600">
                 {fullReport.bestRouteSummary}
               </p>
-              <p className="mt-2 text-[12px] leading-5 text-cyan-100/70">
+              <p className="mt-2 text-[12px] font-semibold leading-5 text-sky-700">
                 可随时回看你的主人格画像、隐藏路线、副人格倾向与长期路线建议，作为当前主推荐之外的长期补充。
               </p>
               <button
                 type="button"
                 onClick={() => onOpenFullReport?.()}
-                className="mt-4 inline-flex items-center justify-center rounded-full border border-cyan-300/22 bg-cyan-300/12 px-4 py-2 text-sm text-cyan-50 transition-colors hover:border-cyan-200/40 hover:bg-cyan-300/18"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-sky-200 bg-sky-500 px-4 py-2 text-sm font-black text-white transition-colors hover:bg-sky-600"
               >
                 再次查看完整档案
               </button>
             </div>
           ) : (
-            <div className="rounded-2xl border border-cyan-300/14 bg-cyan-300/[0.05] p-4">
-              <div className="flex items-center gap-2 text-cyan-100/84">
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/72 p-4">
+              <div className="flex items-center gap-2 text-sky-700">
                 <LockKeyhole className="h-3.5 w-3.5" />
-                <p className="text-[11px] tracking-wide">完整星系人格档案已锁定</p>
+                <p className="text-[11px] font-black tracking-wide">完整星系人格档案已锁定</p>
               </div>
-              <p className="mt-2 text-[13px] leading-6 text-slate-300">
+              <p className="mt-2 text-[13px] font-semibold leading-6 text-slate-600">
                 {requiresLoginBeforeUnlock
                   ? "登录后可解锁完整星系人格档案，查看你的主人格画像、隐藏路线、副人格倾向，以及长期更适合的体验路线与产品方向。"
                   : "0.5 元解锁完整星系人格档案，查看主人格画像、隐藏路线、副人格倾向，以及长期更适合的体验路线与产品方向。"}
               </p>
-              <p className="mt-2 text-[12px] leading-5 text-cyan-100/70">
+              <p className="mt-2 text-[12px] font-semibold leading-5 text-sky-700">
                 0.5 元一次解锁，可随时回看；它补充的是长期适配方向，不会替代这次主推荐。
               </p>
               <button
                 type="button"
                 onClick={() => void onUnlock()}
                 disabled={isUnlocking}
-                className="mt-4 inline-flex items-center justify-center rounded-full border border-cyan-300/22 bg-cyan-300/12 px-4 py-2 text-sm text-cyan-50 transition-colors hover:border-cyan-200/40 hover:bg-cyan-300/18 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex items-center justify-center rounded-full border border-sky-200 bg-sky-500 px-4 py-2 text-sm font-black text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isUnlocking
                   ? "正在解锁中"
