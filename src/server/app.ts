@@ -83,6 +83,8 @@ import {
 } from "./user-favorites-route.js";
 import { createEmailRegistrationHandler } from "./email-register-route.js";
 import { createEmailRegistrationService } from "./email-register-service.js";
+import { createFeedbackEmailNotifier } from "./feedback-email-notifier.js";
+import { createFeedbackScreenshotStorage } from "./feedback-screenshot-storage.js";
 
 dotenv.config();
 
@@ -90,6 +92,7 @@ const { Pool } = pg;
 const app = express();
 const AI_RERANK_MAX_TOKENS = 1200;
 const AI_ENHANCEMENT_MAX_TOKENS = 1800;
+const JSON_BODY_LIMIT = "25mb";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -143,6 +146,27 @@ const getUserFavoritesStore = createLazyValue(() =>
 const getUserFeedbackStore = createLazyValue(() =>
   createUserFeedbackStore({ pool }),
 );
+const getFeedbackScreenshotStorage = createLazyValue(() =>
+  createFeedbackScreenshotStorage({
+    supabaseUrl: process.env.VITE_SUPABASE_URL,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    bucket: process.env.FEEDBACK_SCREENSHOT_BUCKET || "feedback-screenshots",
+  }),
+);
+const getFeedbackEmailNotifier = createLazyValue(() =>
+  createFeedbackEmailNotifier({
+    provider: process.env.FEEDBACK_NOTIFY_PROVIDER === "smtp" ? "smtp" : "resend",
+    apiKey: process.env.RESEND_API_KEY,
+    to: process.env.FEEDBACK_NOTIFY_TO || "2902716634@qq.com",
+    from: process.env.FEEDBACK_NOTIFY_FROM,
+    smtp: {
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || "465"),
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  }),
+);
 const getRecommendationFeedbackStore = createLazyValue(() =>
   createRecommendationFeedbackStore({ pool }),
 );
@@ -172,6 +196,8 @@ const getSupabaseAccessTokenVerifier = createLazyValue(() =>
 const getSaveUserFeedbackHandler = createLazyValue(() =>
   createSaveUserFeedbackHandler({
     store: getUserFeedbackStore(),
+    screenshotStorage: getFeedbackScreenshotStorage(),
+    notifier: getFeedbackEmailNotifier(),
   }),
 );
 const getSaveRecommendationFeedbackEventHandler = createLazyValue(() =>
@@ -255,7 +281,7 @@ const getDeleteFavoriteHandler = createLazyValue(() =>
   }),
 );
 
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: JSON_BODY_LIMIT }));
 
 pool.on("error", (error) => {
   console.error("💥 [Server/DB] 数据库连接池发生灾难性错误:", error);
@@ -263,6 +289,15 @@ pool.on("error", (error) => {
 
 function ensureDatabaseConfigured() {
   getRequiredServerEnv("DATABASE_URL");
+}
+
+function isEntityTooLargeError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "type" in error &&
+    error.type === "entity.too.large"
+  );
 }
 
 function withRouteInitialization(
@@ -596,6 +631,14 @@ app.use(((error, _req, res, _next) => {
   console.error("💥 [Server] 路由初始化或处理中断:", error);
 
   if (res.headersSent) {
+    return;
+  }
+
+  if (isEntityTooLargeError(error)) {
+    res.status(413).json({
+      error: "Feedback payload too large",
+      details: "反馈截图太大，请减少截图数量或换用更小的图片后重试",
+    });
     return;
   }
 

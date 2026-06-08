@@ -144,6 +144,20 @@ test("female MVP home shows a lightweight login entry without inline account for
   assert.doesNotMatch(html, />收藏</);
 });
 
+test("female MVP auth modal wires a general feedback entrance into the auth panel", () => {
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
+
+  assert.match(homePageSource, /function openFeedbackFromFemaleMvpAuth\(\)/);
+  assert.match(homePageSource, /closeFemaleMvpAuthOverlay\(\);\s+openFeedbackModal\(\);/);
+  assert.match(
+    homePageSource,
+    /<AuthPanel\s+\{\.{3}authPanel\}\s+surface="modal"\s+onOpenFeedback=\{openFeedbackFromFemaleMvpAuth\}/,
+  );
+});
+
 test("home auth overlay exposes dialog semantics for keyboard-accessible dismissal", () => {
   const html = renderToStaticMarkup(
     <HomeAuthOverlay onClose={() => {}}>
@@ -852,9 +866,13 @@ test("female MVP login overlay wires auth panel actions into the modal flow", ()
 
   assert.match(homePageSource, /function FemaleMvpAuthEntry/);
   assert.match(homePageSource, /setIsAuthPanelOpen\(true\)/);
-  assert.match(homePageSource, /<AuthPanel \{\.\.\.authPanel\} surface="modal" \/>/);
+  assert.match(
+    homePageSource,
+    /<AuthPanel\s+\{\.{3}authPanel\}\s+surface="modal"\s+onOpenFeedback=\{openFeedbackFromFemaleMvpAuth\}/,
+  );
   assert.match(homePageSource, /onOpenProfiles/);
   assert.match(homePageSource, /onOpenFavorites/);
+  assert.match(homePageSource, /openFeedbackFromFemaleMvpAuth/);
   assert.match(cssSource, /\.female-mvp-auth-entry \{/);
   assert.match(cssSource, /\.female-mvp-auth-modal-shell \{/);
 });
@@ -891,7 +909,7 @@ test("female MVP home does not expose theme switching by default", () => {
 test("home page feedback screenshot planning respects reserved capacity and reports validation issues", () => {
   const planned = planHomeFeedbackScreenshotSelection({
     currentCount: 1,
-    reservedCount: 1,
+    reservedCount: 0,
     selectedTypes: ["image/png", "image/gif", "image/jpeg", "image/webp"],
   });
 
@@ -899,14 +917,14 @@ test("home page feedback screenshot planning respects reserved capacity and repo
   assert.equal(planned.invalidTypeCount, 1);
   assert.equal(planned.overflowCount, 2);
   assert.equal(planned.remainingCapacity, 1);
-  assert.equal(planned.nextReservedCount, 2);
+  assert.equal(planned.nextReservedCount, 1);
   assert.equal(planned.hasInvalidTypeError, true);
   assert.equal(planned.hasOverflowError, true);
 });
 
 test("home page feedback screenshot planning blocks additions when capacity is already reserved", () => {
   const planned = planHomeFeedbackScreenshotSelection({
-    currentCount: 2,
+    currentCount: 1,
     reservedCount: 1,
     selectedTypes: ["image/png"],
   });
@@ -927,7 +945,38 @@ test("female MVP home keeps feedback modal mounted without rendering a feedback 
   assert.match(homePageSource, /<HomeFeedbackModal/);
   assert.doesNotMatch(html, /意见反馈/);
   assert.doesNotMatch(html, /反馈内容/);
-  assert.doesNotMatch(html, /截图上传（可选，最多 3 张）/);
+  assert.doesNotMatch(html, /截图上传（可选，最多 2 张）/);
+});
+
+test("home page feedback modal passes optional selected page route to submission", () => {
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
+
+  assert.match(homePageSource, /const \[feedbackPageRoute, setFeedbackPageRoute\] = useState\(""\)/);
+  assert.match(homePageSource, /pageRoute: feedbackPageRoute \|\| "\/"/);
+  assert.match(homePageSource, /setFeedbackPageRoute\(""\)/);
+  assert.match(homePageSource, /pageRoute=\{feedbackPageRoute\}/);
+  assert.match(homePageSource, /onPageRouteChange=\{\(pageRoute\) => \{/);
+  assert.match(homePageSource, /setFeedbackPageRoute\(pageRoute\)/);
+});
+
+test("home page shows a global success toast after feedback submission", () => {
+  const homePageSource = fs.readFileSync(
+    path.resolve(process.cwd(), "src/pages/HomePage.tsx"),
+    "utf8",
+  );
+  const cssSource = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
+
+  assert.match(homePageSource, /const \[feedbackSuccessToast, setFeedbackSuccessToast\] = useState<string \| null>\(null\)/);
+  assert.match(homePageSource, /const feedbackSuccessToastTimeoutRef = useRef<number \| null>\(null\)/);
+  assert.match(homePageSource, /setFeedbackSuccessToast\("已收到反馈，谢谢你帮 Luna 变好"\)/);
+  assert.match(homePageSource, /setIsFeedbackModalOpen\(false\);\s+setFeedbackSuccessToast/);
+  assert.match(homePageSource, /role="status"/);
+  assert.match(homePageSource, /aria-live="polite"/);
+  assert.match(homePageSource, /home-feedback-success-toast/);
+  assert.match(cssSource, /\.home-feedback-success-toast \{/);
 });
 
 test("theme switch stabilization also suppresses heavy shell and panel transitions without legacy photo crossfade rules", () => {

@@ -47,6 +47,8 @@
     "db:clean:gender-fields": "tsx -r dotenv/config src/db/clean-all-gender-fields.ts",
     "db:clean:duplicates": "tsx -r dotenv/config src/db/clean-duplicate-products-and-toys.ts",
     "db:clean:price-images": "tsx -r dotenv/config src/db/clean-price-image-placeholders.ts",
+    "db:clean:female-device-specs": "tsx -r dotenv/config src/db/clean-female-recommender-toy-device-specs.ts",
+    "db:refresh:xiaoguaishou-device-features": "tsx -r dotenv/config src/db/refresh-xiaoguaishou-device-specs-and-features.ts",
     "db:clean:competitor-countries": "tsx -r dotenv/config src/db/clean-competitor-country-fields.ts",
     "db:purge:obvious-non-gear": "tsx -r dotenv/config src/db/purge-obvious-non-gear.ts",
     "db:refetch:tmall-linked-products": "tsx -r dotenv/config src/db/refetch-tmall-linked-products.ts",

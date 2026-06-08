@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
+import { KeyRound, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
 
 export type AuthPanelMode = "signin" | "signup";
 
@@ -11,7 +11,30 @@ type AuthPanelProps = {
   surface?: "embedded" | "modal";
   onSubmit: (mode: AuthPanelMode, email: string, password: string) => Promise<void>;
   onSignOut: () => Promise<void>;
+  onOpenFeedback?: () => void;
 };
+
+function AuthPanelFeedbackEntry({ onOpenFeedback }: { onOpenFeedback?: () => void }) {
+  if (!onOpenFeedback) {
+    return null;
+  }
+
+  return (
+    <div className="auth-panel-feedback-entry mt-4 rounded-2xl border border-rose-100/80 bg-rose-50/55 px-3 py-3">
+      <p className="flex items-center gap-2 text-xs font-black text-slate-600">
+        <MessageCircle className="h-3.5 w-3.5 text-rose-400" />
+        有想法或问题
+      </p>
+      <button
+        type="button"
+        onClick={onOpenFeedback}
+        className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-rose-200/80 bg-white/76 px-3 py-2 text-xs font-black tracking-wider text-rose-500 transition-colors hover:border-rose-300 hover:bg-rose-50 sm:w-auto"
+      >
+        意见反馈
+      </button>
+    </div>
+  );
+}
 
 export function AuthPanel({
   isConfigured,
@@ -21,6 +44,7 @@ export function AuthPanel({
   surface = "embedded",
   onSubmit,
   onSignOut,
+  onOpenFeedback,
 }: AuthPanelProps) {
   const [mode, setMode] = useState<AuthPanelMode>("signin");
   const [email, setEmail] = useState("");
@@ -58,6 +82,7 @@ export function AuthPanel({
         {statusMessage && (
           <p className="mt-3 text-xs font-semibold leading-5 text-emerald-700">{statusMessage}</p>
         )}
+        <AuthPanelFeedbackEntry onOpenFeedback={onOpenFeedback} />
       </div>
     );
   }
@@ -126,6 +151,7 @@ export function AuthPanel({
       {statusMessage && (
         <p className="mt-3 text-xs font-semibold leading-5 text-sky-700">{statusMessage}</p>
       )}
+      <AuthPanelFeedbackEntry onOpenFeedback={onOpenFeedback} />
     </form>
   );
 }

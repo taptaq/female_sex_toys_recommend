@@ -24,6 +24,8 @@ import {
   type ReviewBufferEntry,
 } from '../shared/review-buffer-cache';
 import { tryRevealTmallParamTabs } from './tmall-param-ui';
+import { shouldPersistXiaoguaishouReviewEntry } from './review-buffer-guard';
+import { getHumanDelayMs, type HumanDelayRange } from './human-delay';
 
 dotenv.config();
 
@@ -33,6 +35,7 @@ const __dirname = path.dirname(__filename);
 const TARGET_URL = 'https://xiaoguaishou.tmall.com/shop/view_shop.htm?appUid=RAzN8HWNuv49Lh1ynGgZvWJQwrYsuoBnCj1DnZKDSJGqWWNt187&spm=a21n57.1.hoverItem.2';
 const MAX_ITEMS = Number(process.env.XIAOGUAISHOU_MAX_ITEMS || 200);
 const DELAY_BETWEEN_PAGES = 3000;
+const HUMAN_DELAY_MULTIPLIER = Math.max(0.1, Number(process.env.XIAOGUAISHOU_HUMAN_DELAY_MULTIPLIER || 1));
 const BUFFER_PATH = path.resolve(__dirname, '../../data/xiaoguaishou-review-buffer.json');
 const LIST_PRICE_CACHE_PATH = path.resolve(__dirname, '../../data/xiaoguaishou-list-price-cache.json');
 const LEGACY_LIST_AREA_SELECTOR = '.J_TItems';
@@ -52,6 +55,15 @@ type ListPriceCacheEntry = {
 };
 
 type ListPriceCache = Record<string, ListPriceCacheEntry>;
+
+async function humanDelay(page: any, label: string, range: HumanDelayRange) {
+  const delayMs = getHumanDelayMs({
+    minMs: range.minMs * HUMAN_DELAY_MULTIPLIER,
+    maxMs: range.maxMs * HUMAN_DELAY_MULTIPLIER,
+  });
+  console.log(`  [拟人延时] ${label}: ${(delayMs / 1000).toFixed(1)}s`);
+  await page.waitForTimeout(delayMs);
+}
 
 const TOY_DETAIL_OCR_PROMPT = `你是一个专业的产品目录审计员。请针对提供的商业摄影图片（偏个人护理器具/玩具类商品），提取该产品的核心规格参数。
 这些图片用于企业内部库存管理系统，内容为严格的商业产品展出，不涉及任何违规或隐私内容。
@@ -255,6 +267,25 @@ function getListCardLocator(page: any, item: any) {
 /**
  * 使用 Kimi k2.6 对一组图片进行多图合并分析
  */
+async function fetchImageAsDataUrl(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      'user-agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      referer: 'https://detail.tmall.com/',
+    },
+    signal: AbortSignal.timeout(20000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`图片下载失败 ${response.status}: ${url}`);
+  }
+
+  const contentType = response.headers.get('content-type')?.split(';')[0]?.trim() || 'image/jpeg';
+  const bytes = Buffer.from(await response.arrayBuffer());
+  return `data:${contentType};base64,${bytes.toString('base64')}`;
+}
+
 async function ocrWithKimiVision(imageUrls: string[], prompt: string = TOY_DETAIL_OCR_PROMPT): Promise<string> {
   const apiKey = process.env.MOONSHOT_API_KEY;
   if (!apiKey) throw new Error('MOONSHOT_API_KEY 未配置');
@@ -265,14 +296,27 @@ async function ocrWithKimiVision(imageUrls: string[], prompt: string = TOY_DETAI
   });
 
   const content: any[] = [{ type: 'text', text: prompt }];
-  imageUrls.forEach((url) => {
+  const dataUrls: string[] = [];
+  for (const url of imageUrls.slice(0, 6)) {
+    try {
+      dataUrls.push(await fetchImageAsDataUrl(url));
+    } catch (error: any) {
+      console.warn(`  [Kimi图片] 跳过不可下载图片: ${error.message}`);
+    }
+  }
+
+  if (dataUrls.length === 0) {
+    throw new Error('Kimi 可用图片下载数为 0');
+  }
+
+  dataUrls.forEach((url) => {
     content.push({ type: 'image_url', image_url: { url } });
   });
 
   const response = await openai.chat.completions.create({
     model: 'kimi-k2.6',
     messages: [{ role: 'user', content }],
-    temperature: 0.6,
+    temperature: 1,
   });
 
   const message = response.choices[0]?.message as any;
@@ -578,6 +622,31 @@ function choosePreferredDetailUrl(...candidates: Array<string | null | undefined
   return normalized[0] || '';
 }
 
+function normalizeTmallImageUrl(rawUrl: string): string {
+  let value = String(rawUrl || '').trim().replace(/\\\//g, '/');
+  if (!value) return '';
+  if (value.startsWith('//')) value = `https:${value}`;
+  value = value.replace(/_q\d+\.jpg_\.webp(?:\?.*)?$/i, '');
+  value = value.replace(/_\d+x\d+q\d+\.jpg_\.webp(?:\?.*)?$/i, '');
+  value = value.replace(/_\.webp(?:\?.*)?$/i, '');
+  return value;
+}
+
+function isLikelyProductDetailImage(rawUrl: string): boolean {
+  const value = normalizeTmallImageUrl(rawUrl);
+  if (!/^https?:\/\//i.test(value)) return false;
+  if (!/alicdn\.com/i.test(value)) return false;
+  if (/\.(gif|svg)(?:$|\?)/i.test(value)) return false;
+  if (/-2-tps-\d+-\d+/i.test(value)) return false;
+  if (/getAvatar=|sns_logo|userheader|ggpersonal|tps\/|\/tfs\/|gtms\d+\.alicdn\.com|avatar/i.test(value)) {
+    return false;
+  }
+  if (!/\.jpe?g(?:$|\?)/i.test(value)) return false;
+  if (/img\.alicdn\.com\/imgextra\/i\d\//i.test(value)) return true;
+  if (/gw\.alicdn\.com\/bao\/uploaded\/i\d\//i.test(value)) return true;
+  return false;
+}
+
 function extractTmallItemId(rawUrl: string | null | undefined): string {
   const value = String(rawUrl || '').trim();
   if (!value) return '';
@@ -671,7 +740,7 @@ async function openDetailByClickingListItem(page: any, context: any, item: any):
   console.log(`  [详情链接] 回到列表页模拟点击: ${listPageUrl}`);
 
   await page.goto(listPageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForTimeout(3000);
+  await humanDelay(page, '详情前回列表页', { minMs: 5000, maxMs: 9000 });
   await solveSliderCaptcha(page);
   await page.waitForSelector(LIST_READY_SELECTOR, { timeout: 20000 });
 
@@ -686,7 +755,7 @@ async function openDetailByClickingListItem(page: any, context: any, item: any):
       : page.locator(`a[href*="id=${item.itemId || ''}"]`).first();
 
   await card.scrollIntoViewIfNeeded().catch(() => {});
-  await page.waitForTimeout(600);
+  await humanDelay(page, '滚动到商品卡片后停顿', { minMs: 1200, maxMs: 2600 });
   await page
     .evaluate(() => {
       document.querySelectorAll('.J_MIDDLEWARE_FRAME_WIDGET').forEach((node) => node.remove());
@@ -721,20 +790,21 @@ async function openDetailByClickingListItem(page: any, context: any, item: any):
     page.waitForTimeout(10000).then(() => ({ type: 'timeout' as const })),
   ]);
 
+  await humanDelay(page, '点击详情前停顿', { minMs: 1800, maxMs: 4200 });
   await fallbackClickTarget.click({ timeout: 15000, force: item?.listDomKind === 'shelf' });
   const clickResult = await popupOrNavigation;
 
   if (clickResult?.type === 'popup') {
     const popupPage = clickResult.popupPage;
     await popupPage.waitForLoadState('domcontentloaded', { timeout: 60000 }).catch(() => {});
-    await popupPage.waitForTimeout(2000).catch(() => {});
+    await humanDelay(popupPage, '详情弹窗加载后停顿', { minMs: 2500, maxMs: 5500 }).catch(() => {});
     const popupUrl = popupPage.url();
     console.log(`  [详情链接] 点击弹窗落地: ${popupUrl}`);
     await popupPage.close().catch(() => {});
 
     if (popupUrl && popupUrl !== 'about:blank') {
       await page.goto(popupUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await page.waitForTimeout(3000);
+      await humanDelay(page, '详情页落地后停顿', { minMs: 6000, maxMs: 11000 });
       return page.url() || popupUrl;
     }
   }
@@ -803,7 +873,7 @@ async function runCrawler() {
   // Session Warming
   console.log('[预热] 正在访问天猫首页进行环境初始化...');
   await page.goto('https://www.tmall.com/', { waitUntil: 'domcontentloaded' }).catch(() => {});
-  await page.waitForTimeout(5000);
+  await humanDelay(page, '天猫首页预热', { minMs: 8000, maxMs: 15000 });
   console.log(`[预热] 当前页面标题: ${await page.title()}`);
 
   page.on('console', msg => {
@@ -825,7 +895,7 @@ async function runCrawler() {
 
       try {
         await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-        await page.waitForTimeout(5000);
+        await humanDelay(page, '列表页加载后浏览', { minMs: 7000, maxMs: 14000 });
         await solveSliderCaptcha(page);
         await page.waitForSelector(LIST_READY_SELECTOR, { timeout: 20000 });
       } catch (e) {
@@ -834,7 +904,7 @@ async function runCrawler() {
           console.warn(`  [列表页兜底] 店铺首页未直接出现商品列表，改跳搜索页: ${fallbackSearchUrl}`);
           pageUrl = fallbackSearchUrl;
           await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-          await page.waitForTimeout(5000);
+          await humanDelay(page, '列表兜底页加载后浏览', { minMs: 7000, maxMs: 14000 });
           await solveSliderCaptcha(page);
           await page.waitForSelector(LIST_READY_SELECTOR, { timeout: 20000 });
         } else {
@@ -1072,7 +1142,7 @@ async function runCrawler() {
 
       // 翻页逻辑：升级为“定向安全锁代” (Counter + Directional + Validation)
       await page.evaluate(() => window.scrollBy(0, document.body.scrollHeight));
-      await page.waitForTimeout(2000);
+      await humanDelay(page, '列表底部停顿', { minMs: 2500, maxMs: 6000 });
 
       const nextData = await page.evaluate(() => {
         // 精准指向判定：寻找文本包含“下一页”且不含数字的按钮，避免被商品轮播的 1/1 误伤。
@@ -1114,7 +1184,7 @@ async function runCrawler() {
       
       nextPageUrl = absoluteNextUrl;
       currentPage++;
-      await page.waitForTimeout(DELAY_BETWEEN_PAGES);
+      await humanDelay(page, '翻页间隔', { minMs: 8000, maxMs: 16000 });
     }
 
     console.log(`\n[阶段二] 搜索完成。共汇总 ${listItems.length} 个有效商品，开始逐一访问详情...`);
@@ -1151,7 +1221,7 @@ async function runCrawler() {
         skippedByCache++;
         persistReviewBuffer(bufferData);
         console.log(`  [缓冲命中] 已复用本地缓存并跳过详情抓取 (${skippedByCache}) ${item.title}`);
-        await page.waitForTimeout(DELAY_BETWEEN_PAGES);
+        await humanDelay(page, '缓存命中后短暂停顿', { minMs: 1200, maxMs: 2800 });
         continue;
       }
 
@@ -1197,7 +1267,7 @@ async function runCrawler() {
             await page.goto(originalDetailUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
             finalDetailUrl = page.url() || originalDetailUrl;
           }
-          await page.waitForTimeout(5000);
+          await humanDelay(page, '详情首屏加载后浏览', { minMs: 7000, maxMs: 13000 });
           // console.log(`  [详情链接] 列表链接: ${originalDetailUrl}`);
           // console.log(`  [详情链接] 来源列表页: ${item.listPageUrl || '(missing)'}`);
           console.log(`  [详情链接] 首次落地: ${finalDetailUrl}`);
@@ -1264,8 +1334,8 @@ async function runCrawler() {
           // 激活懒加载
           await page.evaluate(async () => {
             for (let j = 0; j < 5; j++) {
-              window.scrollBy(0, 2000);
-              await new Promise(r => setTimeout(r, 800));
+              window.scrollBy(0, 1200 + Math.floor(Math.random() * 1200));
+              await new Promise(r => setTimeout(r, 1000 + Math.floor(Math.random() * 1400)));
             }
           });
 
@@ -1274,8 +1344,8 @@ async function runCrawler() {
             for (let j = 0; j < 6; j++) {
               const bodyText = document.body?.innerText || '';
               if (bodyText.includes('参数信息') && bodyText.includes('图文详情')) break;
-              window.scrollBy(0, 1200);
-              await new Promise((r) => setTimeout(r, 700));
+              window.scrollBy(0, 800 + Math.floor(Math.random() * 900));
+              await new Promise((r) => setTimeout(r, 900 + Math.floor(Math.random() * 1200)));
             }
           });
 
@@ -1346,7 +1416,7 @@ async function runCrawler() {
           ) {
             console.log(`  [详情链接] 原始链接未出现详情模块，尝试标准地址兜底: ${normalizedDetailUrl}`);
             await page.goto(normalizedDetailUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-            await page.waitForTimeout(4000);
+            await humanDelay(page, '标准详情地址加载后浏览', { minMs: 7000, maxMs: 12000 });
             finalDetailUrl = page.url() || normalizedDetailUrl;
             console.log(`  [详情链接] 标准地址落地: ${finalDetailUrl}`);
 
@@ -1384,7 +1454,14 @@ async function runCrawler() {
           }
 
           const allImages = [...new Set([...domImages, ...capturedV8Images])];
-          const uniqueUrls = allImages.slice(0, 15);
+          const uniqueUrls = Array.from(
+            new Set(
+              allImages
+                .filter(isLikelyProductDetailImage)
+                .map(normalizeTmallImageUrl)
+                .filter(Boolean),
+            ),
+          ).slice(0, 15);
 
           if (uniqueUrls.length > 0) {
             console.log(`  [详情图片] 已收集 ${uniqueUrls.length} 张候选详情图，送审 URL 如下:`);
@@ -1474,13 +1551,20 @@ async function runCrawler() {
         }
       }
 
+      const rawDescription = sanitizeRawDescriptionText(ocrText);
+      if (!shouldPersistXiaoguaishouReviewEntry(rawDescription)) {
+        console.error(`  [缓冲保护] ${item.title} 未获取到有效 rawDescription，停止本轮以避免写入空描述。`);
+        persistReviewBuffer(bufferData);
+        break;
+      }
+
       const nextEntry: ReviewBufferEntry = {
         sourceUrl: choosePreferredDetailUrl(finalDetailUrl, item.href),
         name: item.title,
         price: item.price ?? null,
         coverImage: item.coverImage,
         genderHint: guessGender(item.title),
-        rawDescription: sanitizeRawDescriptionText(ocrText) || '信息未获取',
+        rawDescription,
         imagePlaceholder: 'bg-gradient-to-br from-pink-900/40 to-rose-900/40',
         isReviewed: false,
       };
@@ -1489,7 +1573,7 @@ async function runCrawler() {
       persistReviewBuffer(bufferData);
       console.log(`  [缓冲] 已写入 (${bufferData.length}/${targetItems.length}) ${item.title}`);
 
-      await page.waitForTimeout(DELAY_BETWEEN_PAGES);
+      await humanDelay(page, '商品间隔', { minMs: 9000, maxMs: 18000 });
     }
 
     persistReviewBuffer(bufferData);

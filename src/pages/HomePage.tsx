@@ -34,7 +34,7 @@ const HOME_FEEDBACK_ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/webp",
 ]);
-const HOME_FEEDBACK_MAX_SCREENSHOTS = 3;
+const HOME_FEEDBACK_MAX_SCREENSHOTS = 2;
 const FEMALE_MVP_HOME_PLANETS = [
   {
     id: "privacy",
@@ -310,6 +310,7 @@ function HomeAuthEntry({
   authPanel,
   onOpenProfiles,
   onOpenFavorites,
+  onOpenFeedback,
 }: {
   authPanel: {
     isConfigured: boolean;
@@ -321,6 +322,7 @@ function HomeAuthEntry({
   };
   onOpenProfiles: () => void;
   onOpenFavorites: () => void;
+  onOpenFeedback: () => void;
 }) {
   const [isAuthPanelOpen, setIsAuthPanelOpen] = useState(false);
   const authEntryButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -346,6 +348,11 @@ function HomeAuthEntry({
 
   function closeAuthOverlay() {
     setIsAuthPanelOpen(false);
+  }
+
+  function openFeedbackFromAuthOverlay() {
+    closeAuthOverlay();
+    onOpenFeedback();
   }
 
   if (authPanel.userLabel) {
@@ -447,7 +454,11 @@ function HomeAuthEntry({
           }}
         >
           <div>
-            <AuthPanel {...authPanel} surface="modal" />
+            <AuthPanel
+              {...authPanel}
+              surface="modal"
+              onOpenFeedback={openFeedbackFromAuthOverlay}
+            />
             <button
               type="button"
               onClick={closeAuthOverlay}
@@ -564,13 +575,16 @@ export function HomePage({
   const { repeat, shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackPageRoute, setFeedbackPageRoute] = useState("");
   const [feedbackScreenshots, setFeedbackScreenshots] = useState<string[]>([]);
   const [feedbackScreenshotPreviews, setFeedbackScreenshotPreviews] = useState<string[]>([]);
   const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
   const [feedbackSubmitError, setFeedbackSubmitError] = useState<string | null>(null);
   const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState<string | null>(null);
+  const [feedbackSuccessToast, setFeedbackSuccessToast] = useState<string | null>(null);
   const [isFemaleMvpLaunching, setIsFemaleMvpLaunching] = useState(false);
   const feedbackCloseTimeoutRef = useRef<number | null>(null);
+  const feedbackSuccessToastTimeoutRef = useRef<number | null>(null);
   const femaleMvpLaunchTimeoutRef = useRef<number | null>(null);
   const feedbackScreenshotCountRef = useRef(0);
   const feedbackPendingScreenshotReservationsRef = useRef(0);
@@ -588,6 +602,9 @@ export function HomePage({
     return () => {
       if (feedbackCloseTimeoutRef.current !== null) {
         window.clearTimeout(feedbackCloseTimeoutRef.current);
+      }
+      if (feedbackSuccessToastTimeoutRef.current !== null) {
+        window.clearTimeout(feedbackSuccessToastTimeoutRef.current);
       }
       if (femaleMvpLaunchTimeoutRef.current !== null) {
         window.clearTimeout(femaleMvpLaunchTimeoutRef.current);
@@ -878,6 +895,11 @@ export function HomePage({
     setIsFemaleMvpAuthPanelOpen(false);
   }
 
+  function openFeedbackFromFemaleMvpAuth() {
+    closeFemaleMvpAuthOverlay();
+    openFeedbackModal();
+  }
+
   function handleFemaleMvpAuthOverlayKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
       event.stopPropagation();
@@ -918,10 +940,19 @@ export function HomePage({
     }
   }
 
+  function clearFeedbackSuccessToastTimeout() {
+    if (feedbackSuccessToastTimeoutRef.current !== null) {
+      window.clearTimeout(feedbackSuccessToastTimeoutRef.current);
+      feedbackSuccessToastTimeoutRef.current = null;
+    }
+  }
+
   function openFeedbackModal() {
     clearFeedbackCloseTimeout();
+    clearFeedbackSuccessToastTimeout();
     setFeedbackSubmitError(null);
     setFeedbackSubmitSuccess(null);
+    setFeedbackSuccessToast(null);
     setIsFeedbackModalOpen(true);
   }
 
@@ -930,6 +961,7 @@ export function HomePage({
     setIsFeedbackModalOpen(false);
     setFeedbackSubmitError(null);
     setFeedbackSubmitSuccess(null);
+    setFeedbackPageRoute("");
   }
 
   async function handleFeedbackFileSelect(files: FileList | null) {
@@ -978,7 +1010,7 @@ export function HomePage({
       nextErrors.push("仅支持上传 PNG、JPEG、WEBP 格式截图");
     }
     if (selectionPlan.hasOverflowError) {
-      nextErrors.push("最多上传 3 张截图");
+      nextErrors.push("最多上传 2 张截图");
     }
 
     if (nextErrors.length > 0) {
@@ -1018,23 +1050,26 @@ export function HomePage({
       await submitHomeFeedback({
         message: trimmedMessage,
         screenshots: feedbackScreenshots,
-        pageRoute: "/",
+        pageRoute: feedbackPageRoute || "/",
       });
 
       setFeedbackMessage("");
+      setFeedbackPageRoute("");
       setFeedbackScreenshots(() => {
         feedbackScreenshotCountRef.current = 0;
         return [];
       });
       setFeedbackScreenshotPreviews([]);
       feedbackPendingScreenshotReservationsRef.current = 0;
-      setFeedbackSubmitSuccess("反馈提交成功");
+      setFeedbackSubmitSuccess(null);
       setFeedbackSubmitError(null);
-      feedbackCloseTimeoutRef.current = window.setTimeout(() => {
-        setIsFeedbackModalOpen(false);
-        setFeedbackSubmitSuccess(null);
-        feedbackCloseTimeoutRef.current = null;
-      }, 1200);
+      setIsFeedbackModalOpen(false);
+      setFeedbackSuccessToast("已收到反馈，谢谢你帮 Luna 变好");
+      clearFeedbackSuccessToastTimeout();
+      feedbackSuccessToastTimeoutRef.current = window.setTimeout(() => {
+        setFeedbackSuccessToast(null);
+        feedbackSuccessToastTimeoutRef.current = null;
+      }, 1800);
     } catch (error) {
       setFeedbackSubmitError(
         error instanceof Error ? error.message : "提交反馈失败，请稍后重试",
@@ -1043,6 +1078,16 @@ export function HomePage({
       setIsFeedbackSubmitting(false);
     }
   }
+
+  const feedbackSuccessToastNode = feedbackSuccessToast ? (
+    <div
+      className="home-feedback-success-toast"
+      role="status"
+      aria-live="polite"
+    >
+      {feedbackSuccessToast}
+    </div>
+  ) : null;
 
   if (shouldUseFemaleMvp()) {
     return (
@@ -1208,6 +1253,7 @@ export function HomePage({
         <HomeFeedbackModal
           isOpen={isFeedbackModalOpen}
           message={feedbackMessage}
+          pageRoute={feedbackPageRoute}
           screenshotPreviews={feedbackScreenshotPreviews}
           isSubmitting={isFeedbackSubmitting}
           submitError={feedbackSubmitError}
@@ -1218,11 +1264,19 @@ export function HomePage({
             setFeedbackSubmitError(null);
             setFeedbackSubmitSuccess(null);
           }}
+          onPageRouteChange={(pageRoute) => {
+            clearFeedbackCloseTimeout();
+            setFeedbackPageRoute(pageRoute);
+            setFeedbackSubmitError(null);
+            setFeedbackSubmitSuccess(null);
+          }}
           onFileSelect={handleFeedbackFileSelect}
           onRemoveScreenshot={handleFeedbackScreenshotRemove}
           onClose={closeFeedbackModal}
           onSubmit={handleFeedbackSubmit}
         />
+
+        {feedbackSuccessToastNode}
 
         {isFemaleMvpAuthPanelOpen ? (
           <HomeAuthOverlay
@@ -1237,7 +1291,11 @@ export function HomePage({
                 <span> Luna 私密舱 </span>
                 <p>{authPanel.userLabel ? "同步你的探索记录" : "登录后再保存也不迟"}</p>
               </div>
-              <AuthPanel {...authPanel} surface="modal" />
+              <AuthPanel
+                {...authPanel}
+                surface="modal"
+                onOpenFeedback={openFeedbackFromFemaleMvpAuth}
+              />
               {authPanel.userLabel ? (
                 <div className="female-mvp-auth-modal-actions">
                   <button type="button" onClick={onOpenProfiles}>
@@ -1373,6 +1431,7 @@ export function HomePage({
               authPanel={authPanel}
               onOpenProfiles={onOpenProfiles}
               onOpenFavorites={onOpenFavorites}
+              onOpenFeedback={openFeedbackModal}
             />
           </div>
         </motion.div>
@@ -1381,6 +1440,7 @@ export function HomePage({
       <HomeFeedbackModal
         isOpen={isFeedbackModalOpen}
         message={feedbackMessage}
+        pageRoute={feedbackPageRoute}
         screenshotPreviews={feedbackScreenshotPreviews}
         isSubmitting={isFeedbackSubmitting}
         submitError={feedbackSubmitError}
@@ -1391,11 +1451,18 @@ export function HomePage({
           setFeedbackSubmitError(null);
           setFeedbackSubmitSuccess(null);
         }}
+        onPageRouteChange={(pageRoute) => {
+          clearFeedbackCloseTimeout();
+          setFeedbackPageRoute(pageRoute);
+          setFeedbackSubmitError(null);
+          setFeedbackSubmitSuccess(null);
+        }}
         onFileSelect={handleFeedbackFileSelect}
         onRemoveScreenshot={handleFeedbackScreenshotRemove}
         onClose={closeFeedbackModal}
         onSubmit={handleFeedbackSubmit}
       />
+      {feedbackSuccessToastNode}
     </>
   );
 }

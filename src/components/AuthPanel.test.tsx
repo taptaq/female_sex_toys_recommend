@@ -101,3 +101,41 @@ test("auth panel uses a calmer stacked layout on mobile for both auth and signed
   assert.match(signedInHtml, /justify-center/);
   assert.match(signedInHtml, /sm:w-auto/);
 });
+
+test("auth panel can expose a general feedback entrance in signed-out and signed-in states", () => {
+  const signedOutHtml = renderToStaticMarkup(
+    <AuthPanel
+      isConfigured={true}
+      userLabel={null}
+      statusMessage={null}
+      isSubmitting={false}
+      surface="modal"
+      onSubmit={async () => {}}
+      onSignOut={async () => {}}
+      onOpenFeedback={() => {}}
+    />,
+  );
+
+  assert.match(signedOutHtml, /有想法或问题/);
+  assert.match(signedOutHtml, />意见反馈</);
+  assert.match(signedOutHtml, /auth-panel-feedback-entry/);
+  assert.doesNotMatch(signedOutHtml, /登录遇到问题/);
+
+  const signedInHtml = renderToStaticMarkup(
+    <AuthPanel
+      isConfigured={true}
+      userLabel="taptaq@example.com"
+      statusMessage={null}
+      isSubmitting={false}
+      surface="modal"
+      onSubmit={async () => {}}
+      onSignOut={async () => {}}
+      onOpenFeedback={() => {}}
+    />,
+  );
+
+  assert.match(signedInHtml, /有想法或问题/);
+  assert.match(signedInHtml, />意见反馈</);
+  assert.match(signedInHtml, /auth-panel-feedback-entry/);
+  assert.doesNotMatch(signedInHtml, /登录遇到问题/);
+});

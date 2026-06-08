@@ -8,11 +8,13 @@ import {
 type HomeFeedbackModalProps = {
   isOpen: boolean;
   message: string;
+  pageRoute: string;
   screenshotPreviews: string[];
   isSubmitting: boolean;
   submitError: string | null;
   submitSuccess: string | null;
   onMessageChange: (message: string) => void;
+  onPageRouteChange: (pageRoute: string) => void;
   onFileSelect: (files: FileList | null) => void;
   onRemoveScreenshot: (index: number) => void;
   onClose: () => void;
@@ -41,6 +43,18 @@ type HomeFeedbackFocusSessionInput = {
   dialog: HomeFeedbackFocusableTarget;
   messageField: HomeFeedbackFocusableTarget;
 };
+
+const HOME_FEEDBACK_PAGE_OPTIONS = [
+  { value: "", label: "请选择页面" },
+  { value: "/", label: "首页" },
+  { value: "/quiz", label: "问答页" },
+  { value: "/library", label: "产品库" },
+  { value: "/results", label: "推荐结果页" },
+  { value: "/profiles", label: "个人档案" },
+  { value: "/favorites", label: "收藏" },
+  { value: "/auth", label: "登录注册" },
+  { value: "/other", label: "其他" },
+];
 
 const HOME_FEEDBACK_FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -126,11 +140,13 @@ function getHomeFeedbackFocusableElements(container: HTMLElement) {
 export function HomeFeedbackModalView({
   isOpen,
   message,
+  pageRoute,
   screenshotPreviews,
   isSubmitting,
   submitError,
   submitSuccess,
   onMessageChange,
+  onPageRouteChange,
   onFileSelect,
   onRemoveScreenshot,
   onClose,
@@ -151,7 +167,7 @@ export function HomeFeedbackModalView({
     >
       <div
         ref={dialogRef}
-        className="w-full max-w-xl rounded-[1.7rem] border border-sky-100 bg-white/95 p-5 text-left text-slate-900 shadow-[0_1.5rem_4rem_rgba(125,211,252,0.2)] sm:p-6"
+        className="home-feedback-modal-shell w-full max-w-xl rounded-[1.7rem] border border-sky-100 bg-white/95 p-5 text-left text-slate-900 shadow-[0_1.5rem_4rem_rgba(125,211,252,0.2)] sm:p-6"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={onDialogKeyDown}
         role="dialog"
@@ -159,6 +175,7 @@ export function HomeFeedbackModalView({
         aria-labelledby="home-feedback-modal-title"
         tabIndex={-1}
       >
+        <span className="home-feedback-modal-glow" aria-hidden="true" />
         <div className="mb-4">
           <h2
             id="home-feedback-modal-title"
@@ -167,7 +184,7 @@ export function HomeFeedbackModalView({
             意见反馈
           </h2>
           <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-            告诉我们哪里不顺手、哪里还可以更清楚，后续会继续补齐提交流程。
+            把体验问题、文案疑惑、想补上的能力都告诉我们。
           </p>
         </div>
 
@@ -177,7 +194,27 @@ export function HomeFeedbackModalView({
             onSubmit();
           }}
         >
-          <label className="block text-sm font-black text-sky-700" htmlFor="home-feedback-message">
+          <label
+            className="block text-sm font-black text-sky-700"
+            htmlFor="home-feedback-page-route"
+          >
+            问题页面（可选）
+          </label>
+          <select
+            id="home-feedback-page-route"
+            value={pageRoute}
+            onChange={(event) => onPageRouteChange(event.target.value)}
+            disabled={isSubmitting}
+            className="mt-2 w-full rounded-2xl border border-sky-100 bg-white/86 px-4 py-3 text-sm font-black text-slate-700 outline-none transition-colors focus:border-sky-300 disabled:cursor-not-allowed disabled:opacity-55"
+          >
+            {HOME_FEEDBACK_PAGE_OPTIONS.map((option) => (
+              <option key={option.value || "empty"} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <label className="mt-4 block text-sm font-black text-sky-700" htmlFor="home-feedback-message">
             反馈内容
           </label>
           <textarea
@@ -188,7 +225,7 @@ export function HomeFeedbackModalView({
             onChange={(event) => onMessageChange(event.target.value)}
             disabled={isSubmitting}
             rows={5}
-            placeholder="欢迎告诉我们你想吐槽、补充或期待的内容"
+            placeholder="例如：我在产品库页面筛选“安静 + 防水”后，看到有些产品详情里没有明确写防水信息，但还是出现在结果里。截图里的这款产品看起来不太符合筛选条件，希望可以帮忙检查一下筛选逻辑。"
             className="mt-2 w-full rounded-2xl border border-sky-100 bg-white/86 px-4 py-3 text-sm font-semibold leading-6 text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-sky-300 disabled:cursor-not-allowed disabled:opacity-55"
           />
 
@@ -197,7 +234,7 @@ export function HomeFeedbackModalView({
               className="block text-sm font-black text-sky-700"
               htmlFor="home-feedback-screenshots"
             >
-              截图上传（可选，最多 3 张）
+              截图上传（可选，最多 2 张）
             </label>
             <input
               id="home-feedback-screenshots"
@@ -253,7 +290,7 @@ export function HomeFeedbackModalView({
             <button
               type="submit"
               disabled={isSubmitting || !message.trim()}
-              className="rounded-full border border-sky-200 bg-sky-500 px-4 py-2 text-xs font-black tracking-wider text-white shadow-[0_0.8rem_1.8rem_rgba(14,165,233,0.18)] transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-55"
+              className="home-feedback-submit-button rounded-full border border-sky-700 bg-sky-700 px-4 py-2 text-xs font-black tracking-wider text-sky-950 shadow-[0_0.85rem_1.8rem_rgba(14,116,144,0.24)] transition-colors hover:bg-sky-800 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:shadow-none"
             >
               {isSubmitting ? "提交中..." : "提交反馈"}
             </button>
@@ -275,11 +312,13 @@ export function HomeFeedbackModalView({
 export function HomeFeedbackModal({
   isOpen,
   message,
+  pageRoute,
   screenshotPreviews,
   isSubmitting,
   submitError,
   submitSuccess,
   onMessageChange,
+  onPageRouteChange,
   onFileSelect,
   onRemoveScreenshot,
   onClose,
@@ -318,11 +357,13 @@ export function HomeFeedbackModal({
     <HomeFeedbackModalView
       isOpen={isOpen}
       message={message}
+      pageRoute={pageRoute}
       screenshotPreviews={screenshotPreviews}
       isSubmitting={isSubmitting}
       submitError={submitError}
       submitSuccess={submitSuccess}
       onMessageChange={onMessageChange}
+      onPageRouteChange={onPageRouteChange}
       onFileSelect={onFileSelect}
       onRemoveScreenshot={onRemoveScreenshot}
       onClose={onClose}
