@@ -56,3 +56,44 @@ test('buildNormalizedSpecs infers silicone and fantasy/glow tags', () => {
   assert.ok(specs.function_tags.includes('夜光'));
   assert.ok(specs.function_tags.includes('幻想造型'));
 });
+
+test('buildNormalizedSpecs treats KUMOCOOM silicone fantasy toys as female insertable items', () => {
+  const specs = cleaner.buildNormalizedSpecs(
+    {
+      name: 'Abyssal Glow Silicone Toy',
+      subtitle: 'Fantasy toy',
+      priceSourceAmount: 66,
+      originalPriceSourceAmount: null,
+      priceCurrency: 'USD',
+      rawDescription: 'Phosphorescent platinum silicone fantasy toy with soft glow.',
+      genderHint: 'male',
+      categoryHints: [],
+    },
+    TEST_FX,
+  );
+
+  assert.equal(specs.gender, 'female');
+  assert.equal(specs.physical_form, 'internal');
+  assert.equal(specs.type_code, 'insertable');
+  assert.equal(specs.subtype_code, 'gspot_insertable');
+});
+
+test('buildNormalizedSpecs gives collectible accessories non-empty type and subtype', () => {
+  const specs = cleaner.buildNormalizedSpecs(
+    {
+      name: "Tiny Wonders Mystery Box",
+      subtitle: 'Collector item',
+      priceSourceAmount: 42,
+      originalPriceSourceAmount: null,
+      priceCurrency: 'USD',
+      rawDescription: 'Mystery box with random miniature replica for collectors.',
+      genderHint: 'female',
+      categoryHints: [],
+    },
+    TEST_FX,
+  );
+
+  assert.equal(specs.gender, 'female');
+  assert.equal(specs.type_code, 'bdsm');
+  assert.equal(specs.subtype_code, 'fetish_accessory');
+});

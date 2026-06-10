@@ -31,8 +31,8 @@ test('extractListItemsFromHtml parses cards inside .product-grid without extra f
   `);
 
   assert.equal(result.length, 2);
-  assert.equal(result[0]?.sourceUrl, 'https://kumocoom.com/products/abyssal-glow-silicone-toy');
-  assert.equal(result[1]?.sourceUrl, 'https://kumocoom.com/products/forest-muse');
+  assert.equal(result[0]?.sourceUrl, 'https://kumocoom.cn/products/abyssal-glow-silicone-toy');
+  assert.equal(result[1]?.sourceUrl, 'https://kumocoom.cn/products/forest-muse');
 });
 
 test('extractListItemsFromShopifyJson preserves USD prices and keeps all products', () => {
@@ -138,5 +138,5 @@ test('crawlCollectionPages falls back to Shopify JSON when HTML is incomplete', 
 
   assert.equal(result.length, 1);
   assert.equal(result[0]?.name, 'Abyssal Glow Silicone Toy');
-  assert.equal(result[0]?.sourceUrl, 'https://kumocoom.com/products/abyssal-glow-silicone-toy');
+  assert.equal(result[0]?.sourceUrl, 'https://kumocoom.cn/products/abyssal-glow-silicone-toy');
 });

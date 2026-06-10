@@ -3,6 +3,9 @@ import type { Product } from "../data/mock.js";
 export type RecommendationEvidenceSignal =
   | "suction"
   | "insertable"
+  | "material"
+  | "fantasy"
+  | "accessory"
   | "appOrRemote"
   | "couple"
   | "patterns"
@@ -143,6 +146,7 @@ function pushEvidenceIfMatch(
 function buildRecommendationEvidence(product: Product): RecommendationEvidenceSnippet[] {
   const sources = getProductEvidenceTextSources(product);
   const evidence: RecommendationEvidenceSnippet[] = [];
+  const haystack = buildRecommendationProductHaystack(product);
 
   pushEvidenceIfMatch(
     evidence,
@@ -191,6 +195,52 @@ function buildRecommendationEvidence(product: Product): RecommendationEvidenceSn
       signal: "suction",
       polarity: "positive",
       text: "商品类型标记为吮吸路线",
+      source: "structured",
+    });
+  }
+
+  if (
+    product.typeCode === "insertable" ||
+    product.subtypeCode === "gspot_insertable" ||
+    product.subtypeCode === "insertable_vibe" ||
+    product.physicalForm === "internal" ||
+    product.physicalForm === "composite"
+  ) {
+    evidence.push({
+      signal: "insertable",
+      polarity: "positive",
+      text: "商品结构标记为入体探索路线",
+      source: "structured",
+    });
+  }
+
+  if (/硅胶|silicone|platinum silicone|body-safe|non-porous|无孔|身体安全|铂金级/.test(haystack)) {
+    evidence.push({
+      signal: "material",
+      polarity: "positive",
+      text: "商品材质标记为硅胶/身体安全材质",
+      source: "structured",
+    });
+  }
+
+  if (/幻想|奇幻|fantasy|怪物|生物|creature|dragon|tentacle|knot|paw|pony|glow|luminous|夜光|收藏|collect/i.test(haystack)) {
+    evidence.push({
+      signal: "fantasy",
+      polarity: "positive",
+      text: "商品描述命中幻想造型或收藏风格",
+      source: "structured",
+    });
+  }
+
+  if (
+    product.typeCode === "bdsm" ||
+    product.subtypeCode === "fetish_accessory" ||
+    /harness|keychain|mystery box|monthly drop|束具|钥匙链|神秘盒|周边|配件/i.test(haystack)
+  ) {
+    evidence.push({
+      signal: "accessory",
+      polarity: "positive",
+      text: "商品类型或描述标记为周边/配件路线",
       source: "structured",
     });
   }

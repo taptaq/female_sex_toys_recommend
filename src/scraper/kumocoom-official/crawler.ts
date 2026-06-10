@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const ORIGIN = 'https://kumocoom.com';
+export const ORIGIN = 'https://kumocoom.cn';
 export const LIST_URL = `${ORIGIN}/collections/all`;
 export const COLLECTION_JSON_URL = `${ORIGIN}/collections/all/products.json`;
 export const BUFFER_PATH = path.resolve(__dirname, '../../data/kumocoom-official-review-buffer.json');
@@ -126,6 +126,10 @@ function uniqueStrings(values: Array<string | null | undefined>, limit = 120): s
   return result;
 }
 
+function isLikelyLogoAsset(url: string): boolean {
+  return /\/logo\.(?:png|jpe?g|webp|svg)(?:[?#]|$)/i.test(url) || /files\/logo\.png/i.test(url);
+}
+
 function parsePrice(value: unknown): number | null {
   const match = String(value ?? '').match(/-?\d+(?:\.\d+)?/);
   if (!match) return null;
@@ -181,7 +185,9 @@ function buildCandidateText(input: Record<string, unknown>): string {
 function inferGenderHint(input: Record<string, unknown>): 'female' | 'male' | 'unisex' {
   const haystack = buildCandidateText(input);
   if (/(couples|partner|remote couple|wearable pair|dual)/i.test(haystack)) return 'unisex';
-  if (/(male|men|masturbator|stroker|penis|prostate|male toy)/i.test(haystack)) return 'male';
+  if (/(^|[^a-z])(male|men|masturbator|stroker|penis|prostate|male toy)([^a-z]|$)/i.test(haystack)) {
+    return 'male';
+  }
   return 'female';
 }
 
@@ -448,7 +454,7 @@ export function extractDetailFromHtml(html: string): KumocoomProductDetail {
       normalizeAssetUrl(match[1] || ''),
     ),
     24,
-  ).filter(Boolean);
+  ).filter((url) => Boolean(url) && !isLikelyLogoAsset(url));
   const currentPriceMatch =
     html.match(/<(?:span|div)[^>]*class="[^"]*price-item--sale[^"]*"[^>]*>([\s\S]*?)<\/(?:span|div)>/i) ||
     html.match(/<(?:span|div)[^>]*class="[^"]*price-item[^"]*"[^>]*>([\s\S]*?)<\/(?:span|div)>/i) ||
@@ -504,7 +510,7 @@ function buildReviewBufferItem(item: KumocoomListItem, detail: KumocoomProductDe
     ...item,
     ...detail,
     sourceUrl: item.sourceUrl,
-    coverImage: detail.coverImage || item.coverImage,
+    coverImage: item.coverImage || detail.coverImage,
     priceSourceAmount: detail.priceSourceAmount ?? item.priceSourceAmount,
     originalPriceSourceAmount: detail.originalPriceSourceAmount ?? item.originalPriceSourceAmount,
     genderHint: inferGenderHint({
@@ -555,6 +561,7 @@ export async function runCrawler(): Promise<KumocoomReviewBufferItem[]> {
         detail = {
           ...jsonDetail,
           ...htmlDetail,
+          coverImage: jsonDetail.coverImage || htmlDetail.coverImage,
           priceSourceAmount: htmlDetail.priceSourceAmount ?? jsonDetail.priceSourceAmount,
           originalPriceSourceAmount: htmlDetail.originalPriceSourceAmount ?? jsonDetail.originalPriceSourceAmount,
           galleryImages: uniqueStrings([...(htmlDetail.galleryImages || []), ...(jsonDetail.galleryImages || [])], 24),

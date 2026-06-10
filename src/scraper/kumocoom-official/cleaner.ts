@@ -9,6 +9,7 @@ import {
   classifyLibrarySubtypeCode,
   classifyLibraryTypeCode,
 } from '../../lib/library-product-type-classifier.ts';
+import type { LibrarySubtypeCode, LibraryTypeCode } from '../../lib/library-product-types.ts';
 import { buildSafeDisplayName } from '../../lib/product-display-name.ts';
 import { translateRawDescriptionToZh } from '../shared/raw-description-translator.ts';
 import {
@@ -94,10 +95,25 @@ export type CleanedRow = {
   subtypeCode: string | null;
 };
 
-const pool = new pg.Pool({ connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+let pool: pg.Pool | null = null;
+let prisma: PrismaClient | null = null;
+
+function getPrisma() {
+  if (prisma) return prisma;
+  pool = new pg.Pool({ connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
+  prisma = new PrismaClient({ adapter });
+  return prisma;
+}
+
+async function disconnectPrisma() {
+  await prisma?.$disconnect().catch(() => {});
+  await pool?.end().catch(() => {});
+  prisma = null;
+  pool = null;
+}
 
 export function resolveRmbPrice(amount: number | null, rate: number): number | null {
   if (!amount || !Number.isFinite(amount) || amount <= 0) return null;
@@ -169,6 +185,9 @@ function inferAppearance(text: string): string {
 
 function inferPhysicalForm(text: string): string {
   if (/g-spot|g spot|internal|insertable|insert|vaginal|anal|pelvic|kegel|阴道|肛门|插入|prostate/i.test(text)) return 'internal';
+  if (/silicone toy|platinum silicone|body-safe silicone|non-porous|shaft|base|fluid-expelling|dildo/i.test(text)) {
+    return 'internal';
+  }
   return 'external';
 }
 
@@ -196,20 +215,76 @@ function inferFunctionTags(text: string): string[] {
   ]);
 }
 
+function isKumocoomFantasySiliconeToy(text: string): boolean {
+  return /silicone toy|platinum silicone|body-safe silicone|non-porous|fluid-expelling|shaft|dildo|fantasy toy/i.test(text);
+}
+
+function isKumocoomCollectibleAccessory(text: string): boolean {
+  return /keychain|mystery box|miniature|replica|collector|collectible|full case|preview|monthly drop/i.test(text);
+}
+
+export function resolveKumocoomGender(item: CleanerBufferItem, signalText: string): Gender {
+  const hinted = normalizeGenderHint(item.genderHint);
+  if (hinted === 'male' && isKumocoomFantasySiliconeToy(signalText) && !/(^|[^a-z])(penis|prostate|stroker|masturbator)([^a-z]|$)/i.test(signalText)) {
+    return 'female';
+  }
+  if (hinted === 'unisex') return 'unisex';
+  return 'female';
+}
+
+function resolveKumocoomTypeCodes(input: {
+  gender: Gender;
+  physicalForm: string;
+  name: string;
+  rawDescription: string;
+  tags: string[];
+}): { type_code: LibraryTypeCode; subtype_code: LibrarySubtypeCode } {
+  const signalText = `${input.name}\n${input.rawDescription}\n${input.tags.join('\n')}`;
+  const classifiedType = classifyLibraryTypeCode({
+    gender: input.gender,
+    physicalForm: input.physicalForm,
+    name: input.name,
+    rawDescription: input.rawDescription,
+    tags: input.tags,
+  });
+  const classifiedSubtype = classifyLibrarySubtypeCode({
+    gender: input.gender,
+    physicalForm: input.physicalForm,
+    name: input.name,
+    rawDescription: input.rawDescription,
+    tags: input.tags,
+    typeCode: classifiedType,
+  });
+
+  if (classifiedType !== 'unknown' && classifiedSubtype) {
+    return { type_code: classifiedType, subtype_code: classifiedSubtype };
+  }
+
+  if (isKumocoomCollectibleAccessory(signalText) && !isKumocoomFantasySiliconeToy(signalText)) {
+    return { type_code: 'bdsm', subtype_code: 'fetish_accessory' };
+  }
+
+  if (isKumocoomFantasySiliconeToy(signalText) || input.physicalForm === 'internal') {
+    return { type_code: 'insertable', subtype_code: 'gspot_insertable' };
+  }
+
+  return { type_code: 'bdsm', subtype_code: 'fetish_accessory' };
+}
+
 const isTransientDbError = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message : String(error || '');
   return /Connection terminated|ECONNRESET|server closed the connection|terminating connection|Can't reach database|P1001|P1017/i.test(message);
 };
 
 async function reconnectPrisma() {
-  await prisma.$disconnect().catch(() => {});
+  await getPrisma().$disconnect().catch(() => {});
   await sleep(800);
-  await prisma.$connect();
+  await getPrisma().$connect();
 }
 
 async function ensurePrismaConnection() {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrisma().$queryRaw`SELECT 1`;
   } catch (error) {
     if (!isTransientDbError(error)) throw error;
     await reconnectPrisma();
@@ -269,25 +344,17 @@ export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): N
   const priceSourceAmount = parsePositiveNumber(item.priceSourceAmount);
   const originalPriceSourceAmount = parsePositiveNumber(item.originalPriceSourceAmount);
   const priceSourceCurrency = normalizeSourceCurrency(item.priceCurrency || fx.currency || 'USD');
-  const genderHint = normalizeGenderHint(item.genderHint);
+  const genderHint = resolveKumocoomGender(item, signalText);
   const classifierTags = Array.isArray(item.categoryHints)
     ? item.categoryHints.filter((value): value is string => typeof value === 'string')
     : [];
-
-  const type_code = classifyLibraryTypeCode({
+  const physicalForm = inferPhysicalForm(signalText);
+  const { type_code, subtype_code } = resolveKumocoomTypeCodes({
     gender: genderHint,
-    physicalForm: inferPhysicalForm(signalText),
+    physicalForm,
     name,
     rawDescription,
     tags: classifierTags,
-  });
-  const subtype_code = classifyLibrarySubtypeCode({
-    gender: genderHint,
-    physicalForm: inferPhysicalForm(signalText),
-    name,
-    rawDescription,
-    tags: classifierTags,
-    typeCode: type_code,
   });
 
   return {
@@ -302,7 +369,7 @@ export function buildNormalizedSpecs(item: CleanerBufferItem, fx: FxSnapshot): N
     gender: genderHint,
     material: inferMaterial(name, rawDescription),
     appearance: inferAppearance(signalText),
-    physical_form: inferPhysicalForm(signalText),
+    physical_form: physicalForm,
     motor_type: inferMotorType(signalText),
     waterproof: inferWaterproof(signalText),
     max_db: hasAnyHint(signalText, ['quiet', 'silent']) ? 50 : null,
@@ -349,14 +416,14 @@ async function translateForPersistence(rawDescription: string, canonicalName: st
 
 export async function runCleaner(): Promise<CleanedRow[]> {
   if (!fs.existsSync(BUFFER_PATH)) {
-    await prisma.$disconnect().catch(() => {});
+    await disconnectPrisma();
     return [];
   }
 
   const bufferData = JSON.parse(fs.readFileSync(BUFFER_PATH, 'utf8')) as Array<Record<string, unknown>>;
   if (bufferData.length === 0) {
     fs.writeFileSync(CLEANED_PATH, JSON.stringify([], null, 2));
-    await prisma.$disconnect().catch(() => {});
+    await disconnectPrisma();
     return [];
   }
 
@@ -368,7 +435,7 @@ export async function runCleaner(): Promise<CleanedRow[]> {
 
   try {
     brandId = await ensureCompetitorRecord({
-      prisma,
+      prisma: getPrisma(),
       withDbRetry,
       brandName: BRAND_NAME,
     });
@@ -437,18 +504,19 @@ export async function runCleaner(): Promise<CleanedRow[]> {
 
     try {
       await withDbRetry(`同步商品 ${canonicalName}`, async () => {
-        const existingProduct = await prisma.products.findFirst({ where: { name: canonicalName } });
+        const db = getPrisma();
+        const existingProduct = await db.products.findFirst({ where: { name: canonicalName } });
         let originalId: string;
         if (existingProduct) {
-          const updated = await prisma.products.update({ where: { id: existingProduct.id }, data: productPayload });
+          const updated = await db.products.update({ where: { id: existingProduct.id }, data: productPayload });
           originalId = updated.id;
         } else {
-          const created = await prisma.products.create({ data: productPayload });
+          const created = await db.products.create({ data: productPayload });
           originalId = created.id;
         }
 
-        await prisma.recommender_toys.deleteMany({ where: { name: canonicalName } });
-        await prisma.recommender_toys.create({
+        await db.recommender_toys.deleteMany({ where: { name: canonicalName } });
+        await db.recommender_toys.create({
           data: {
             original_id: originalId,
             ...toyPayload,
@@ -464,6 +532,6 @@ export async function runCleaner(): Promise<CleanedRow[]> {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(CLEANED_PATH, JSON.stringify(cleanedRows, null, 2));
   console.log(`[clean] cleaned-data 已写入 ${cleanedRows.length} 条: ${CLEANED_PATH}`);
-  await prisma.$disconnect().catch(() => {});
+  await disconnectPrisma();
   return cleanedRows;
 }

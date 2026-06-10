@@ -139,3 +139,35 @@ test("buildRecommendationProductFeatures returns concise evidence snippets for p
     ["多模式、多档位节奏变化，温和档适合慢热。", "模式多"],
   );
 });
+
+test("buildRecommendationProductFeatures adds structured evidence for insertable silicone fantasy products", () => {
+  const features = buildRecommendationProductFeatures(
+    makeProduct({
+      typeCode: "insertable",
+      subtypeCode: "gspot_insertable",
+      physicalForm: "internal",
+      material: "铂金硅胶",
+      rawDescription:
+        "Phosphorescent platinum silicone fantasy toy with a luminous glow and body-safe non-porous finish.",
+      tags: ["幻想造型"],
+    }),
+  );
+
+  assert.ok(features.evidence.some((item) => item.signal === "insertable" && item.source === "structured"));
+  assert.ok(features.evidence.some((item) => item.signal === "material" && item.source === "structured"));
+  assert.ok(features.evidence.some((item) => item.signal === "fantasy" && item.source === "structured"));
+});
+
+test("buildRecommendationProductFeatures adds structured evidence for accessories", () => {
+  const features = buildRecommendationProductFeatures(
+    makeProduct({
+      typeCode: "bdsm",
+      subtypeCode: "fetish_accessory",
+      physicalForm: "external",
+      rawDescription: "Acrylic keychain add-on and collectible accessory.",
+      tags: ["周边"],
+    }),
+  );
+
+  assert.ok(features.evidence.some((item) => item.signal === "accessory" && item.source === "structured"));
+});
