@@ -7,10 +7,12 @@ import { runCleaner } from './cleaner.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const ORIGIN = 'https://us.satisfyer.com';
-const LIST_URL = `${ORIGIN}/us/products?p=`;
+const DEFAULT_LIST_URL = 'https://us.satisfyer.com/us/products';
+const LIST_URL_BASE = String(process.env.SATISFYER_OFFICIAL_LIST_URL || DEFAULT_LIST_URL).replace(/[?&]p=\d+$/i, '');
+const ORIGIN = new URL(LIST_URL_BASE).origin;
 const MAX_ITEMS = Number(process.env.SATISFYER_OFFICIAL_MAX_ITEMS || '200');
 const MAX_PAGES = Number(process.env.SATISFYER_OFFICIAL_MAX_PAGES || '26');
+const MAX_SCROLL_ROUNDS = Number(process.env.SATISFYER_OFFICIAL_SCROLL_ROUNDS || '24');
 const BUFFER_PATH = path.resolve(__dirname, '../../data/satisfyer-official-review-buffer.json');
 const IMAGE_PLACEHOLDER = 'bg-gradient-to-br from-zinc-950/50 to-rose-900/30';
 
@@ -34,6 +36,7 @@ type DetailPayload = {
   primaryPriceText: string;
   originalPriceText: string;
   extraPriceTexts: string[];
+  priceCurrency: string;
   tabContents: string[];
   bodyText: string;
   imageUrls: string[];
@@ -46,6 +49,7 @@ type ProductDetail = {
   metaDescription: string;
   priceUsd: number | null;
   originalPriceUsd: number | null;
+  priceCurrency: string;
   featureHeadlines: string[];
   specPairs: Array<{ key: string; value: string }>;
   bodySummary: string;
@@ -97,7 +101,11 @@ function uniqueStrings(values: Array<string | null | undefined>, limit = 60): st
 }
 
 function parseNumber(value: unknown): number | null {
-  const numeric = Number(String(value ?? '').replace(/[^\d.]+/g, ''));
+  const raw = String(value ?? '').trim();
+  const normalized = raw.includes(',') && !raw.includes('.')
+    ? raw.replace(/[^\d,]+/g, '').replace(',', '.')
+    : raw.replace(/[^\d.]+/g, '');
+  const numeric = Number(normalized);
   return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
 }
 
@@ -109,6 +117,12 @@ function resolveUrl(input: string): string {
   } catch {
     return '';
   }
+}
+
+function buildListUrl(pageNo: number): string {
+  const url = new URL(LIST_URL_BASE, ORIGIN);
+  url.searchParams.set('p', String(pageNo));
+  return url.toString();
 }
 
 function extractFirstSrcsetUrl(input: string): string {
@@ -243,23 +257,65 @@ async function createContext(): Promise<BrowserContext> {
 }
 
 async function gotoAndSettle(page: Page, url: string) {
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
-  await page.waitForTimeout(5000);
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForTimeout(5000);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 4) break;
+      console.warn(`[导航] 第 ${attempt} 次打开失败，稍后重试: ${url}`, error);
+      await page.waitForTimeout(1500 * attempt);
+    }
+  }
+  throw lastError;
 }
 
 async function ensureListExpanded(page: Page) {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  let lastCount = -1;
+  let stableRounds = 0;
+
+  for (let attempt = 0; attempt < MAX_SCROLL_ROUNDS; attempt += 1) {
     const currentCount = await page.locator('.listing .product--box').count();
-    if (currentCount >= 10) return;
+    if (currentCount >= MAX_ITEMS) return;
 
-    await page.mouse.wheel(0, 1600);
-    await page.waitForTimeout(900);
+    const loadMoreLocator = page
+      .locator(
+        [
+          '.infinite--actions button',
+          '.infinite--actions a',
+          '.listing--actions button',
+          '.listing--actions a',
+          'button:has-text("Load more")',
+          'a:has-text("Load more")',
+          'button:has-text("Load more articles")',
+          'a:has-text("Load more articles")',
+        ].join(', '),
+      )
+      .first();
+    const hasLoadMoreButton = await loadMoreLocator.isVisible().catch(() => false);
 
-    const loadMoreButton = page.getByRole('button', { name: /load more articles/i });
-    if (await loadMoreButton.isVisible().catch(() => false)) {
-      await loadMoreButton.click({ timeout: 5000 }).catch(() => undefined);
-      await page.waitForTimeout(1500);
+    if (hasLoadMoreButton) {
+      await loadMoreLocator.click({ timeout: 6000 }).catch(() => undefined);
+      await page.waitForTimeout(1800);
+    } else {
+      await page.mouse.wheel(0, 2400);
+      await page.waitForTimeout(1200);
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => undefined);
+      await page.waitForTimeout(1200);
     }
+
+    const nextCount = await page.locator('.listing .product--box').count();
+    if (nextCount <= lastCount || nextCount === currentCount) {
+      stableRounds += 1;
+    } else {
+      stableRounds = 0;
+    }
+    lastCount = Math.max(currentCount, nextCount);
+
+    if (!hasLoadMoreButton && stableRounds >= 3) return;
   }
 }
 
@@ -311,7 +367,8 @@ async function extractListItemsFromPage(page: Page, pageNo: number): Promise<Lis
           const href = resolveUrl(anchor.getAttribute('href') || anchor.href || '');
           if (!href) continue;
           if (href.includes('/note/add/')) continue;
-          if (!href.startsWith(origin + '/us/')) continue;
+          if (!href.startsWith(origin + '/')) continue;
+          if (/\\/products\\/?(?:[?#]|$)/i.test(new URL(href).pathname)) continue;
           return href;
         }
         return '';
@@ -372,7 +429,7 @@ async function extractListItemsFromPage(page: Page, pageNo: number): Promise<Lis
 }
 
 async function collectListItems(page: Page): Promise<ListItem[]> {
-  await gotoAndSettle(page, `${LIST_URL}1`);
+  await gotoAndSettle(page, buildListUrl(1));
   await ensureListExpanded(page);
   const discoveredPages = await extractMaxPages(page);
   const totalPages = Math.min(discoveredPages, MAX_PAGES);
@@ -382,7 +439,15 @@ async function collectListItems(page: Page): Promise<ListItem[]> {
   const listItems: ListItem[] = [];
 
   for (let pageNo = 1; pageNo <= totalPages; pageNo += 1) {
-    await gotoAndSettle(page, `${LIST_URL}${pageNo}`);
+    try {
+      await gotoAndSettle(page, buildListUrl(pageNo));
+    } catch (error) {
+      if (listItems.length > 0) {
+        console.warn(`[列表] p=${pageNo} 打开失败，已保留前序 ${listItems.length} 个候选，停止继续翻页。`, error);
+        break;
+      }
+      throw error;
+    }
     await ensureListExpanded(page);
     const pageItems = await extractListItemsFromPage(page, pageNo);
     console.log(`[列表] p=${pageNo} 解析到 ${pageItems.length} 个商品卡片`);
@@ -516,13 +581,21 @@ async function extractDetail(page: Page, fallback: ListItem): Promise<ProductDet
           .map((node) => normalize(node.textContent || ''))
           .filter(Boolean)
       ).slice(0, 6);
+      const pageHtml = document.documentElement?.innerHTML || '';
+      const metaProductPrice = normalize(document.querySelector('meta[property="product:price"]')?.getAttribute('content') || '');
+      const dataLayerProductPrice = normalize(pageHtml.match(/"productPrice"\\s*:\\s*"([^"]+)"/)?.[1] || '');
+      const dataLayerValuePrice = normalize(pageHtml.match(/"value"\\s*:\\s*"([^"]+)"/)?.[1] || '');
+      const productCurrency =
+        normalize(pageHtml.match(/"productCurrency"\\s*:\\s*"([^"]+)"/)?.[1] || '') ||
+        normalize(pageHtml.match(/"currency"\\s*:\\s*"([^"]+)"/)?.[1] || '');
       return {
         title,
         metaTitle: normalize(document.title || ''),
         metaDescription,
-        primaryPriceText,
+        primaryPriceText: primaryPriceText || metaProductPrice || dataLayerProductPrice || dataLayerValuePrice,
         originalPriceText,
-        extraPriceTexts,
+        extraPriceTexts: unique([metaProductPrice, dataLayerProductPrice, dataLayerValuePrice, ...extraPriceTexts]).slice(0, 8),
+        priceCurrency: productCurrency,
         tabContents,
         bodyText: normalize(document.body?.innerText || ''),
         imageUrls: images.slice(0, 40),
@@ -566,6 +639,7 @@ async function extractDetail(page: Page, fallback: ListItem): Promise<ProductDet
     metaDescription: normalizeWhitespace(detailPayload.metaDescription),
     priceUsd: priceUsd ?? fallback.priceUsd,
     originalPriceUsd: originalPriceUsd ?? fallback.originalPriceUsd,
+    priceCurrency: normalizeWhitespace(detailPayload.priceCurrency || 'USD').toUpperCase(),
     featureHeadlines: extractFeatureHeadlines(bodySummary || detailPayload.metaDescription),
     specPairs,
     bodySummary,
@@ -585,8 +659,8 @@ function buildRawDescription(item: ListItem, detail: ProductDetail, resolvedGend
     detail.subtitle ? `副标题: ${detail.subtitle}` : '',
     detail.metaTitle ? `页面标题: ${detail.metaTitle}` : '',
     detail.metaDescription ? `页面描述: ${detail.metaDescription}` : '',
-    detail.priceUsd ? `页面价格(USD): ${detail.priceUsd}` : '',
-    detail.originalPriceUsd ? `划线价格(USD): ${detail.originalPriceUsd}` : '',
+    detail.priceUsd ? `页面价格(${detail.priceCurrency || 'USD'}): ${detail.priceUsd}` : '',
+    detail.originalPriceUsd ? `划线价格(${detail.priceCurrency || 'USD'}): ${detail.originalPriceUsd}` : '',
     item.categoryHints.length ? `站内分类提示: ${item.categoryHints.join(' | ')}` : '',
     `性别提示: ${resolvedGender}`,
     detail.productCode ? `产品代码: ${detail.productCode}` : '',
@@ -614,7 +688,7 @@ function persistBuffer(bufferData: unknown[]) {
 
 export async function runCrawler() {
   console.log('--- 启动 Satisfyer 官方站抓取任务 ---');
-  console.log(`[列表] 入口: ${LIST_URL}1`);
+  console.log(`[列表] 入口: ${buildListUrl(1)}`);
 
   const context = await createContext();
   const page = await context.newPage();
@@ -658,7 +732,7 @@ export async function runCrawler() {
           price: detail.priceUsd ?? item.priceUsd ?? null,
           priceUsd: detail.priceUsd ?? item.priceUsd ?? null,
           originalPriceUsd: detail.originalPriceUsd ?? item.originalPriceUsd ?? null,
-          priceCurrency: 'USD',
+          priceCurrency: detail.priceCurrency || 'USD',
           coverImage: detail.coverImage || item.coverImage || '',
           genderHint: resolvedGender,
           categoryHints: uniqueStrings(item.categoryHints, 8),
@@ -681,10 +755,14 @@ export async function runCrawler() {
     console.log(`\n--- Satisfyer 官方站抓取结束，共写入 ${bufferData.length} 条 ---`);
     console.log(`[缓冲] ${BUFFER_PATH}`);
 
-    try {
-      await runCleaner();
-    } catch (error) {
-      console.error('[致命错误] cleaner 执行失败:', error);
+    if (process.env.SATISFYER_OFFICIAL_SKIP_CLEANER === '1') {
+      console.log('[清洗] 已按 SATISFYER_OFFICIAL_SKIP_CLEANER=1 跳过旧 cleaner。');
+    } else {
+      try {
+        await runCleaner();
+      } catch (error) {
+        console.error('[致命错误] cleaner 执行失败:', error);
+      }
     }
   } finally {
     await context.close();

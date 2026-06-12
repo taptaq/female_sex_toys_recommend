@@ -11,7 +11,9 @@ test("getActiveQuestions returns the female-only flow immediately", () => {
   assert.deepEqual(ids, [
     "female-route",
     "female-experience",
+    "female-pleasure-focus",
     "female-temperature",
+    "female-app-support",
     "female-noise",
     "female-cleanup",
     "female-budget",
@@ -49,5 +51,37 @@ test("female temperature question keeps heating preference lightweight", () => {
   assert.deepEqual(
     temperatureQuestion?.options.map((option) => option.value),
     ["want", "avoid", "neutral"],
+  );
+});
+
+test("female app support question captures remote-control preference", () => {
+  const questions = quizData.getActiveQuestions?.() ?? [];
+  const appQuestion = questions.find((question) => question.id === "female-app-support");
+
+  assert.equal(appQuestion?.field, "appSupportPreference");
+  assert.match(appQuestion?.subtitle ?? "", /APP|远控|异地互动/);
+  assert.deepEqual(
+    appQuestion?.options.map((option) => option.value),
+    ["required", "avoid_app", "neutral_app"],
+  );
+  assert.deepEqual(
+    appQuestion?.options.map((option) => option.tag),
+    ["需要APP支持", "不需要APP", "APP不限定"],
+  );
+});
+
+test("female flow asks for pleasure focus after intensity calibration", () => {
+  const questions = quizData.getActiveQuestions?.() ?? [];
+  const focusQuestion = questions.find((question) => question.id === "female-pleasure-focus");
+
+  assert.equal(focusQuestion?.field, "pleasureFocus");
+  assert.match(focusQuestion?.title ?? "", /愉悦部位/);
+  assert.deepEqual(
+    focusQuestion?.options.map((option) => option.value),
+    ["clitoral", "gspot", "dual", "nipple", "anal", undefined],
+  );
+  assert.deepEqual(
+    focusQuestion?.options.find((option) => option.value === "gspot")?.answerPatch,
+    { physicalForm: "internal" },
   );
 });

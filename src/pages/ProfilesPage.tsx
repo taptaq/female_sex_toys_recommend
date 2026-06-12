@@ -22,6 +22,15 @@ const ANSWER_VALUE_LABELS: Record<string, string> = {
   sensitive: "敏感新手",
   balanced: "均衡体验",
   intense: "强烈体验",
+  clitoral: "阴蒂/外部刺激",
+  gspot: "G 点/阴道内探索",
+  dual: "内外双刺激",
+  nipple: "乳头/身体表面刺激",
+  anal: "肛门/后庭探索",
+  unsure: "部位待判断",
+  required: "需要 APP/远控",
+  avoid_app: "不需要 APP",
+  neutral_app: "APP 不限定",
   manual: "手动控制",
   automatic: "自动模式",
   hybrid: "混合模式",
@@ -142,6 +151,9 @@ function buildProfileDecisionSnapshot(profile: SavedRecommendationProfile) {
       : "",
     answers.waterproof != null
       ? `清洁：${formatAnswerCondition("防水", answers.waterproof)}`
+      : "",
+    answers.appSupportPreference
+      ? `APP：${formatAnswerCondition("APP", answers.appSupportPreference)}`
       : "",
     answers.appearance
       ? `收纳：${formatAnswerCondition("外观", answers.appearance)}`

@@ -80,6 +80,46 @@ test("buildLocalRecommendationRanking keeps natural language evidence in the vis
   );
 });
 
+test("buildLocalRecommendationRanking respects selected pleasure focus", () => {
+  const baseAnswers: AnswerState = {
+    gender: "female",
+    maxDb: 50,
+    waterproof: 7,
+    budget: [100, 300],
+    appearance: "normal",
+    tags: ["女性向"],
+  };
+  const clitoralProduct = makeProduct({
+    id: "clitoral-suction",
+    name: "Clitoral Suction",
+    physicalForm: "external",
+    typeCode: "suction",
+    subtypeCode: "clitoral_suction",
+    rawDescription: "阴蒂吸吮刺激，外部空气脉冲。",
+  });
+  const gspotProduct = makeProduct({
+    id: "gspot-insertable",
+    name: "G Spot Insertable",
+    physicalForm: "internal",
+    typeCode: "insertable",
+    subtypeCode: "gspot_insertable",
+    rawDescription: "G 点入体震动，适合阴道内探索。",
+  });
+
+  const clitoralRanking = buildLocalRecommendationRanking(
+    { ...baseAnswers, pleasureFocus: "clitoral", tags: ["女性向", "阴蒂刺激"] },
+    [gspotProduct, clitoralProduct],
+  );
+  const gspotRanking = buildLocalRecommendationRanking(
+    { ...baseAnswers, pleasureFocus: "gspot", tags: ["女性向", "G点刺激"] },
+    [clitoralProduct, gspotProduct],
+  );
+
+  assert.equal(clitoralRanking.rankedCandidates[0].id, "clitoral-suction");
+  assert.equal(gspotRanking.rankedCandidates[0].id, "gspot-insertable");
+});
+
+
 test("buildLocalResultComputation filters male-only products before ranking in female MVP mode", async () => {
   const { buildLocalResultComputation } = await import("./app-result-flow.ts");
   const answers: AnswerState = {

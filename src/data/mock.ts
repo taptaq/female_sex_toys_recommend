@@ -35,7 +35,15 @@ export type AudienceGender = "male" | "female" | "unisex";
 export type PhysicalFormPreference = Product["physicalForm"];
 export type MotorTypePreference = Product["motorType"];
 export type ExperienceLevel = "sensitive" | "balanced" | "intense";
+export type PleasureFocus =
+  | "clitoral"
+  | "gspot"
+  | "dual"
+  | "nipple"
+  | "anal"
+  | "unsure";
 export type TemperaturePreference = "want" | "avoid" | "neutral";
+export type AppSupportPreference = "required" | "avoid_app" | "neutral_app";
 export type DriveMode = "manual" | "automatic" | "hybrid";
 export type ChannelFeel = "soft" | "balanced" | "tight";
 export type SessionGoal = "slow" | "daily" | "explosive";
@@ -54,7 +62,9 @@ export type AnswerState = {
   budget?: [number, number];
   appearance?: "high_disguise" | "normal";
   experienceLevel?: ExperienceLevel;
+  pleasureFocus?: PleasureFocus;
   temperaturePreference?: TemperaturePreference;
+  appSupportPreference?: AppSupportPreference;
   driveMode?: DriveMode;
   channelFeel?: ChannelFeel;
   sessionGoal?: SessionGoal;
@@ -152,6 +162,52 @@ const FEMALE_QUESTIONS: Question[] = [
     ],
   },
   {
+    id: "female-pleasure-focus",
+    title: "愉悦部位",
+    subtitle: "更想把刺激集中在哪个身体反馈点？不确定也可以先让系统判断。",
+    field: "pleasureFocus",
+    options: [
+      {
+        label: "阴蒂/外部更直接",
+        value: "clitoral",
+        tag: "阴蒂刺激",
+        answerPatch: {
+          physicalForm: "external",
+        },
+      },
+      {
+        label: "G 点/阴道内探索",
+        value: "gspot",
+        tag: "G点刺激",
+        answerPatch: {
+          physicalForm: "internal",
+        },
+      },
+      {
+        label: "内外一起更完整",
+        value: "dual",
+        tag: "内外双刺激",
+        answerPatch: {
+          physicalForm: "composite",
+        },
+      },
+      {
+        label: "乳头/身体表面",
+        value: "nipple",
+        tag: "乳头刺激",
+      },
+      {
+        label: "肛门/后庭探索",
+        value: "anal",
+        tag: "肛门刺激",
+        answerPatch: {
+          physicalForm: "internal",
+        },
+      },
+      helpMeDecideOption("还不确定部位，先帮我判断", "部位待判断"),
+    ],
+  },
+  {
     id: "female-temperature",
     title: "温热感",
     subtitle: "你会不会希望设备带一点温热感，帮助身体更放松？",
@@ -171,6 +227,29 @@ const FEMALE_QUESTIONS: Question[] = [
         label: "都可以，不作为重点",
         value: "neutral",
         tag: "温热不限定",
+      },
+    ],
+  },
+  {
+    id: "female-app-support",
+    title: "APP 支持",
+    subtitle: "你会希望它能连接 APP、远控或异地互动吗？",
+    field: "appSupportPreference",
+    options: [
+      {
+        label: "需要，想要远控/APP",
+        value: "required",
+        tag: "需要APP支持",
+      },
+      {
+        label: "不需要，简单直接最好",
+        value: "avoid_app",
+        tag: "不需要APP",
+      },
+      {
+        label: "都可以，不作为重点",
+        value: "neutral_app",
+        tag: "APP不限定",
       },
     ],
   },

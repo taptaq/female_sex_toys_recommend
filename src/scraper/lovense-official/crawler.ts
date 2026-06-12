@@ -38,6 +38,40 @@ type ListPageConfig = {
   genderHint: GenderHint;
 };
 
+function resolveListPageConfigs(): readonly ListPageConfig[] {
+  const targetUrl = String(process.env.LOVENSE_OFFICIAL_LIST_URL || '').trim();
+  const target = String(process.env.LOVENSE_OFFICIAL_TARGET || '').trim().toLowerCase();
+
+  if (targetUrl) {
+    const inferredGenderHint: GenderHint =
+      /women|female|for-her/i.test(targetUrl)
+        ? 'female'
+        : /men|male|for-him/i.test(targetUrl)
+          ? 'male'
+          : 'unisex';
+    const knownConfig = LIST_PAGE_CONFIGS.find((config) => config.url === targetUrl);
+    return [
+      knownConfig ?? {
+        url: targetUrl,
+        label: target || 'Lovense Target List',
+        genderHint: inferredGenderHint,
+      },
+    ];
+  }
+
+  if (['women', 'female', 'for-women'].includes(target)) {
+    return LIST_PAGE_CONFIGS.filter((config) => config.genderHint === 'female');
+  }
+  if (['men', 'male', 'for-men'].includes(target)) {
+    return LIST_PAGE_CONFIGS.filter((config) => config.genderHint === 'male');
+  }
+  if (['couples', 'couple', 'unisex'].includes(target)) {
+    return LIST_PAGE_CONFIGS.filter((config) => config.genderHint === 'unisex');
+  }
+
+  return LIST_PAGE_CONFIGS;
+}
+
 type ListItem = {
   sourceUrl: string;
   name: string;
@@ -312,10 +346,10 @@ async function extractListItemsFromGenderPage(page: Page, config: ListPageConfig
   };
 }
 
-async function collectListItems(page: Page): Promise<ListItem[]> {
+async function collectListItems(page: Page, listPageConfigs: readonly ListPageConfig[]): Promise<ListItem[]> {
   const itemMap = new Map<string, ListItem>();
 
-  for (const config of LIST_PAGE_CONFIGS) {
+  for (const config of listPageConfigs) {
     console.log(`[列表] 打开${config.label}: ${config.url}`);
     await gotoAndSettle(page, config.url);
     try {
@@ -566,14 +600,15 @@ function persistBuffer(bufferData: unknown[]) {
 }
 
 export async function runCrawler() {
+  const listPageConfigs = resolveListPageConfigs();
   console.log('--- 启动 Lovense 官方站抓取任务 ---');
-  console.log(`[列表] 入口: ${LIST_PAGE_CONFIGS.map((config) => config.url).join(' | ')}`);
+  console.log(`[列表] 入口: ${listPageConfigs.map((config) => config.url).join(' | ')}`);
 
   const context = await createContext();
   const page = await context.newPage();
 
   try {
-    const listItems = await collectListItems(page);
+    const listItems = await collectListItems(page, listPageConfigs);
     console.log(`[列表] 去重后候选商品数: ${listItems.length}`);
 
     if (listItems.length === 0) {

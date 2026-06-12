@@ -68,6 +68,8 @@ test("selected answer options produce concrete matching signals instead of displ
     experienceLevel: "intense",
     motorType: "strong",
     temperaturePreference: "want",
+    appSupportPreference: "required",
+    pleasureFocus: "dual",
     maxDb: 40,
     waterproof: 7,
     budget: [300, 10000],
@@ -76,7 +78,9 @@ test("selected answer options produce concrete matching signals instead of displ
       "女性向",
       "复合机型",
       "强刺激偏好",
+      "内外双刺激",
       "想要温热",
+      "需要APP支持",
       "< 40dB",
       "≥ IPX7 防水",
       "旗舰级",
@@ -89,11 +93,53 @@ test("selected answer options produce concrete matching signals instead of displ
   assert.ok(signals.some((signal) => signal.id === "audience.female"));
   assert.ok(signals.some((signal) => signal.id === "stimulation.composite"));
   assert.ok(signals.some((signal) => signal.id === "intensity.strong"));
+  assert.ok(signals.some((signal) => signal.id === "pleasure.dual"));
   assert.ok(signals.some((signal) => signal.id === "temperature.want"));
+  assert.ok(signals.some((signal) => signal.id === "app.required"));
   assert.ok(signals.some((signal) => signal.id === "noise.strict"));
   assert.ok(signals.some((signal) => signal.id === "maintenance.easy"));
   assert.ok(signals.some((signal) => signal.id === "budget.premium"));
   assert.ok(signals.some((signal) => signal.id === "privacy.high"));
+});
+
+test("pleasure focus rewards products that target the selected body area", () => {
+  const clitoralAdjustment = getPreferenceSignalAdjustment(
+    makeProduct({
+      gender: "female",
+      physicalForm: "external",
+      typeCode: "suction",
+      subtypeCode: "clitoral_suction",
+      rawDescription: "阴蒂吸吮刺激，外部空气脉冲反馈。",
+    }),
+    { pleasureFocus: "clitoral", tags: ["阴蒂刺激"] },
+  );
+  const gspotAdjustment = getPreferenceSignalAdjustment(
+    makeProduct({
+      gender: "female",
+      physicalForm: "internal",
+      typeCode: "insertable",
+      subtypeCode: "gspot_insertable",
+      rawDescription: "G 点入体震动，适合阴道内探索。",
+    }),
+    { pleasureFocus: "gspot", tags: ["G点刺激"] },
+  );
+  const nippleAdjustment = getPreferenceSignalAdjustment(
+    makeProduct({
+      gender: "female",
+      physicalForm: "external",
+      typeCode: "dual_stimulation",
+      subtypeCode: "multi_head_dual",
+      rawDescription: "Gemini nipple clamps for nipple play.",
+    }),
+    { pleasureFocus: "nipple", tags: ["乳头刺激"] },
+  );
+
+  assert.ok(clitoralAdjustment.score > 0);
+  assert.match(clitoralAdjustment.summary.join(" "), /阴蒂|外部/);
+  assert.ok(gspotAdjustment.score > 0);
+  assert.match(gspotAdjustment.summary.join(" "), /G 点|阴道内/);
+  assert.ok(nippleAdjustment.score > 0);
+  assert.match(nippleAdjustment.summary.join(" "), /乳头|身体表面/);
 });
 
 test("balanced options actively reward stable middle-ground products", () => {
@@ -149,4 +195,37 @@ test("temperature preference rewards or relaxes heating signals", () => {
   assert.ok(roomTempAdjustment.score > 0);
   assert.match(heatedAdjustment.summary.join(" "), /温热|放松/);
   assert.match(roomTempAdjustment.summary.join(" "), /常温/);
+});
+
+test("app support preference rewards remote products or simple non-app products", () => {
+  const remoteProduct = makeProduct({
+    gender: "female",
+    typeCode: "wearable_remote",
+    rawDescription: "支持 APP 蓝牙连接，可远控和异地互动。",
+    tags: ["APP", "远控"],
+  });
+  const simpleProduct = makeProduct({
+    gender: "female",
+    typeCode: "suction",
+    rawDescription: "一键启动，不需要 APP，简单直接。",
+    tags: ["简单操作"],
+  });
+
+  const requiredAdjustment = getPreferenceSignalAdjustment(remoteProduct, {
+    appSupportPreference: "required",
+    tags: ["需要APP支持"],
+  });
+  const avoidRemoteAdjustment = getPreferenceSignalAdjustment(remoteProduct, {
+    appSupportPreference: "avoid_app",
+    tags: ["不需要APP"],
+  });
+  const avoidSimpleAdjustment = getPreferenceSignalAdjustment(simpleProduct, {
+    appSupportPreference: "avoid_app",
+    tags: ["不需要APP"],
+  });
+
+  assert.ok(requiredAdjustment.score > 0);
+  assert.match(requiredAdjustment.summary.join(" "), /APP|远控|蓝牙/);
+  assert.ok(avoidSimpleAdjustment.score > avoidRemoteAdjustment.score);
+  assert.match(avoidSimpleAdjustment.summary.join(" "), /不依赖 APP|简单直接/);
 });
