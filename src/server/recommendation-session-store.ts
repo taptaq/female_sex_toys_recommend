@@ -1,5 +1,16 @@
+import {
+  encryptPrivateJson,
+  type EncryptedPrivateJson,
+} from "./user-recommendation-privacy.js";
+
 type Queryable = {
   query: (sql: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
+};
+
+export type RecommendationSessionPrivatePayload = {
+  answers: Record<string, unknown>;
+  answerPath: unknown[];
+  topProducts: unknown[];
 };
 
 export type SaveRecommendationSessionInput = {
@@ -12,12 +23,14 @@ export type SaveRecommendationSessionInput = {
   resultProvider?: string | null;
   resultModelName?: string | null;
   pageRoute: string;
+  privatePayload?: RecommendationSessionPrivatePayload | null;
 };
 
 export type RecommendationSessionStore = {
   saveSession: (
     input: SaveRecommendationSessionInput,
   ) => Promise<{ id: string }>;
+  deleteExpiredSessions: () => Promise<{ deletedCount: number }>;
 };
 
 export async function ensureRecommendationSessionSchema(pool: Queryable) {
@@ -33,6 +46,8 @@ export async function ensureRecommendationSessionSchema(pool: Queryable) {
       result_provider text,
       result_model_name text,
       page_route text NOT NULL DEFAULT '/results',
+      encrypted_payload jsonb,
+      expires_at timestamptz NOT NULL DEFAULT (now() + interval '90 days'),
       created_at timestamptz NOT NULL DEFAULT now(),
       completed_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
@@ -86,6 +101,16 @@ export async function ensureRecommendationSessionSchema(pool: Queryable) {
 
   await pool.query(`
     ALTER TABLE public.recommendation_sessions
+    ADD COLUMN IF NOT EXISTS encrypted_payload jsonb
+  `);
+
+  await pool.query(`
+    ALTER TABLE public.recommendation_sessions
+    ADD COLUMN IF NOT EXISTS expires_at timestamptz NOT NULL DEFAULT (now() + interval '90 days')
+  `);
+
+  await pool.query(`
+    ALTER TABLE public.recommendation_sessions
     ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()
   `);
 
@@ -108,12 +133,21 @@ export async function ensureRecommendationSessionSchema(pool: Queryable) {
     CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_completed_at
     ON public.recommendation_sessions(completed_at DESC)
   `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_recommendation_sessions_expires_at
+    ON public.recommendation_sessions(expires_at)
+  `);
 }
 
 export function createRecommendationSessionStore({
   pool,
+  encryptionKey,
+  retentionDays = 90,
 }: {
   pool: Queryable;
+  encryptionKey?: string;
+  retentionDays?: number;
 }): RecommendationSessionStore {
   return {
     async saveSession({
@@ -126,7 +160,13 @@ export function createRecommendationSessionStore({
       resultProvider,
       resultModelName,
       pageRoute,
+      privatePayload,
     }) {
+      const encryptedPayload: EncryptedPrivateJson | null =
+        encryptionKey && privatePayload
+          ? encryptPrivateJson(privatePayload, encryptionKey)
+          : null;
+      const expiresAtExpression = `now() + ($10::int * interval '1 day')`;
       const result = await pool.query(
         `
           INSERT INTO public.recommendation_sessions (
@@ -138,9 +178,11 @@ export function createRecommendationSessionStore({
             algorithm_version,
             result_provider,
             result_model_name,
-            page_route
+            page_route,
+            encrypted_payload,
+            expires_at
           )
-          VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6, $7, $8, $9)
+          VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6, $7, $8, $9, $11::jsonb, ${expiresAtExpression})
           ON CONFLICT (session_id) DO UPDATE SET
             answers = EXCLUDED.answers,
             answer_path = EXCLUDED.answer_path,
@@ -150,6 +192,8 @@ export function createRecommendationSessionStore({
             result_provider = EXCLUDED.result_provider,
             result_model_name = EXCLUDED.result_model_name,
             page_route = EXCLUDED.page_route,
+            encrypted_payload = EXCLUDED.encrypted_payload,
+            expires_at = EXCLUDED.expires_at,
             completed_at = now(),
             updated_at = now()
           RETURNING id
@@ -164,6 +208,8 @@ export function createRecommendationSessionStore({
           resultProvider ?? null,
           resultModelName ?? null,
           pageRoute,
+          retentionDays,
+          encryptedPayload ? JSON.stringify(encryptedPayload) : null,
         ],
       );
 
@@ -173,6 +219,15 @@ export function createRecommendationSessionStore({
       }
 
       return { id: row.id };
+    },
+    async deleteExpiredSessions() {
+      const result = await pool.query(`
+        DELETE FROM public.recommendation_sessions
+        WHERE expires_at < now()
+        RETURNING id
+      `);
+
+      return { deletedCount: result.rows.length };
     },
   };
 }

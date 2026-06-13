@@ -4246,6 +4246,15 @@ textarea:disabled {
   perspective: 900px;
 }
 
+.female-mvp-mode-page-assets-loading .female-mvp-mode-orbit-stage {
+  opacity: 0.01;
+}
+
+.female-mvp-mode-page-assets-ready .female-mvp-mode-orbit-stage {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
 .female-mvp-mode-orbit-stage::before {
   position: absolute;
   left: 12%;
@@ -4320,6 +4329,7 @@ textarea:disabled {
     opacity 520ms ease,
     transform 680ms cubic-bezier(0.18, 0.86, 0.2, 1);
   transform-style: preserve-3d;
+  backface-visibility: hidden;
   will-change: transform, opacity;
 }
 
@@ -4447,9 +4457,12 @@ textarea:disabled {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   pointer-events: none;
   user-select: none;
   transform-origin: 50% 56%;
+  backface-visibility: hidden;
   will-change: transform;
 }
 

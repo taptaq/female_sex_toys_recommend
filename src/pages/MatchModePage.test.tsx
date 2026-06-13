@@ -37,6 +37,7 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /幸运抽取/);
   assert.match(html, /手动筛选/);
   assert.match(html, /female-mvp-mode-page/);
+  assert.match(html, /female-mvp-mode-page-assets-loading/);
   assert.match(html, /female-mvp-mode-orbit-stage/);
   assert.match(html, /female-mvp-mode-orbit-ring/);
   assert.match(html, /female-mvp-mode-planet-button/);
@@ -56,6 +57,7 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /\/assets\/luna-astronaut\/mode-guide\.webp/);
   assert.match(html, /\/assets\/luna-astronaut\/mode-dive\.webp/);
   assert.match(html, /\/assets\/luna-astronaut\/mode-portal\.webp/);
+  assert.match(html, /loading="eager"/);
   assert.match(html, /aria-pressed="true"/);
   assert.match(html, /慢慢来，我会陪你校准/);
   assert.match(html, /开始轻问答/);
@@ -77,6 +79,10 @@ test("match mode Luna guide docks left and dives into the active planet center",
   assert.match(pageSource, /runMatchModeEntranceMotion/);
   assert.match(pageSource, /runMatchModeActiveFocusMotion/);
   assert.match(pageSource, /runMatchModeLaunchMotion/);
+  assert.match(pageSource, /setAreModeAssetsReady\(true\)/);
+  assert.match(pageSource, /new Image\(\)/);
+  assert.match(pageSource, /image\.decode/);
+  assert.match(pageSource, /clearProps: "transform,opacity,visibility"/);
   assert.match(pageSource, /gsap\.timeline\(\{[\s\S]*?defaults: \{ ease: "sine\.out" \}/);
   assert.match(pageSource, /\.addLabel\("modeOrbitWake"\)/);
   assert.match(pageSource, /\.addLabel\("modeLunaDock"/);
@@ -170,6 +176,8 @@ test("match mode planet switching eases between orbit slots without delaying cli
   assert.match(planetButtonBlock, /opacity 520ms ease/);
   assert.match(planetButtonBlock, /transform 680ms cubic-bezier\(0\.18, 0\.86, 0\.2, 1\)/);
   assert.match(planetImageBlock, /will-change: transform;/);
+  assert.match(planetImageBlock, /aspect-ratio: 1 \/ 1;/);
+  assert.match(planetImageBlock, /object-fit: contain;/);
   assert.match(pageSource, /type OrbitSlot = "active" \| "next" \| "prev" \| "back";/);
   assert.match(pageSource, /if \(diff === total - 1\) return "prev";\s*return "back";/);
   assert.match(pageSource, /aria-hidden=\{slot === "back" \? true : undefined\}/);

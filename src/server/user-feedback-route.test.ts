@@ -128,6 +128,34 @@ test("save user feedback handler rejects invalid screenshot payloads", async () 
   });
 });
 
+test("save user feedback handler rejects oversized messages", async () => {
+  let saveCount = 0;
+  const handler = createSaveUserFeedbackHandler({
+    store: {
+      saveFeedback: async () => {
+        saveCount += 1;
+        return { id: "feedback-1" };
+      },
+    },
+  });
+
+  const mockResponse = createMockResponse();
+  await handler(
+    createMockRequest({
+      body: {
+        message: "x".repeat(2_001),
+      },
+    }),
+    mockResponse.response,
+  );
+
+  assert.equal(saveCount, 0);
+  assert.equal(mockResponse.readStatusCode(), 413);
+  assert.deepEqual(mockResponse.readJsonPayload(), {
+    error: "Feedback message is too large",
+  });
+});
+
 test("save user feedback handler rejects non-array screenshots payloads", async () => {
   let saveCount = 0;
   const handler = createSaveUserFeedbackHandler({

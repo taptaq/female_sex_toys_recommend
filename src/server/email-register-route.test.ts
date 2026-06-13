@@ -83,3 +83,57 @@ test("email registration handler rejects missing credentials", async () => {
     error: "Email and password are required",
   });
 });
+
+test("email registration handler rejects invalid emails before creating users", async () => {
+  let createCount = 0;
+  const handler = createEmailRegistrationHandler({
+    service: {
+      createEmailUser: async () => {
+        createCount += 1;
+        return {
+          success: true,
+          userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
+        };
+      },
+    },
+  });
+
+  const mockResponse = createMockResponse();
+  await handler(
+    createMockRequest({ email: "not-an-email", password: "secret-pass" }),
+    mockResponse.response,
+  );
+
+  assert.equal(createCount, 0);
+  assert.equal(mockResponse.readStatusCode(), 400);
+  assert.deepEqual(mockResponse.readJsonPayload(), {
+    error: "A valid email address is required",
+  });
+});
+
+test("email registration handler rejects weak or oversized passwords", async () => {
+  let createCount = 0;
+  const handler = createEmailRegistrationHandler({
+    service: {
+      createEmailUser: async () => {
+        createCount += 1;
+        return {
+          success: true,
+          userId: "6f78f6c4-6f1a-4d28-8f34-51ce2f10aa00",
+        };
+      },
+    },
+  });
+
+  const mockResponse = createMockResponse();
+  await handler(
+    createMockRequest({ email: "taptaq@example.com", password: "short" }),
+    mockResponse.response,
+  );
+
+  assert.equal(createCount, 0);
+  assert.equal(mockResponse.readStatusCode(), 400);
+  assert.deepEqual(mockResponse.readJsonPayload(), {
+    error: "Password must be between 8 and 128 characters",
+  });
+});

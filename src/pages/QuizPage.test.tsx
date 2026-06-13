@@ -72,6 +72,7 @@ test("quiz page uses mobile female MVP presentation", () => {
 
   assert.match(html, /female-mvp-quiz/);
   assert.match(html, /overflow-y-auto/);
+  assert.match(html, /pb-\[calc\(6rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(html, /Luna 正在帮你校准/);
   assert.match(html, /female-mvp-quiz__astronaut-image/);
   assert.match(html, /female-mvp-quiz__astronaut-figure/);
@@ -214,6 +215,7 @@ test("quiz female MVP background is scoped to the quiz shell", () => {
   assert.doesNotMatch(pageMarkup, /female-mvp-quiz-card[^"]*overflow-hidden/);
   assert.match(pageMarkup, /female-mvp-quiz/);
   assert.match(pageMarkup, /min-h-\[100svh\]/);
+  assert.match(pageMarkup, /pb-\[calc\(6rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(pageMarkup, /quiz-scan-shell/);
   assert.doesNotMatch(source, /quiz-scan-shell/);
   assert.doesNotMatch(source, /quiz-starfield/);
@@ -244,6 +246,7 @@ test("female MVP quiz uses one local background layer instead of duplicating the
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
 
   assert.match(source, /currentRoute === "\/quiz" && step < activeQuestions\.length && isFemaleMvp/);
+  assert.match(source, /effectiveShellRoute === "\/quiz"[\s\S]*\? "h-\[100svh\] min-h-\[100svh\] p-0"/);
   assert.match(source, /const shouldRenderThemeCosmosLayer =[\s\S]*!isFemaleMvpQuizRoute/);
   assert.match(source, /isFemaleMvpSoftShellRoute \? "female-mvp-soft-shell" : ""/);
 });

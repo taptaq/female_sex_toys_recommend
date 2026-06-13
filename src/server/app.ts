@@ -43,6 +43,14 @@ import {
   createLazyRouteInitializer,
   getRequiredServerEnv,
 } from "./server-runtime.js";
+import {
+  createAiRouteRateLimitMiddleware,
+  createCorsAllowlistMiddleware,
+  createOriginGuardMiddleware,
+  createSecurityHeadersMiddleware,
+  createSensitiveRouteRateLimitMiddleware,
+  getPublicErrorDetails,
+} from "./server-security.js";
 import { createSupabaseAccessTokenVerifier } from "./user-auth.js";
 import { createSaveUserFeedbackHandler } from "./user-feedback-route.js";
 import {
@@ -92,6 +100,7 @@ const { Pool } = pg;
 const app = express();
 const AI_RERANK_MAX_TOKENS = 1200;
 const AI_ENHANCEMENT_MAX_TOKENS = 1800;
+const AI_PROMPT_MAX_LENGTH = 12_000;
 const JSON_BODY_LIMIT = "25mb";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -171,7 +180,11 @@ const getRecommendationFeedbackStore = createLazyValue(() =>
   createRecommendationFeedbackStore({ pool }),
 );
 const getRecommendationSessionStore = createLazyValue(() =>
-  createRecommendationSessionStore({ pool }),
+  createRecommendationSessionStore({
+    pool,
+    encryptionKey: process.env.PRIVATE_DATA_ENCRYPTION_KEY,
+    retentionDays: Number(process.env.RECOMMENDATION_SESSION_RETENTION_DAYS || "90"),
+  }),
 );
 const getBodyPersonaStore = createLazyValue(() =>
   createBodyPersonaStore({ pool }),
@@ -281,7 +294,13 @@ const getDeleteFavoriteHandler = createLazyValue(() =>
   }),
 );
 
+app.use(createSecurityHeadersMiddleware());
+app.use(createCorsAllowlistMiddleware());
+app.use(createOriginGuardMiddleware());
 app.use(express.json({ limit: JSON_BODY_LIMIT }));
+
+const sensitiveRouteRateLimit = createSensitiveRouteRateLimitMiddleware();
+const aiRouteRateLimit = createAiRouteRateLimitMiddleware();
 
 pool.on("error", (error) => {
   console.error("💥 [Server/DB] 数据库连接池发生灾难性错误:", error);
@@ -386,18 +405,14 @@ function ensureUserFavoritesRouteReady() {
   });
 }
 
-app.get(
-  "/api/recommender/toys",
-  createListRecommenderToysHandler({
-    pool,
-    ensureLibraryRouteReady,
-  }),
-);
-
-app.post("/api/ai/rerank", async (req, res) => {
+const aiRerankHandler: RequestHandler = async (req, res) => {
   const prompt = String(req.body?.prompt || "").trim();
   if (!prompt) {
     res.status(400).json({ error: "Prompt is required" });
+    return;
+  }
+  if (prompt.length > AI_PROMPT_MAX_LENGTH) {
+    res.status(413).json({ error: "Prompt is too large" });
     return;
   }
 
@@ -413,14 +428,22 @@ app.post("/api/ai/rerank", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("❌ [Server/AI] Top3 重排链路全部中断:", error);
-    res.status(500).json({ error: "AI rerank failed", details: String(error) });
+    const details = getPublicErrorDetails(error);
+    res.status(500).json({
+      error: "AI rerank failed",
+      ...(details ? { details } : {}),
+    });
   }
-});
+};
 
-app.post("/api/ai/result-enhancement", async (req, res) => {
+const aiResultEnhancementHandler: RequestHandler = async (req, res) => {
   const prompt = String(req.body?.prompt || "").trim();
   if (!prompt) {
     res.status(400).json({ error: "Prompt is required" });
+    return;
+  }
+  if (prompt.length > AI_PROMPT_MAX_LENGTH) {
+    res.status(413).json({ error: "Prompt is too large" });
     return;
   }
 
@@ -436,18 +459,34 @@ app.post("/api/ai/result-enhancement", async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error("❌ [Server/AI] 结果增强链路全部中断:", error);
+    const details = getPublicErrorDetails(error);
     res.status(500).json({
       error: "AI result enhancement failed",
-      details: String(error),
+      ...(details ? { details } : {}),
     });
   }
-});
+};
 
-app.post("/api/ai/recalibrate-results", (req, res) =>
+app.get(
+  "/api/recommender/toys",
+  createListRecommenderToysHandler({
+    pool,
+    ensureLibraryRouteReady,
+  }),
+);
+
+app.post("/api/ai/rerank", aiRouteRateLimit, aiRerankHandler);
+app.post(
+  "/api/ai/result-enhancement",
+  aiRouteRateLimit,
+  aiResultEnhancementHandler,
+);
+app.post("/api/ai/recalibrate-results", aiRouteRateLimit, (req, res) =>
   getRecalibrateResultsHandler()(req, res),
 );
 app.post(
   "/api/auth/register",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureUserProfileRouteReady,
     () =>
@@ -501,6 +540,7 @@ app.post(
 );
 app.post(
   "/api/feedback",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureFeedbackRouteReady,
     getSaveUserFeedbackHandler,
@@ -508,6 +548,7 @@ app.post(
 );
 app.post(
   "/api/recommendation-feedback/events",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureRecommendationFeedbackRouteReady,
     getSaveRecommendationFeedbackEventHandler,
@@ -515,6 +556,7 @@ app.post(
 );
 app.post(
   "/api/recommendation-sessions",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureRecommendationSessionRouteReady,
     getSaveRecommendationSessionHandler,
@@ -522,6 +564,7 @@ app.post(
 );
 app.post(
   "/api/body-persona/sessions",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureBodyPersonaRouteReady,
     getCreateBodyPersonaSessionHandler,
@@ -536,6 +579,7 @@ app.get(
 );
 app.post(
   "/api/body-persona/orders",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureBodyPersonaRouteReady,
     getCreateBodyPersonaOrderHandler,
@@ -543,6 +587,7 @@ app.post(
 );
 app.post(
   "/api/body-persona/orders/:id/confirm",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureBodyPersonaRouteReady,
     getConfirmBodyPersonaUnlockHandler,
@@ -557,6 +602,7 @@ app.get(
 );
 app.post(
   "/api/user/recommendation-profiles",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureUserRecommendationRouteReady,
     getSaveRecommendationProfileHandler,
@@ -585,6 +631,7 @@ app.get(
 );
 app.post(
   "/api/user/favorites",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureUserFavoritesRouteReady,
     getAddFavoriteHandler,
@@ -606,6 +653,7 @@ app.get(
 );
 app.post(
   "/api/user/favorites",
+  sensitiveRouteRateLimit,
   withLazyRouteHandler(
     ensureUserFavoritesRouteReady,
     getAddFavoriteHandler,
@@ -642,9 +690,10 @@ app.use(((error, _req, res, _next) => {
     return;
   }
 
+  const details = getPublicErrorDetails(error);
   res.status(500).json({
     error: "Server request failed",
-    details: error instanceof Error ? error.message : String(error),
+    ...(details ? { details } : {}),
   });
 }) as RequestHandler);
 

@@ -119,3 +119,32 @@ test("recommendation feedback handler stores normalized reroll events", async ()
     userAgent: "Mozilla/5.0 RecommendationFeedbackTest",
   });
 });
+
+test("recommendation feedback handler rejects oversized answer payloads", async () => {
+  let saveCount = 0;
+  const handler = createSaveRecommendationFeedbackEventHandler({
+    store: {
+      saveEvent: async () => {
+        saveCount += 1;
+        return { id: "event-1" };
+      },
+    },
+  });
+
+  const mockResponse = createMockResponse();
+  await handler(
+    createMockRequest({
+      body: {
+        eventType: "reroll_recommendation",
+        answers: { freeText: "x".repeat(31_000) },
+      },
+    }),
+    mockResponse.response,
+  );
+
+  assert.equal(saveCount, 0);
+  assert.equal(mockResponse.readStatusCode(), 413);
+  assert.deepEqual(mockResponse.readJsonPayload(), {
+    error: "Recommendation feedback answers are too large",
+  });
+});

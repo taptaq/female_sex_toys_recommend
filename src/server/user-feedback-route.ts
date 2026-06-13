@@ -9,6 +9,8 @@ import type {
 
 const SCREENSHOT_DATA_URL_PATTERN =
   /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+const MAX_FEEDBACK_MESSAGE_LENGTH = 2_000;
+const MAX_SCREENSHOT_DATA_URL_LENGTH = 5_000_000;
 
 function normalizeMessage(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -181,6 +183,11 @@ export function createSaveUserFeedbackHandler({
       return;
     }
 
+    if (message.length > MAX_FEEDBACK_MESSAGE_LENGTH) {
+      res.status(413).json({ error: "Feedback message is too large" });
+      return;
+    }
+
     if (screenshots.length > 2) {
       res.status(400).json({ error: "At most 2 screenshots are allowed" });
       return;
@@ -194,7 +201,9 @@ export function createSaveUserFeedbackHandler({
     if (
       hasInvalidEntry ||
       screenshots.some(
-        (screenshot) => !SCREENSHOT_DATA_URL_PATTERN.test(screenshot),
+        (screenshot) =>
+          screenshot.length > MAX_SCREENSHOT_DATA_URL_LENGTH ||
+          !SCREENSHOT_DATA_URL_PATTERN.test(screenshot),
       )
     ) {
       res.status(400).json({

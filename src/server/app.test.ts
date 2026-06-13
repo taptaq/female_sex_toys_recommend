@@ -41,3 +41,37 @@ test("server accepts feedback screenshot payloads and reports oversize requests 
   assert.match(source, /res\.status\(413\)\.json/);
   assert.match(source, /反馈截图太大/);
 });
+
+test("server wires production security middleware before routes", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/server/app.ts"), "utf8");
+
+  assert.match(source, /createSecurityHeadersMiddleware/);
+  assert.match(source, /createCorsAllowlistMiddleware/);
+  assert.match(source, /createOriginGuardMiddleware/);
+  assert.match(source, /createSensitiveRouteRateLimitMiddleware/);
+  assert.match(source, /createAiRouteRateLimitMiddleware/);
+  assert.ok(
+    source.indexOf("app.use(createSecurityHeadersMiddleware())") <
+      source.indexOf('app.get(\n  "/api/recommender/toys"'),
+    "security headers should be registered before API routes",
+  );
+  assert.ok(
+    source.indexOf("app.use(createCorsAllowlistMiddleware())") <
+      source.indexOf("app.use(createOriginGuardMiddleware())"),
+    "cors allowlist should handle preflight before origin guard",
+  );
+  assert.ok(
+    source.indexOf("app.use(createOriginGuardMiddleware())") <
+      source.indexOf('app.get(\n  "/api/recommender/toys"'),
+    "origin guard should be registered before API routes",
+  );
+});
+
+test("server limits AI prompt size and hides production error details", () => {
+  const source = fs.readFileSync(path.resolve(process.cwd(), "src/server/app.ts"), "utf8");
+
+  assert.match(source, /const AI_PROMPT_MAX_LENGTH = 12_000/);
+  assert.match(source, /prompt\.length > AI_PROMPT_MAX_LENGTH/);
+  assert.match(source, /app\.post\("\/api\/ai\/rerank", aiRouteRateLimit, aiRerankHandler\)/);
+  assert.match(source, /getPublicErrorDetails\(error\)/);
+});

@@ -84,6 +84,7 @@ export function MatchModePage({
   const { repeat, shouldAnimate, prefersReducedMotion } = usePagePerformanceState();
   const [activeModeId, setActiveModeId] = useState<MatchModeId>("quiz");
   const [launchingModeId, setLaunchingModeId] = useState<MatchModeId | null>(null);
+  const [areModeAssetsReady, setAreModeAssetsReady] = useState(false);
   const modePageRef = useRef<HTMLElement | null>(null);
   const didRunEntranceMotionRef = useRef(false);
   const touchStartXRef = useRef<number | null>(null);
@@ -97,6 +98,43 @@ export function MatchModePage({
     lucky: onSelectLuckyMode,
     library: onSelectLibraryMode,
   } satisfies Record<MatchModeId, () => void>;
+
+  useEffect(() => {
+    let isCancelled = false;
+    const assetUrls = [
+      ...MATCH_MODE_OPTIONS.map((mode) => mode.asset),
+      "/assets/luna-astronaut/mode-guide.webp",
+      "/assets/luna-astronaut/mode-dive.webp",
+      "/assets/luna-astronaut/mode-portal.webp",
+    ];
+
+    Promise.all(
+      assetUrls.map(
+        (src) =>
+          new Promise<void>((resolve) => {
+            const image = new Image();
+            image.onload = () => {
+              const decode = image.decode?.();
+              if (decode) {
+                decode.then(() => resolve()).catch(() => resolve());
+                return;
+              }
+              resolve();
+            };
+            image.onerror = () => resolve();
+            image.src = src;
+          }),
+      ),
+    ).then(() => {
+      if (!isCancelled) {
+        setAreModeAssetsReady(true);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const runMatchModeLaunchMotion = () => {
     const root = modePageRef.current;
@@ -420,6 +458,12 @@ export function MatchModePage({
     const idleRepeat = repeat === Infinity ? -1 : repeat;
     const ctx = gsap.context(() => {
       const runMatchModeActiveFocusMotion = () => {
+        gsap.set(".female-mvp-mode-planet-image", {
+          clearProps: "transform,opacity,visibility",
+        });
+        gsap.set(".female-mvp-mode-planet-aura", {
+          clearProps: "transform,opacity,visibility",
+        });
         gsap.timeline({ defaults: { ease: "sine.out" } })
           .fromTo(
             ".female-mvp-mode-planet-button-active .female-mvp-mode-planet-image",
@@ -507,6 +551,7 @@ export function MatchModePage({
         "female-mvp-mode-page relative left-1/2 min-h-[100svh] w-screen -translate-x-1/2 overflow-hidden px-4 pb-[calc(1.15rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))] text-slate-900",
         entrance === "planet" ? "female-mvp-mode-page-from-planet" : "",
         isLaunching ? "female-mvp-mode-page-launching" : "",
+        areModeAssetsReady ? "female-mvp-mode-page-assets-ready" : "female-mvp-mode-page-assets-loading",
       ].join(" ")}
     >
       <div className="female-mvp-mode-stars" aria-hidden="true" />
@@ -588,9 +633,9 @@ export function MatchModePage({
                 <img
                   src={mode.asset}
                   alt=""
-                  loading={isActive ? "eager" : "lazy"}
+                  loading="eager"
                   decoding="async"
-                  fetchPriority={isActive ? "high" : "auto"}
+                  fetchPriority={slot === "back" ? "low" : "high"}
                   className="female-mvp-mode-planet-image"
                 />
                 <span className="female-mvp-mode-planet-label">
@@ -611,8 +656,9 @@ export function MatchModePage({
             <img
               src="/assets/luna-astronaut/mode-portal.webp"
               alt=""
-              loading="lazy"
+              loading="eager"
               decoding="async"
+              fetchPriority="low"
             />
           </span>
 
@@ -651,8 +697,9 @@ export function MatchModePage({
             <img
               src="/assets/luna-astronaut/mode-dive.webp"
               alt=""
-              loading="lazy"
+              loading="eager"
               decoding="async"
+              fetchPriority="low"
               className="female-mvp-mode-luna-image female-mvp-mode-luna-image-dive"
             />
           </div>

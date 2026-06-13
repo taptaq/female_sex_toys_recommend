@@ -11,6 +11,11 @@ type UserProfileStore = {
   upsertProfile: (input: { userId: string; username: string }) => Promise<void>;
 };
 
+const MAX_EMAIL_LENGTH = 254;
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+const BASIC_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function createEmailRegistrationHandler({
   service,
   profileStore,
@@ -25,6 +30,23 @@ export function createEmailRegistrationHandler({
     if (!email || !password.trim()) {
       res.status(400).json({
         error: "Email and password are required",
+      });
+      return;
+    }
+
+    if (email.length > MAX_EMAIL_LENGTH || !BASIC_EMAIL_PATTERN.test(email)) {
+      res.status(400).json({
+        error: "A valid email address is required",
+      });
+      return;
+    }
+
+    if (
+      password.length < MIN_PASSWORD_LENGTH ||
+      password.length > MAX_PASSWORD_LENGTH
+    ) {
+      res.status(400).json({
+        error: "Password must be between 8 and 128 characters",
       });
       return;
     }

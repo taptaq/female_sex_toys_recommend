@@ -135,7 +135,8 @@
     "scrape:zalo-official": "tsx -r dotenv/config src/scraper/zalo-official/crawler.ts",
     "scrape:xiaoguaishou": "tsx -r dotenv/config src/scraper/xiaoguaishou/crawler.ts",
     "scrape:wangyichunfeng": "tsx -r dotenv/config src/scraper/wangyichunfeng/crawler.ts",
-    "scrape:zuiqingfeng": "tsx -r dotenv/config src/scraper/zuiqingfeng/crawler.ts"
+    "scrape:zuiqingfeng": "tsx -r dotenv/config src/scraper/zuiqingfeng/crawler.ts",
+    "db:clean:expired-recommendation-sessions": "tsx -r dotenv/config src/db/delete-expired-recommendation-sessions.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

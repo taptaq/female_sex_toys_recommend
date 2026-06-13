@@ -1053,9 +1053,23 @@ export default function App() {
 
       fetch(requestUrl)
         .then(async (response) => {
-          const data = await response.json();
+          if (response.status === 304) {
+            const cachedProducts = readProductsCache();
+            if (cachedProducts.length > 0) {
+              return cachedProducts;
+            }
+          }
+
+          const data = await response.json().catch(() => null);
           if (!response.ok) {
-            throw new Error(data?.error || data?.details || "装备库接口异常");
+            const message =
+              data && typeof data === "object"
+                ? (data as { error?: string; details?: string }).error ||
+                  (data as { error?: string; details?: string }).details
+                : "";
+            throw new Error(
+              message || `装备库接口异常（HTTP ${response.status}）`,
+            );
           }
           return normalizeProductsPayload(data);
         })
@@ -1074,7 +1088,12 @@ export default function App() {
         .catch((error) => {
           console.error("Failed to fetch products:", error);
           setLoadingStep(-1); // 链路中断
-          setProductsError("装备库数据加载失败，请稍后重试。");
+          const message = error instanceof Error ? error.message : "";
+          setProductsError(
+            message
+              ? `装备库数据加载失败，请稍后重试。（${message}）`
+              : "装备库数据加载失败，请稍后重试。",
+          );
           setIsLoading(false);
           resolve([]); // Resolve anyway to allow user to try again or see error state
         })
@@ -2494,7 +2513,7 @@ ${JSON.stringify(context.backupCandidates)}
     : isShellKnowledgeDetailRoute
       ? "h-dvh min-h-dvh p-0"
     : effectiveShellRoute === "/quiz"
-      ? "h-dvh min-h-dvh p-0"
+      ? "h-[100svh] min-h-[100svh] p-0"
     : isFemaleMvpResultsRoute
       ? "min-h-screen p-0"
     : effectiveShellRoute === "/profiles"

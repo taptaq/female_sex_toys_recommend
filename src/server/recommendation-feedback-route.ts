@@ -9,6 +9,8 @@ import type {
 } from "./recommendation-feedback-store.js";
 
 const SUPPORTED_EVENT_TYPES = new Set(["reroll_recommendation"]);
+const MAX_RECOMMENDATION_FEEDBACK_JSON_BYTES = 30_000;
+const MAX_ANSWER_PATH_ITEMS = 30;
 
 function normalizeEventType(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -45,7 +47,11 @@ function normalizeTopProducts(value: unknown) {
 }
 
 function normalizeAnswerPath(value: unknown) {
-  return Array.isArray(value) ? value : [];
+  return Array.isArray(value) ? value.slice(0, MAX_ANSWER_PATH_ITEMS) : [];
+}
+
+function exceedsJsonByteLimit(value: unknown, maxBytes: number) {
+  return Buffer.byteLength(JSON.stringify(value), "utf8") > maxBytes;
 }
 
 function resolveUserAgentHeader(value: string | string[] | undefined) {
@@ -72,10 +78,16 @@ export function createSaveRecommendationFeedbackEventHandler({
       return;
     }
 
+    const answers = normalizeJsonObject(requestBody.answers);
+    if (exceedsJsonByteLimit(answers, MAX_RECOMMENDATION_FEEDBACK_JSON_BYTES)) {
+      res.status(413).json({ error: "Recommendation feedback answers are too large" });
+      return;
+    }
+
     const input: SaveRecommendationFeedbackEventInput = {
       eventType: eventType as SaveRecommendationFeedbackEventInput["eventType"],
       sessionId: normalizeOptionalText(requestBody.sessionId),
-      answers: normalizeJsonObject(requestBody.answers),
+      answers,
       answerPath: normalizeAnswerPath(requestBody.answerPath),
       topProducts: normalizeTopProducts(requestBody.topProducts),
       rerollAttempt: normalizeRerollAttempt(requestBody.rerollAttempt),
