@@ -79,7 +79,7 @@ test("product card falls back to a subtype placeholder image when image placehol
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.webp"/);
 });
 
 test("product card labels taxonomy placeholder images as references", () => {
@@ -118,7 +118,7 @@ test("product card maps legacy subtype aliases to placeholder images", () => {
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.webp"/);
 });
 
 test("product card falls back to type placeholder when subtype is missing", () => {
@@ -132,7 +132,7 @@ test("product card falls back to type placeholder when subtype is missing", () =
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.webp"/);
 });
 
 test("product card replaces legacy gradient placeholders with subtype images", () => {
@@ -146,7 +146,7 @@ test("product card replaces legacy gradient placeholders with subtype images", (
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.webp"/);
 });
 
 test("product card replaces non-renderable placeholder strings with subtype images", () => {
@@ -159,7 +159,7 @@ test("product card replaces non-renderable placeholder strings with subtype imag
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/bullet_vibe.webp"/);
 });
 
 test("product card falls back to physical form placeholder for restored result snapshots", () => {
@@ -174,5 +174,5 @@ test("product card falls back to physical form placeholder for restored result s
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.webp"/);
 });

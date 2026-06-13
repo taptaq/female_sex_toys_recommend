@@ -83,8 +83,8 @@ test("matching page moves the safety and exploration planets into the loading ri
   );
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/index.css"), "utf8");
 
-  assert.match(html, /\/assets\/luna-planets\/safety\.png/);
-  assert.match(html, /\/assets\/luna-planets\/explore\.png/);
+  assert.match(html, /\/assets\/luna-planets\/safety\.webp/);
+  assert.match(html, /\/assets\/luna-planets\/explore\.webp/);
   assert.equal((html.match(/female-mvp-matching__planet-image/g) ?? []).length, 2);
   assert.match(source, /\.female-mvp-matching__planet-safety/);
   assert.match(source, /\.female-mvp-matching__planet-explore/);

@@ -590,11 +590,11 @@ test("female MVP keeps the primary image area separate from the detail link hots
     />,
   );
 
-  assert.match(html, /<img src="\/assets\/product-placeholder\/suction_pure.png" alt="Primary Pick"/);
+  assert.match(html, /<img src="\/assets\/product-placeholder\/suction_pure.webp" alt="Primary Pick"/);
   assert.match(html, /href="https:\/\/example.com\/primary-pick"/);
   assert.doesNotMatch(
     html,
-    /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*<img src="\/assets\/product-placeholder\/suction_pure\.png"[\s\S]*Primary Pick[\s\S]*<\/a>/,
+    /<a[^>]*href="https:\/\/example\.com\/primary-pick"[\s\S]*<img src="\/assets\/product-placeholder\/suction_pure\.webp"[\s\S]*Primary Pick[\s\S]*<\/a>/,
   );
 });
 
@@ -651,7 +651,7 @@ test("female MVP primary image falls back to subtype placeholder when product im
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/suction_pure.webp"/);
 });
 
 test("female MVP primary image can fall back to quiz physical form when restored product taxonomy is missing", () => {
@@ -677,7 +677,7 @@ test("female MVP primary image can fall back to quiz physical form when restored
     />,
   );
 
-  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.png"/);
+  assert.match(html, /src="\/assets\/product-placeholder\/rabbit_dual.webp"/);
 });
 
 test("female MVP folds practical cautions into the primary check card", () => {

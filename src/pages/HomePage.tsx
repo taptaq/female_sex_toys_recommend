@@ -40,28 +40,28 @@ const FEMALE_MVP_HOME_PLANETS = [
     id: "privacy",
     label: "隐私星",
     shortLabel: "隐私",
-    src: "/assets/luna-planets/privacy.png",
+    src: "/assets/luna-planets/privacy.webp",
     className: "female-mvp-orbit-planet-privacy",
   },
   {
     id: "comfort",
     label: "舒适星",
     shortLabel: "舒适",
-    src: "/assets/luna-planets/comfort.png",
+    src: "/assets/luna-planets/comfort.webp",
     className: "female-mvp-orbit-planet-comfort",
   },
   {
     id: "beginner",
     label: "新手星",
     shortLabel: "新手",
-    src: "/assets/luna-planets/beginner.png",
+    src: "/assets/luna-planets/beginner.webp",
     className: "female-mvp-orbit-planet-beginner",
   },
   {
     id: "care",
     label: "清洁星",
     shortLabel: "清洁",
-    src: "/assets/luna-planets/care.png",
+    src: "/assets/luna-planets/care.webp",
     className: "female-mvp-orbit-planet-care",
   },
 ] as const;
@@ -1195,6 +1195,8 @@ export function HomePage({
                         <img
                           src={planet.src}
                           alt=""
+                          loading="eager"
+                          decoding="async"
                           className="female-mvp-orbit-planet-image"
                         />
                       </span>
@@ -1205,8 +1207,11 @@ export function HomePage({
                   <span className="female-mvp-astronaut-thruster" aria-hidden="true" />
                   <span className="female-mvp-astronaut-shimmer" aria-hidden="true" />
                   <img
-                    src="/assets/luna-astronaut/yeah.png"
+                    src="/assets/luna-astronaut/yeah.webp"
                     alt="Luna 小宇航员"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                     className="female-mvp-astronaut-image"
                   />
                 </div>

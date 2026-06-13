@@ -96,8 +96,10 @@ export function MatchingPage({
             aria-label="安心星"
           >
             <img
-              src="/assets/luna-planets/safety.png"
+              src="/assets/luna-planets/safety.webp"
               alt=""
+              loading="eager"
+              decoding="async"
               className="female-mvp-matching__planet-image"
             />
           </span>
@@ -106,8 +108,10 @@ export function MatchingPage({
             aria-label="探索星"
           >
             <img
-              src="/assets/luna-planets/explore.png"
+              src="/assets/luna-planets/explore.webp"
               alt=""
+              loading="eager"
+              decoding="async"
               className="female-mvp-matching__planet-image"
             />
           </span>

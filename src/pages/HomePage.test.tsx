@@ -258,7 +258,7 @@ test("female MVP home renders a mobile-first astronaut atmosphere", () => {
   assert.match(html, /female-mvp-stars/);
   assert.match(html, /female-mvp-astronaut/);
   assert.match(html, /female-mvp-astronaut-image/);
-  assert.match(html, /\/assets\/luna-astronaut\/yeah\.png/);
+  assert.match(html, /\/assets\/luna-astronaut\/yeah\.webp/);
   assert.match(html, /female-mvp-primary-button/);
   assert.doesNotMatch(html, /home-space-depth/);
   assert.doesNotMatch(html, /home-primary-ignition/);
@@ -296,16 +296,16 @@ test("female MVP home keeps only the four core Luna planet IP assets in the star
     "beginner",
     "care",
   ].forEach((id) => {
-    assert.match(html, new RegExp(`/assets/luna-planets/${id}\\.png`));
+    assert.match(html, new RegExp(`/assets/luna-planets/${id}\\.webp`));
     assert.match(homePageSource, new RegExp(`female-mvp-orbit-planet-${id}`));
   });
-  assert.doesNotMatch(html, /\/assets\/luna-planets\/safety\.png/);
-  assert.doesNotMatch(html, /\/assets\/luna-planets\/explore\.png/);
+  assert.doesNotMatch(html, /\/assets\/luna-planets\/safety\.webp/);
+  assert.doesNotMatch(html, /\/assets\/luna-planets\/explore\.webp/);
   assert.doesNotMatch(html, /privacy-ring/);
   assert.doesNotMatch(homePageSource, /ringSrc/);
   assert.doesNotMatch(cssSource, /female-mvp-planet-ring/);
   assert.equal(
-    fs.existsSync(path.resolve(process.cwd(), "public/assets/luna-planets/privacy-ring.png")),
+    fs.existsSync(path.resolve(process.cwd(), "public/assets/luna-planets/privacy-ring.webp")),
     false,
   );
   assert.equal(countMatches(html, /female-mvp-orbit-planet-image/g), 4);

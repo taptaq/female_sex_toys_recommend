@@ -9,8 +9,17 @@ import {
 const DEFAULT_FALLBACK_CLASS_NAME =
   "bg-gradient-to-br from-sky-50 via-white to-rose-50";
 
+export function normalizeProductImageSource(value: string) {
+  return value
+    .trim()
+    .replace(
+      /^\/assets\/product-placeholder\/([^/?#]+)\.png([?#].*)?$/i,
+      "/assets/product-placeholder/$1.webp$2",
+    );
+}
+
 function isRenderableProductImageSource(value: string) {
-  const trimmed = value.trim();
+  const trimmed = normalizeProductImageSource(value);
 
   return (
     /^https?:\/\//i.test(trimmed) ||
@@ -23,7 +32,7 @@ function isRenderableProductImageSource(value: string) {
 }
 
 export function getInitialProductImageState(imageValue: string) {
-  const trimmed = imageValue.trim();
+  const trimmed = normalizeProductImageSource(imageValue);
   const isRemoteImage = isRenderableProductImageSource(trimmed);
 
   return {
@@ -33,7 +42,7 @@ export function getInitialProductImageState(imageValue: string) {
 }
 
 export function getNextProductImageStateOnError(imageValue: string) {
-  const trimmed = imageValue.trim();
+  const trimmed = normalizeProductImageSource(imageValue);
 
   return {
     isRemoteImage: false,
@@ -54,7 +63,7 @@ export function resolveProductImageValue({
   gender?: "female" | "male" | "unisex" | null;
   physicalForm?: string | null;
 }) {
-  const trimmedImageValue = imageValue.trim();
+  const trimmedImageValue = normalizeProductImageSource(imageValue);
   const hasTaxonomyPlaceholderSource = Boolean(
     subtypeCode || typeCode || physicalForm,
   );
@@ -130,6 +139,8 @@ export function ProductImage({
         <img
           src={activeImageValue}
           alt={alt}
+          loading="lazy"
+          decoding="async"
           className={imageClassName}
           onError={() => {
             if (

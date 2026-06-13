@@ -14,7 +14,7 @@ const MATCH_MODE_OPTIONS = [
     meta: "新手友好 · 约 2 分钟",
     guide: "慢慢来，我会陪你校准。",
     cta: "开始轻问答",
-    asset: "/assets/luna-planets/modes/quiz.png",
+    asset: "/assets/luna-planets/modes/quiz.webp",
   },
   {
     id: "natural-language",
@@ -24,7 +24,7 @@ const MATCH_MODE_OPTIONS = [
     meta: "更自由 · 适合有想法时",
     guide: "你说，我来整理。",
     cta: "直接告诉 Luna",
-    asset: "/assets/luna-planets/modes/talk.png",
+    asset: "/assets/luna-planets/modes/talk.webp",
     isComingSoon: true,
   },
   {
@@ -35,7 +35,7 @@ const MATCH_MODE_OPTIONS = [
     meta: "随机灵感 · 轻松开始",
     guide: "今天交给一点直觉。",
     cta: "抽取今日幸运",
-    asset: "/assets/luna-planets/modes/lucky.png",
+    asset: "/assets/luna-planets/modes/lucky.webp",
     isComingSoon: true,
   },
   {
@@ -46,7 +46,7 @@ const MATCH_MODE_OPTIONS = [
     meta: "自主比较 · 适合想自己挑",
     guide: "你来挑，我帮你排好。",
     cta: "进入产品库",
-    asset: "/assets/luna-planets/modes/library.png",
+    asset: "/assets/luna-planets/modes/library.webp",
   },
 ] as const;
 
@@ -585,7 +585,14 @@ export function MatchModePage({
                 tabIndex={slot === "back" ? -1 : 0}
               >
                 <span className="female-mvp-mode-planet-aura" aria-hidden="true" />
-                <img src={mode.asset} alt="" className="female-mvp-mode-planet-image" />
+                <img
+                  src={mode.asset}
+                  alt=""
+                  loading={isActive ? "eager" : "lazy"}
+                  decoding="async"
+                  fetchPriority={isActive ? "high" : "auto"}
+                  className="female-mvp-mode-planet-image"
+                />
                 <span className="female-mvp-mode-planet-label">
                   <span>{mode.eyebrow}</span>
                   <strong>{mode.title}</strong>
@@ -601,7 +608,12 @@ export function MatchModePage({
             ].join(" ")}
             aria-hidden="true"
           >
-            <img src="/assets/luna-astronaut/mode-portal.png" alt="" />
+            <img
+              src="/assets/luna-astronaut/mode-portal.webp"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
           </span>
 
           <span
@@ -629,13 +641,18 @@ export function MatchModePage({
           >
             <span className="female-mvp-mode-luna-bubble">{activeMode.guide}</span>
             <img
-              src="/assets/luna-astronaut/mode-guide.png"
+              src="/assets/luna-astronaut/mode-guide.webp"
               alt=""
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
               className="female-mvp-mode-luna-image female-mvp-mode-luna-image-guide"
             />
             <img
-              src="/assets/luna-astronaut/mode-dive.png"
+              src="/assets/luna-astronaut/mode-dive.webp"
               alt=""
+              loading="lazy"
+              decoding="async"
               className="female-mvp-mode-luna-image female-mvp-mode-luna-image-dive"
             />
           </div>

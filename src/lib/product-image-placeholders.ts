@@ -19,7 +19,7 @@ export type ProductImagePlaceholder = {
 /**
  * Subtype 到占位符的映射表
  *
- * 图片命名规范：{subtype_code}.png
+ * 图片命名规范：{subtype_code}.webp
  * 图片路径：/assets/product-placeholder/
  * 建议尺寸：800x800px (1:1 比例)
  */
@@ -29,52 +29,52 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
   // 吮吸类
   suction_pure: {
     type: 'image',
-    value: '/assets/product-placeholder/suction_pure.png',
+    value: '/assets/product-placeholder/suction_pure.webp',
     description: '纯吮吸产品示意图'
   },
 
   suction_dual: {
     type: 'image',
-    value: '/assets/product-placeholder/suction_dual.png',
+    value: '/assets/product-placeholder/suction_dual.webp',
     description: '吮吸双刺激产品示意图'
   },
 
   // 外部震动
   bullet_vibe: {
     type: 'image',
-    value: '/assets/product-placeholder/bullet_vibe.png',
+    value: '/assets/product-placeholder/bullet_vibe.webp',
     description: '跳蛋产品示意图'
   },
 
   wand_massager: {
     type: 'image',
-    value: '/assets/product-placeholder/wand_massager.png',
+    value: '/assets/product-placeholder/wand_massager.webp',
     description: '魔杖按摩器示意图'
   },
 
   // 入体震动
   gspot_insertable: {
     type: 'image',
-    value: '/assets/product-placeholder/gspot_insertable.png',
+    value: '/assets/product-placeholder/gspot_insertable.webp',
     description: 'G点探索产品示意图'
   },
 
   insertable_vibe: {
     type: 'image',
-    value: '/assets/product-placeholder/insertable_vibe.png',
+    value: '/assets/product-placeholder/insertable_vibe.webp',
     description: '入体震动产品示意图'
   },
 
   // 双刺激
   rabbit_dual: {
     type: 'image',
-    value: '/assets/product-placeholder/rabbit_dual.png',
+    value: '/assets/product-placeholder/rabbit_dual.webp',
     description: '兔耳双刺激产品示意图'
   },
 
   multi_head_dual: {
     type: 'image',
-    value: '/assets/product-placeholder/multi_head_dual.png',
+    value: '/assets/product-placeholder/multi_head_dual.webp',
     description: '多头双刺激产品示意图'
   },
 
@@ -82,13 +82,13 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
 
   insertable_couples: {
     type: 'image',
-    value: '/assets/product-placeholder/insertable_couples.png',
+    value: '/assets/product-placeholder/insertable_couples.webp',
     description: '双人入体产品示意图'
   },
 
   external_couples: {
     type: 'image',
-    value: '/assets/product-placeholder/external_couples.png',
+    value: '/assets/product-placeholder/external_couples.webp',
     description: '双人外用产品示意图'
   },
 
@@ -96,19 +96,19 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
 
   panty_wearable: {
     type: 'image',
-    value: '/assets/product-placeholder/panty_wearable.png',
+    value: '/assets/product-placeholder/panty_wearable.webp',
     description: '隐形穿戴产品示意图'
   },
 
   insertable_remote: {
     type: 'image',
-    value: '/assets/product-placeholder/insertable_remote.png',
+    value: '/assets/product-placeholder/insertable_remote.webp',
     description: '入体远控产品示意图'
   },
 
   dual_wearable_remote: {
     type: 'image',
-    value: '/assets/product-placeholder/dual_wearable_remote.png',
+    value: '/assets/product-placeholder/dual_wearable_remote.webp',
     description: '双人远控产品示意图'
   },
 
@@ -116,19 +116,13 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
 
   lube_care: {
     type: 'image',
-    value: '/assets/product-placeholder/lube_care.png',
+    value: '/assets/product-placeholder/lube_care.webp',
     description: '润滑护理产品示意图'
-  },
-
-  condom: {
-    type: 'image',
-    value: '/assets/product-placeholder/condom.png',
-    description: '避孕套产品示意图'
   },
 
   lingerie: {
     type: 'image',
-    value: '/assets/product-placeholder/lingerie.png',
+    value: '/assets/product-placeholder/lingerie.webp',
     description: '内衣服饰示意图'
   },
 
@@ -136,25 +130,25 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
 
   bondage_restraint: {
     type: 'image',
-    value: '/assets/product-placeholder/bondage_restraint.png',
+    value: '/assets/product-placeholder/bondage_restraint.webp',
     description: '束缚拘束产品示意图'
   },
 
   collar_leash: {
     type: 'image',
-    value: '/assets/product-placeholder/collar_leash.png',
+    value: '/assets/product-placeholder/collar_leash.webp',
     description: '项圈牵引产品示意图'
   },
 
   impact_play: {
     type: 'image',
-    value: '/assets/product-placeholder/impact_play.png',
+    value: '/assets/product-placeholder/impact_play.webp',
     description: '拍打调教产品示意图'
   },
 
   nipple_play: {
     type: 'image',
-    value: '/assets/product-placeholder/nipple_play.png',
+    value: '/assets/product-placeholder/nipple_play.webp',
     description: '乳夹刺激产品示意图'
   },
 
@@ -163,7 +157,7 @@ const SUBTYPE_IMAGE_PLACEHOLDERS: Partial<Record<LibrarySubtypeCode, ProductImag
   // 前列腺
   prostate_plug: {
     type: 'image',
-    value: '/assets/product-placeholder/prostate_plug.png',
+    value: '/assets/product-placeholder/prostate_plug.webp',
     description: '前列腺塞产品示意图'
   },
 };
