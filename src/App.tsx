@@ -2502,7 +2502,7 @@ ${JSON.stringify(context.backupCandidates)}
         (effectiveShellRoute === "/quiz" && step === activeQuestions.length)
       ? "overflow-visible"
       : effectiveShellRoute === "/quiz" && isFemaleMvp
-        ? "overflow-y-auto overflow-x-hidden"
+        ? "overflow-hidden"
       : "overflow-hidden";
   const shellAlignmentClassName =
     effectiveShellRoute === "/quiz" && isFemaleMvp

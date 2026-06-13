@@ -10,6 +10,7 @@ test("server startup eagerly initializes the recommender schema", () => {
 
   assert.match(ensureServerReadyBlock, /export function ensureServerReady\(\)/);
   assert.match(ensureServerReadyBlock, /await ensureRecommenderItemsSchema\(pool\)/);
+  assert.doesNotMatch(ensureServerReadyBlock, /refreshFemaleTable:\s*true/);
   assert.ok(
     ensureServerReadyBlock.indexOf("ensureDatabaseConfigured();") <
       ensureServerReadyBlock.indexOf("await ensureRecommenderItemsSchema(pool)"),

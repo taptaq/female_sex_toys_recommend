@@ -2,7 +2,10 @@ type Queryable = {
   query: (sql: string) => Promise<unknown>;
 };
 
-export async function ensureRecommenderItemsSchema(pool: Queryable) {
+export async function ensureRecommenderItemsSchema(
+  pool: Queryable,
+  { refreshFemaleTable = false }: { refreshFemaleTable?: boolean } = {},
+) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS public.recommender_toys (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -76,16 +79,18 @@ export async function ensureRecommenderItemsSchema(pool: Queryable) {
     ADD COLUMN IF NOT EXISTS link TEXT
   `);
 
-  await pool.query(`
-    TRUNCATE TABLE public.female_recommender_toys
-  `);
+  if (refreshFemaleTable) {
+    await pool.query(`
+      TRUNCATE TABLE public.female_recommender_toys
+    `);
 
-  await pool.query(`
-    INSERT INTO public.female_recommender_toys
-    SELECT *
-    FROM public.recommender_toys
-    WHERE gender = 'female'
-  `);
+    await pool.query(`
+      INSERT INTO public.female_recommender_toys
+      SELECT *
+      FROM public.recommender_toys
+      WHERE gender = 'female'
+    `);
+  }
 
   await pool.query(`
     UPDATE public.female_recommender_toys t

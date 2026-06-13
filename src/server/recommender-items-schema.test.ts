@@ -74,7 +74,7 @@ test("ensureRecommenderItemsSchema creates and refreshes a female-only product t
     },
   };
 
-  await ensureRecommenderItemsSchema(pool);
+  await ensureRecommenderItemsSchema(pool, { refreshFemaleTable: true });
 
   assert.ok(
     queries.some((query) =>
@@ -91,6 +91,33 @@ test("ensureRecommenderItemsSchema creates and refreshes a female-only product t
       ),
     ),
     "female table should be populated from female recommender_toys rows",
+  );
+});
+
+test("ensureRecommenderItemsSchema does not refresh female rows during runtime initialization by default", async () => {
+  const queries: string[] = [];
+  const pool = {
+    async query(sql: string) {
+      queries.push(sql);
+      return { rows: [], rowCount: 0 };
+    },
+  };
+
+  await ensureRecommenderItemsSchema(pool);
+
+  assert.ok(
+    queries.some((query) =>
+      /CREATE TABLE IF NOT EXISTS public\.female_recommender_toys/i.test(query),
+    ),
+    "runtime initialization should still ensure the female table exists",
+  );
+  assert.ok(
+    queries.every((query) => !/TRUNCATE TABLE public\.female_recommender_toys/i.test(query)),
+    "runtime initialization must not truncate production library data",
+  );
+  assert.ok(
+    queries.every((query) => !/INSERT INTO public\.female_recommender_toys/i.test(query)),
+    "runtime initialization must not rebuild production library data",
   );
 });
 

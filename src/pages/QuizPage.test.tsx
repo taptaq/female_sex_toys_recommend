@@ -72,7 +72,7 @@ test("quiz page uses mobile female MVP presentation", () => {
 
   assert.match(html, /female-mvp-quiz/);
   assert.match(html, /overflow-y-auto/);
-  assert.match(html, /pb-\[calc\(6rem\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(html, /pb-\[calc\(7rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(html, /Luna 正在帮你校准/);
   assert.match(html, /female-mvp-quiz__astronaut-image/);
   assert.match(html, /female-mvp-quiz__astronaut-figure/);
@@ -173,7 +173,7 @@ test("quiz page primary back action routes to the match mode layer", () => {
 test("female MVP quiz shell aligns to the top so short mobile viewports can scroll", () => {
   const source = fs.readFileSync(path.resolve(process.cwd(), "src/App.tsx"), "utf8");
 
-  assert.match(source, /effectiveShellRoute === "\/quiz" && isFemaleMvp\s*\?\s*"overflow-y-auto overflow-x-hidden"/);
+  assert.match(source, /effectiveShellRoute === "\/quiz" && isFemaleMvp\s*\?\s*"overflow-hidden"/);
   assert.match(source, /const shellAlignmentClassName =[\s\S]*effectiveShellRoute === "\/quiz" && isFemaleMvp[\s\S]*\? "justify-start"[\s\S]*: "justify-center";/);
   assert.doesNotMatch(
     source,
@@ -214,8 +214,12 @@ test("quiz female MVP background is scoped to the quiz shell", () => {
   assert.match(pageMarkup, /female-mvp-quiz-card/);
   assert.doesNotMatch(pageMarkup, /female-mvp-quiz-card[^"]*overflow-hidden/);
   assert.match(pageMarkup, /female-mvp-quiz/);
+  assert.match(pageMarkup, /h-\[100svh\]/);
   assert.match(pageMarkup, /min-h-\[100svh\]/);
-  assert.match(pageMarkup, /pb-\[calc\(6rem\+env\(safe-area-inset-bottom\)\)\]/);
+  assert.match(pageMarkup, /overflow-y-auto/);
+  assert.match(pageMarkup, /overscroll-contain/);
+  assert.match(pageMarkup, /touch-pan-y/);
+  assert.match(pageMarkup, /pb-\[calc\(7rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.doesNotMatch(pageMarkup, /quiz-scan-shell/);
   assert.doesNotMatch(source, /quiz-scan-shell/);
   assert.doesNotMatch(source, /quiz-starfield/);
@@ -240,6 +244,8 @@ test("quiz animated art layers are isolated for smoother compositing", () => {
   assert.match(source, /\.female-mvp-quiz__astronaut-image\s*\{[\s\S]*?will-change: opacity;/);
   assert.match(source, /\.female-mvp-quiz__astronaut-blink-patch\s*\{[\s\S]*?will-change: opacity;/);
   assert.match(source, /\.female-mvp-quiz-card\s*\{[\s\S]*?contain: paint;/);
+  assert.match(source, /^\.female-mvp-quiz\s*\{[\s\S]*?-webkit-overflow-scrolling: touch;/m);
+  assert.match(source, /^\.female-mvp-option\s*\{[\s\S]*?touch-action: pan-y;/m);
 });
 
 test("female MVP quiz uses one local background layer instead of duplicating the shell cosmos", () => {

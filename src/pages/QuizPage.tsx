@@ -108,7 +108,7 @@ export function QuizPage({
       animate="in"
       exit="out"
       className={[
-        "female-mvp-quiz relative left-1/2 flex min-h-[100svh] w-screen -translate-x-1/2 flex-col overflow-x-hidden overflow-y-auto px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4",
+        "female-mvp-quiz relative left-1/2 flex h-[100svh] min-h-[100svh] w-screen -translate-x-1/2 touch-pan-y flex-col overflow-x-hidden overflow-y-auto overscroll-contain px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4",
         shouldAnimate ? "" : "ambient-motion-paused",
       ].join(" ")}
     >
