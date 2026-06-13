@@ -40,6 +40,8 @@ test("match mode page renders quiz and natural language entry options", () => {
   assert.match(html, /female-mvp-mode-orbit-stage/);
   assert.match(html, /female-mvp-mode-orbit-ring/);
   assert.match(html, /female-mvp-mode-planet-button/);
+  assert.match(html, /female-mvp-mode-planet-button-active/);
+  assert.match(html, /female-mvp-mode-planet-button-back/);
   assert.match(html, /female-mvp-mode-luna-guide/);
   assert.match(html, /female-mvp-mode-luna-guide-from-home/);
   assert.match(html, /female-mvp-mode-portal/);
@@ -168,6 +170,15 @@ test("match mode planet switching eases between orbit slots without delaying cli
   assert.match(planetButtonBlock, /opacity 520ms ease/);
   assert.match(planetButtonBlock, /transform 680ms cubic-bezier\(0\.18, 0\.86, 0\.2, 1\)/);
   assert.match(planetImageBlock, /will-change: transform;/);
+  assert.match(pageSource, /type OrbitSlot = "active" \| "next" \| "prev" \| "back";/);
+  assert.match(pageSource, /if \(diff === total - 1\) return "prev";\s*return "back";/);
+  assert.match(pageSource, /aria-hidden=\{slot === "back" \? true : undefined\}/);
+  assert.match(pageSource, /tabIndex=\{slot === "back" \? -1 : 0\}/);
+  assert.match(source, /\.female-mvp-mode-planet-button-back\s*\{[\s\S]*?opacity: 0;[\s\S]*?pointer-events: none;/);
+  assert.match(pageSource, /\.set\("\.female-mvp-mode-planet-button", \{ autoAlpha: 0 \}\)/);
+  assert.match(pageSource, /"\.female-mvp-mode-planet-button",\s*\{\s*autoAlpha: 1,\s*stagger:/);
+  assert.doesNotMatch(pageSource, /\.set\("\.female-mvp-mode-planet-button", \{ autoAlpha: 0, scale:/);
+  assert.doesNotMatch(pageSource, /"\.female-mvp-mode-planet-button",\s*\{\s*autoAlpha: 1,\s*scale:/);
   assert.doesNotMatch(pageSource, /setTimeout\(\(\) => \{\s*setActiveModeId/);
 });
 

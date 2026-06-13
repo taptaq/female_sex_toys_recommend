@@ -644,9 +644,7 @@ export function HomePage({
           element.dataset.introHidden = "false";
           element.style.opacity = "1";
           element.style.visibility = "visible";
-          element.style.transform = element.classList.contains("female-mvp-game-lobby-stage")
-            ? "translateY(-0.9rem)"
-            : "none";
+          element.style.transform = "";
         });
       return;
     }
@@ -665,7 +663,7 @@ export function HomePage({
           yoyo: true,
         });
 
-        gsap.to(".female-mvp-orbit-planet", {
+        gsap.to(".female-mvp-orbit-planet-body", {
           x: (index) => ["0.1rem", "0.14rem", "-0.16rem", "-0.12rem"][index] ?? "0.1rem",
           y: (index) => ["-0.22rem", "-0.3rem", "-0.24rem", "-0.26rem"][index] ?? "-0.24rem",
           rotation: (index) => [0.8, -0.6, 1.2, -1][index] ?? 0.8,
@@ -686,8 +684,8 @@ export function HomePage({
           yoyo: true,
         });
 
-        gsap.to(".female-mvp-stage-backdrop", {
-          scale: 1.012,
+        gsap.to(".female-mvp-depth-wash", {
+          autoAlpha: 0.82,
           duration: getGsapDuration(5.6, motionState),
           ease: "sine.inOut",
           repeat: idleRepeat,
@@ -711,13 +709,14 @@ export function HomePage({
       timeline
         .set(".female-mvp-nav-reveal", { autoAlpha: 0, y: -10 })
         .set(".female-mvp-copy-reveal", { autoAlpha: 0, y: 10 })
-        .set(".female-mvp-orbit-planet", { autoAlpha: 0, scale: 0.92, xPercent: -50, yPercent: -50 })
+        .set(".female-mvp-orbit-planet", { autoAlpha: 0 })
+        .set(".female-mvp-orbit-planet-body", { scale: 0.92 })
         .set(".female-mvp-planet-label", { autoAlpha: 0 })
         .set(".female-mvp-route-spark", { autoAlpha: 0 })
-        .set(".female-mvp-stage-backdrop", { autoAlpha: 0, scale: 0.98 })
-        .set(".female-mvp-starmap-scan", { autoAlpha: 0, scale: 0.86, rotation: -10 })
+        .set(".female-mvp-stage-backdrop", { autoAlpha: 0 })
+        .set(".female-mvp-starmap-scan", { autoAlpha: 0 })
         .set(".female-mvp-orbit-path", { autoAlpha: 0, strokeDasharray: 720, strokeDashoffset: 720 })
-        .set(".female-mvp-game-lobby-stage", { autoAlpha: 1, y: -14 })
+        .set(".female-mvp-game-lobby-stage", { autoAlpha: 1 })
         .set(".female-mvp-display-plinth", { autoAlpha: 0.34 })
         .set(".female-mvp-holo-grid", { autoAlpha: 0 })
         .set(".female-mvp-lens-ribbon", { autoAlpha: 0.18 })
@@ -727,15 +726,12 @@ export function HomePage({
         .addLabel("orbitScan")
         .to(".female-mvp-stage-backdrop", {
           autoAlpha: 1,
-          scale: 1,
           duration: getGsapDuration(0.52, motionState),
         })
         .to(
           ".female-mvp-starmap-scan",
           {
             autoAlpha: 0.9,
-            scale: 1.08,
-            rotation: 4,
             duration: getGsapDuration(0.7, motionState),
             ease: "sine.inOut",
           },
@@ -756,8 +752,15 @@ export function HomePage({
           ".female-mvp-orbit-planet",
           {
             autoAlpha: 0.86,
+            stagger: getGsapDuration(0.13, motionState),
+            duration: getGsapDuration(0.46, motionState),
+          },
+          "planetDiscovery",
+        )
+        .to(
+          ".female-mvp-orbit-planet-body",
+          {
             scale: 1,
-            filter: "brightness(1.08) saturate(1.06)",
             stagger: getGsapDuration(0.13, motionState),
             duration: getGsapDuration(0.46, motionState),
             ease: "back.out(1.45)",
@@ -765,9 +768,19 @@ export function HomePage({
           "planetDiscovery",
         )
         .to(
-          ".female-mvp-orbit-planet",
+          ".female-mvp-orbit-planet-image",
           {
-            filter: "brightness(1) saturate(1)",
+            filter: "saturate(1.06) contrast(0.96) brightness(1.12)",
+            duration: getGsapDuration(0.3, motionState),
+            stagger: getGsapDuration(0.05, motionState),
+            ease: "sine.out",
+          },
+          "planetDiscovery+=0.08",
+        )
+        .to(
+          ".female-mvp-orbit-planet-image",
+          {
+            filter: "saturate(0.82) contrast(0.92) brightness(1.08)",
             duration: getGsapDuration(0.42, motionState),
             stagger: getGsapDuration(0.05, motionState),
             ease: "sine.out",
@@ -778,7 +791,6 @@ export function HomePage({
           ".female-mvp-starmap-scan",
           {
             autoAlpha: 0,
-            scale: 1.18,
             duration: getGsapDuration(0.34, motionState),
             ease: "sine.out",
           },
@@ -1179,11 +1191,13 @@ export function HomePage({
                       ].join(" ")}
                       style={{ left: `${pos.left}%`, top: `${pos.top}%` }}
                     >
-                      <img
-                        src={planet.src}
-                        alt=""
-                        className="female-mvp-orbit-planet-image"
-                      />
+                      <span className="female-mvp-orbit-planet-body">
+                        <img
+                          src={planet.src}
+                          alt=""
+                          className="female-mvp-orbit-planet-image"
+                        />
+                      </span>
                     </span>
                   );
                 })}

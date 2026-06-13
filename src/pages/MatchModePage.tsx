@@ -51,15 +51,17 @@ const MATCH_MODE_OPTIONS = [
 ] as const;
 
 type MatchModeId = (typeof MATCH_MODE_OPTIONS)[number]["id"];
+type OrbitSlot = "active" | "next" | "prev" | "back";
 export type MatchModeEntrance = "home" | "planet";
 
-function getOrbitSlot(index: number, activeIndex: number) {
+function getOrbitSlot(index: number, activeIndex: number): OrbitSlot {
   const total = MATCH_MODE_OPTIONS.length;
   const diff = (index - activeIndex + total) % total;
 
   if (diff === 0) return "active";
   if (diff === 1) return "next";
-  return "prev";
+  if (diff === total - 1) return "prev";
+  return "back";
 }
 
 export function MatchModePage({
@@ -301,9 +303,9 @@ export function MatchModePage({
         timeline
           .set(".female-mvp-mode-back", { autoAlpha: 0, y: -8 })
           .set(".female-mvp-mode-hero", { autoAlpha: 0, y: 12 })
-          .set(".female-mvp-mode-orbit-ring", { autoAlpha: 0, scale: 0.86 })
-          .set(".female-mvp-mode-orbit-control", { autoAlpha: 0, scale: 0.88 })
-          .set(".female-mvp-mode-planet-button", { autoAlpha: 0, scale: 0.82 })
+          .set(".female-mvp-mode-orbit-ring", { autoAlpha: 0 })
+          .set(".female-mvp-mode-orbit-control", { autoAlpha: 0 })
+          .set(".female-mvp-mode-planet-button", { autoAlpha: 0 })
           .set(".female-mvp-mode-luna-guide", { autoAlpha: 0 })
           .set(".female-mvp-mode-luna-image-guide", { scale: 0.88, y: 12, rotation: -4 })
           .set(".female-mvp-mode-luna-bubble", { autoAlpha: 0, x: 8, y: 3 })
@@ -328,7 +330,6 @@ export function MatchModePage({
             ".female-mvp-mode-orbit-ring",
             {
               autoAlpha: 1,
-              scale: 1,
               stagger: getGsapDuration(0.08, motionState),
               duration: getGsapDuration(0.48, motionState),
             },
@@ -338,10 +339,8 @@ export function MatchModePage({
             ".female-mvp-mode-planet-button",
             {
               autoAlpha: 1,
-              scale: 1,
               stagger: getGsapDuration(0.08, motionState),
               duration: getGsapDuration(0.5, motionState),
-              ease: "back.out(1.3)",
             },
             "modeOrbitWake+=0.08",
           )
@@ -349,7 +348,6 @@ export function MatchModePage({
             ".female-mvp-mode-orbit-control",
             {
               autoAlpha: 1,
-              scale: 1,
               duration: getGsapDuration(0.3, motionState),
             },
             "<0.12",
@@ -583,6 +581,8 @@ export function MatchModePage({
                   `female-mvp-mode-planet-button-${mode.id}`,
                   `female-mvp-mode-planet-button-${slot}`,
                 ].join(" ")}
+                aria-hidden={slot === "back" ? true : undefined}
+                tabIndex={slot === "back" ? -1 : 0}
               >
                 <span className="female-mvp-mode-planet-aura" aria-hidden="true" />
                 <img src={mode.asset} alt="" className="female-mvp-mode-planet-image" />
